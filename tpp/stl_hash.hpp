@@ -6,17 +6,8 @@
 
 #ifndef TPP_NO_HASH
 
-/* If we are on MSVC and modules are supported, use `std.core` instead of traditional includes.
- * Otherwise, only include what we need. */
-#ifdef TPP_USE_IMPORT
-
-#if defined(_MSC_VER) || __cplusplus <= 202002L
-import std.core;
-#else /* C++23 */
-import std;
-#endif
-
-#elif __cplusplus >= 202002L
+/* If we are on MSVC and modules are supported, use `std.core` instead of `<version>`. */
+#if !defined(TPP_USE_IMPORT) && __cplusplus >= 202002L
 
 #include <version>
 

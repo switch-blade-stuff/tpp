@@ -4,38 +4,25 @@
 
 #pragma once
 
+#include "detail/common.hpp"
+
 #ifndef TPP_NO_HASH
 
-/* If we are on MSVC and modules are supported, use `std.core` instead of traditional includes.
- * Otherwise, only include what we need. */
-#ifdef TPP_USE_IMPORT
+/* If there is no modules support, include what we need. */
+#ifndef TPP_USE_IMPORT
 
-#ifdef _MSC_VER
-import std.core;
-#else
-import std;
-#endif
-
-#else
-
-#include <type_traits>
 #include <cstring>
 #include <cstdint>
 #include <climits>
 
 #endif
 
-#if defined(__cpp_if_consteval) && __cpp_if_consteval >= 202106L
-#define TPP_IF_CONSTEVAL if consteval
-#elif defined(__cpp_lib_is_constant_evaluated)
-#define TPP_IF_CONSTEVAL if (std::is_constant_evaluated())
-#elif defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
-#define TPP_IF_CONSTEVAL if (__builtin_is_constant_evaluated())
-#endif
-
+/* Use `constexpr` implementation for seahash if `consteval` is available. */
 #ifdef TPP_IF_CONSTEVAL
+#define TPP_SEAHASH_CONSTEVAL(t, f) TPP_IF_CONSTEVAL(t, f)
 #define TPP_SEAHASH_CONSTEXPR constexpr
 #else
+#define TPP_SEAHASH_CONSTEVAL(t, f) f;
 #define TPP_SEAHASH_CONSTEXPR
 #endif
 
@@ -342,11 +329,8 @@ namespace tpp
 			auto *src_bytes = static_cast<const std::uint8_t *>(src);
 			auto *dst_bytes = static_cast<std::uint8_t *>(dst) + off;
 
-#ifdef TPP_IF_CONSTEVAL
-			TPP_IF_CONSTEVAL for (std::size_t i = 0; i < n; ++i) dst_bytes[i] = src_bytes[i];
-			else
-#endif
-				std::memcpy(dst_bytes, src_bytes, n);
+			TPP_SEAHASH_CONSTEVAL(for (std::size_t i = 0; i < n; ++i) { dst_bytes[i] = src_bytes[i]; },
+			                      std::memcpy(dst_bytes, src_bytes, n))
 		}
 
 		[[nodiscard]] constexpr static std::uint64_t read_buff(const void *data, std::size_t n) noexcept
@@ -614,7 +598,7 @@ namespace tpp
 }
 
 #undef TPP_SEAHASH_CONSTEXPR
-#undef TPP_IF_CONSTEVAL
+#undef TPP_SEAHASH_CONSTEVAL
 
 #define TPP_TRIVIAL_HASH_IMPL(T)                                                \
     template<std::size_t (*Algo)(const void *, std::size_t)>                    \
