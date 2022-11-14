@@ -6,10 +6,24 @@
 
 #ifndef TPP_NO_HASH
 
+/* If we are on MSVC and modules are supported, use `std.core` instead of traditional includes.
+ * Otherwise, only include what we need. */
+#ifdef TPP_USE_IMPORT
+
+#ifdef _MSC_VER
+import std.core;
+#else
+import std;
+#endif
+
+#else
+
 #include <type_traits>
 #include <cstring>
 #include <cstdint>
 #include <climits>
+
+#endif
 
 #if defined(__cpp_if_consteval) && __cpp_if_consteval >= 202106L
 #define TPP_IF_CONSTEVAL if consteval

@@ -6,7 +6,17 @@
 
 #ifndef TPP_NO_HASH
 
-#if __cplusplus >= 202002L
+/* If we are on MSVC and modules are supported, use `std.core` instead of traditional includes.
+ * Otherwise, only include what we need. */
+#ifdef TPP_USE_IMPORT
+
+#if defined(_MSC_VER) || __cplusplus <= 202002L
+import std.core;
+#else /* C++23 */
+import std;
+#endif
+
+#elif __cplusplus >= 202002L
 
 #include <version>
 
@@ -15,7 +25,11 @@
 #if !defined(TPP_HAS_OPTIONAL_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_OPTIONAL_HASH))
 #define TPP_HAS_OPTIONAL_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <optional>
+
+#endif
 
 template<typename T, std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::optional<T>, Algo>
@@ -36,7 +50,11 @@ struct tpp::hash<std::optional<T>, Algo>
 #if !defined(TPP_HAS_VARIANT_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_VARIANT_HASH))
 #define TPP_HAS_VARIANT_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <variant>
+
+#endif
 
 namespace tpp
 {
@@ -78,7 +96,11 @@ namespace tpp
 #if !defined(TPP_HAS_STRING_VIEW_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_STRING_VIEW_HASH))
 #define TPP_HAS_STRING_VIEW_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <string_view>
+
+#endif
 
 #define TPP_STRING_VIEW_HASH_IMPL(C)                                                        \
     template<std::size_t (*Algo)(const void *, std::size_t)>                                \
@@ -113,7 +135,11 @@ TPP_STRING_VIEW_HASH_IMPL(char8_t)
 #if !defined(TPP_HAS_STRING_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_STRING_HASH) || defined(TPP_STRING_VIEW_HASH))
 #define TPP_HAS_STRING_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <string>
+
+#endif
 
 #define TPP_STRING_HASH_IMPL(C)                                                             \
     template<typename Alloc, std::size_t (*Algo)(const void *, std::size_t)>                \
@@ -148,7 +174,11 @@ TPP_STRING_HASH_IMPL(char8_t)
 #if !defined(TPP_HAS_BITSET_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_BITSET_HASH))
 #define TPP_HAS_BITSET_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <bitset>
+
+#endif
 
 template<std::size_t N, std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::bitset<N>, Algo>
@@ -172,7 +202,11 @@ struct tpp::hash<std::bitset<N>, Algo>
 #if !defined(TPP_HAS_SYSTEM_ERROR_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_SYSTEM_ERROR_HASH))
 #define TPP_HAS_SYSTEM_ERROR_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <system_error>
+
+#endif
 
 template<std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::error_condition, Algo>
@@ -201,7 +235,17 @@ struct tpp::hash<std::error_code, Algo>
 #if !defined(TPP_HAS_MEMORY_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_MEMORY_HASH))
 #define TPP_HAS_MEMORY_HASH
 
+#ifdef TPP_USE_IMPORT
+
+#ifdef _MSC_VER
+import std.memory;
+#endif
+
+#else
+
 #include <memory>
+
+#endif
 
 template<typename T, typename D, std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::unique_ptr<T, D>, Algo>
@@ -228,7 +272,11 @@ struct tpp::hash<std::shared_ptr<T>, Algo>
 #if !defined(TPP_HAS_TYPEINDEX_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_TYPEINDEX_HASH))
 #define TPP_HAS_TYPEINDEX_HASH
 
+#ifndef TPP_USE_IMPORT
+
 #include <typeindex>
+
+#endif
 
 template<std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::type_index, Algo>
@@ -245,7 +293,17 @@ struct tpp::hash<std::type_index, Algo>
 #if !defined(TPP_HAS_FILESYSTEM_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_FILESYSTEM_HASH))
 #define TPP_HAS_FILESYSTEM_HASH
 
+#ifdef TPP_USE_IMPORT
+
+#ifdef _MSC_VER
+import std.memory;
+#endif
+
+#else
+
 #include <filesystem>
+
+#endif
 
 template<std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::filesystem::path, Algo>
@@ -265,7 +323,17 @@ struct tpp::hash<std::filesystem::path, Algo>
 #if !defined(TPP_HAS_THREAD_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_THREAD_HASH))
 #define TPP_HAS_THREAD_HASH
 
+#ifdef TPP_USE_IMPORT
+
+#ifdef _MSC_VER
+import std.threading;
+#endif
+
+#else
+
 #include <thread>
+
+#endif
 
 template<std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::thread::id, Algo>
@@ -291,7 +359,11 @@ struct tpp::hash<std::thread::id, Algo>
 
 #if __cplusplus >= 202002L && defined(TPP_STL_HASH_ALL) || defined(TPP_COROUTINE_HASH)
 
+#ifndef TPP_USE_IMPORT
+
 #include <coroutine>
+
+#endif
 
 #if !defined(TPP_HAS_COROUTINE_HASH) && defined(__cpp_lib_coroutine) && __cpp_lib_coroutine >= 201902L
 #define TPP_HAS_COROUTINE_HASH
@@ -313,7 +385,11 @@ struct tpp::hash<std::coroutine_handle<P>, Algo>
 
 #if __cplusplus > 202002L && defined(TPP_STL_HASH_ALL) || defined(TPP_STACKTRACE_HASH)
 
+#ifndef TPP_USE_IMPORT
+
 #include <stacktrace>
+
+#endif
 
 #if !defined(TPP_HAS_STACKTRACE_HASH) && defined(__cpp_lib_stacktrace) && __cpp_lib_stacktrace >= 202011L
 #define TPP_HAS_STACKTRACE_HASH

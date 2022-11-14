@@ -4,6 +4,12 @@ project(tpp)
 set(CMAKE_CXX_STANDARD 20)
 
 # Library options
+option(TPP_USE_MODULES "Toggles support for C++20 modules" ON)
+
+if (${TPP_USE_MODULES})
+    add_compile_definitions(TPP_USE_MODULES)
+endif ()
+
 option(TPP_NO_HASH "Toggles availability of hash function utilities" OFF)
 option(TPP_OPTIONAL_HASH "Enable hash specializations for the <optional> header" OFF)
 option(TPP_VARIANT_HASH "Enable hash specializations for the <variant> header" OFF)
@@ -81,11 +87,24 @@ endif ()
 
 set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
 add_library(tpp INTERFACE
+        ${TPP_SOURCE_DIR}/detail/common.hpp
+
+        # Hash utilities
         ${TPP_SOURCE_DIR}/hash.hpp
         ${TPP_SOURCE_DIR}/stl_hash.hpp
+
+        # DenseHash table containers
+        ${TPP_SOURCE_DIR}/detail/dense_table.hpp
         ${TPP_SOURCE_DIR}/dense_set.hpp
         ${TPP_SOURCE_DIR}/dense_map.hpp
-        ${TPP_SOURCE_DIR}/dense_bimap.hpp)
+        ${TPP_SOURCE_DIR}/dense_bimap.hpp
+
+        # SwissHash table containers
+        #${TPP_SOURCE_DIR}/detail/swiss_table.hpp
+        #${TPP_SOURCE_DIR}/swiss_set.hpp
+        #${TPP_SOURCE_DIR}/swiss_map.hpp
+        #${TPP_SOURCE_DIR}/swiss_bimap.hpp
+        )
 
 # Unit tests
 option(TPP_TESTS "Enable unit tests" OFF)

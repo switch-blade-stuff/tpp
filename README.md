@@ -22,6 +22,8 @@ Here is a brief list of the features of this library:
     * `tpp::ordered_dense_map`
 * Utilities & hash functions
     * `tpp::hash_combine`
+    * `tpp::seahash_builder`
+    * `tpp::seahash`
     * `tpp::fnv1a`
     * `tpp::sdbm`
     * `tpp::crc32`
@@ -36,6 +38,12 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
 
 <table>
   <tr><th>#define macro</th><th>CMake option</th><th>Default value</th><th>Description</th></tr>
+  <tr>
+    <td>TPP_USE_MODULES</td>
+    <td>-DTPP_USE_MODULES</td>
+    <td>ON</td>
+    <td>Toggles support for C++20 modules</td>
+  </tr>
   <tr>
     <td>TPP_NO_HASH</td>
     <td>-DTPP_NO_HASH</td>
@@ -130,6 +138,13 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
 
 If hash utility functions are enabled, all tables will use the `tpp::seahash_hash` hasher by default,
 otherwise `std::hash` is used.
+
+## Modules
+
+At present, `tpp` has basic support for C++20 modules. If `TPP_USE_MODULES` option is enabled, and modules are supported
+by the compiler, the library will prefer using `import` as opposed to `#include` for standard library headers.
+
+In the future, a module interface may be provided for the library as an alternative to the current header API.
 
 ## Notes
 
