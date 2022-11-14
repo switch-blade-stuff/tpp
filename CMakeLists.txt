@@ -79,7 +79,7 @@ else ()
     endif ()
 endif ()
 
-set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tables-pp)
+set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
 add_library(tpp INTERFACE
         ${TPP_SOURCE_DIR}/hash.hpp
         ${TPP_SOURCE_DIR}/stl_hash.hpp

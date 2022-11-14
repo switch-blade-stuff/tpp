@@ -319,249 +319,270 @@ namespace tpp
 		return fnv1a(data, n, detail::fnv1a_offset);
 	}
 
-	namespace detail
+	/** @brief Helper structure used to assemble a SeaHash hash.
+	 * @note Reference implementation at <a href="https://docs.rs/seahash/latest/src/seahash/stream.rs.html">https://docs.rs/seahash/latest/src/seahash/stream.rs.html</a>. */
+	class seahash_builder
 	{
-		struct seahash_state
+		TPP_SEAHASH_CONSTEXPR static void copy_bytes(void *dst, const void *src, std::size_t n, std::size_t off = 0) noexcept
 		{
-			/* SeaHash reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html`. */
-
-			TPP_SEAHASH_CONSTEXPR static void copy_bytes(void *dst, const void *src, std::size_t n, std::size_t off = 0) noexcept
-			{
-				auto *src_bytes = static_cast<const std::uint8_t *>(src);
-				auto *dst_bytes = static_cast<std::uint8_t *>(dst) + off;
+			auto *src_bytes = static_cast<const std::uint8_t *>(src);
+			auto *dst_bytes = static_cast<std::uint8_t *>(dst) + off;
 
 #ifdef TPP_IF_CONSTEVAL
-				TPP_IF_CONSTEVAL for (std::size_t i = 0; i < n; ++i) dst_bytes[i] = src_bytes[i];
-				else
+			TPP_IF_CONSTEVAL for (std::size_t i = 0; i < n; ++i) dst_bytes[i] = src_bytes[i];
+			else
 #endif
-					std::memcpy(dst_bytes, src_bytes, n);
-			}
+				std::memcpy(dst_bytes, src_bytes, n);
+		}
 
-			[[nodiscard]] TPP_SEAHASH_CONSTEXPR static std::uint64_t read_u64(const void *data) noexcept
+		[[nodiscard]] constexpr static std::uint64_t read_buff(const void *data, std::size_t n) noexcept
+		{
+			switch (n)
 			{
-				std::uint64_t value;
-				copy_bytes(&value, data, 8);
-				return value;
-			}
-			[[nodiscard]] constexpr static std::uint64_t read_buff(const void *data, std::size_t n) noexcept
-			{
-				switch (n)
+				case 1: return static_cast<std::uint64_t>(*static_cast<const std::uint8_t *>(data));
+				case 2: return static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
+				case 3:
 				{
-					case 1: return static_cast<std::uint64_t>(*static_cast<const std::uint8_t *>(data));
-					case 2: return static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
+					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 2));
+					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
+					return l | (h << 16);
+				}
+				case 4: return static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
+				case 5:
+				{
+					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 4));
+					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
+					return l | (h << 32);
+				}
+				case 6:
+				{
+					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
+					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
+					return l | (h << 32);
+				}
+				case 7:
+				{
+					const auto a = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
+					const auto b = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 6));
+					const auto c = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
+					return c | (a << 32) | (b << 48);
+				}
+				default: return 0;
+			}
+		}
+		[[nodiscard]] TPP_SEAHASH_CONSTEXPR static std::uint64_t read_u64(const void *data) noexcept
+		{
+			std::uint64_t value;
+			copy_bytes(&value, data, 8);
+			return value;
+		}
+
+		[[nodiscard]] constexpr static std::uint64_t diffuse(std::uint64_t x) noexcept
+		{
+			/* Diffuse constants from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/helper.rs.html#85`. */
+			const std::uint64_t c = 0x6eed0e9da4d94a4f;
+			x *= c;
+			const auto a = x >> 32;
+			const auto b = x >> 60;
+			x ^= a >> b;
+			return x * c;
+		}
+
+	public:
+		/** Initializes SeaHash builder with a default seed. */
+		constexpr seahash_builder() noexcept = default;
+		/** Initializes SeaHash builder with the specified seed. */
+		constexpr seahash_builder(const std::uint64_t (&seed)[4]) noexcept : seahash_builder(seed[0], seed[1], seed[2], seed[3]) {}
+		/** @copydoc seahash_builder */
+		constexpr seahash_builder(std::uint64_t s0, std::uint64_t s1, std::uint64_t s2, std::uint64_t s3) noexcept : state{s0, s1, s2, s3} {}
+
+		/** Writes a scalar value to the resulting hash.
+		 * @param value Scalar value to be added to the resulting hash.
+		 * @return Reference to this hash builder.
+		 * @note This overload is available only if `T` is a scalar type. */
+		template<typename T>
+		TPP_SEAHASH_CONSTEXPR std::enable_if_t<std::is_scalar_v<std::remove_cvref_t<T>>, seahash_builder &> write(const T &value) noexcept
+		{
+			push(&value, sizeof(std::remove_cvref_t<T>));
+			return *this;
+		}
+		/** Writes a buffer of bytes to the resulting hash.
+		 * @param data Pointer to the source buffer to be added to the resulting hash.
+		 * @param n Size of the source buffer in bytes.
+		 * @return Reference to this hash builder. */
+		TPP_SEAHASH_CONSTEXPR seahash_builder &write(const void *data, std::size_t n) noexcept
+		{
+			push(data, n);
+			return *this;
+		}
+
+		/** Finalizes the hash and returns it's value.
+		 * @note Returned hash is always a 64-bit unsigned integer, even if `std::size_t` is 32-bit. */
+		[[nodiscard]] constexpr std::uint64_t finish() noexcept
+		{
+			const auto a = tail_n > 0 ? diffuse(state[0] ^ read_buff(&tail, tail_n)) : 0;
+			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^
+			               static_cast<std::uint64_t>(written) +
+			               static_cast<std::uint64_t>(tail_n));
+		}
+
+	private:
+		TPP_SEAHASH_CONSTEXPR void push(const void *data, std::size_t n) noexcept
+		{
+			const auto overflow = 8 - tail_n;
+			const auto copy_n = overflow < n ? overflow : n;
+			auto *bytes = static_cast<const std::uint8_t *>(data);
+
+			std::uint8_t tail_buff[8] = {0};
+			copy_bytes(tail_buff, bytes, copy_n, tail_n);
+
+			if (copy_n + tail_n != 8)
+			{
+				copy_bytes(&tail, tail_buff, 8);
+				tail_n += copy_n;
+			}
+			else
+			{
+				push_u64(read_u64(tail_buff));
+				tail_n = 0;
+				tail = 0;
+
+				const auto *ptr = bytes + copy_n;
+				const auto *end = ptr + ((n - copy_n) & ~static_cast<std::size_t>(0x1F));
+				while (ptr < end)
+				{
+					state[0] = diffuse(state[0] ^ read_u64(ptr));
+					state[1] = diffuse(state[1] ^ read_u64(ptr + 8));
+					state[2] = diffuse(state[2] ^ read_u64(ptr + 16));
+					state[3] = diffuse(state[3] ^ read_u64(ptr + 24));
+					written += 32;
+					ptr += 32;
+				}
+
+				auto excess = bytes + n - ptr;
+				switch (excess)
+				{
+					case 0: break;
+					case 1:
+					case 2:
 					case 3:
-					{
-						const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 2));
-						const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
-						return l | (h << 16);
-					}
-					case 4: return static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
+					case 4:
 					case 5:
-					{
-						const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 4));
-						const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-						return l | (h << 32);
-					}
 					case 6:
-					{
-						const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
-						const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-						return l | (h << 32);
-					}
 					case 7:
 					{
-						const auto a = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
-						const auto b = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 6));
-						const auto c = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-						return c | (a << 32) | (b << 48);
+						tail = read_buff(ptr, excess);
+						tail_n = excess;
+						break;
 					}
-					default: return 0;
-				}
-			}
-
-			constexpr seahash_state() noexcept = default;
-			constexpr seahash_state(const std::uint64_t (&seed)[4]) noexcept { for (std::size_t i = 0; i < 4; ++i) state[i] = seed[i]; }
-
-			[[nodiscard]] constexpr std::uint64_t diffuse(std::uint64_t x) noexcept
-			{
-				/* Diffuse constants from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/helper.rs.html#85`. */
-				const std::uint64_t c = 0x6eed0e9da4d94a4f;
-				x *= c;
-				const auto a = x >> 32;
-				const auto b = x >> 60;
-				x ^= a >> b;
-				return x * c;
-			}
-			constexpr seahash_state &push_u64(std::uint64_t x) noexcept
-			{
-				x = diffuse(state[0] ^ x);
-				state[0] = state[1];
-				state[1] = state[2];
-				state[2] = state[3];
-				state[3] = x;
-				written += 8;
-				return *this;
-			}
-
-			template<typename T>
-			TPP_SEAHASH_CONSTEXPR seahash_state &push(const T *bytes) noexcept { return push(static_cast<const void *>(bytes), sizeof(T)); }
-			TPP_SEAHASH_CONSTEXPR seahash_state &push(const void *data, std::size_t n) noexcept
-			{
-				const auto overflow = 8 - tail_n;
-				const auto copy_n = overflow < n ? overflow : n;
-				auto *bytes = static_cast<const std::uint8_t *>(data);
-
-				std::uint8_t tail_buff[8] = {0};
-				copy_bytes(tail_buff, bytes, copy_n, tail_n);
-
-				if (copy_n + tail_n != 8)
-				{
-					copy_bytes(&tail, tail_buff, 8);
-					tail_n += copy_n;
-				}
-				else
-				{
-					push_u64(read_u64(tail_buff));
-					tail_n = 0;
-					tail = 0;
-
-					const auto *ptr = bytes + copy_n;
-					const auto *end = ptr + ((n - copy_n) & ~static_cast<std::size_t>(0x1F));
-					while (ptr < end)
+					case 8:
 					{
-						state[0] = diffuse(state[0] ^ read_u64(ptr));
-						state[1] = diffuse(state[1] ^ read_u64(ptr + 8));
-						state[2] = diffuse(state[2] ^ read_u64(ptr + 16));
-						state[3] = diffuse(state[3] ^ read_u64(ptr + 24));
-						written += 32;
-						ptr += 32;
+						push_u64(read_u64(ptr));
+						break;
 					}
-
-					auto excess = bytes + n - ptr;
-					switch (excess)
+					case 9:
+					case 10:
+					case 11:
+					case 12:
+					case 13:
+					case 14:
+					case 15:
 					{
-						case 0: break;
-						case 1:
-						case 2:
-						case 3:
-						case 4:
-						case 5:
-						case 6:
-						case 7:
-						{
-							tail = read_buff(ptr, excess);
-							tail_n = excess;
-							break;
-						}
-						case 8:
-						{
-							push_u64(read_u64(ptr));
-							break;
-						}
-						case 9:
-						case 10:
-						case 11:
-						case 12:
-						case 13:
-						case 14:
-						case 15:
-						{
-							push_u64(read_u64(ptr));
-							tail = read_buff(ptr + 8, excess -= 8);
-							tail_n = excess;
-							break;
-						}
-						case 16:
-						{
-							const auto a = diffuse(state[0] ^ read_u64(ptr));
-							const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
+						push_u64(read_u64(ptr));
+						tail = read_buff(ptr + 8, excess -= 8);
+						tail_n = excess;
+						break;
+					}
+					case 16:
+					{
+						const auto a = diffuse(state[0] ^ read_u64(ptr));
+						const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
 
-							state[0] = state[2];
-							state[1] = state[3];
-							state[2] = a;
-							state[3] = b;
-							written += 16;
-							break;
-						}
-						case 17:
-						case 18:
-						case 19:
-						case 20:
-						case 21:
-						case 22:
-						case 23:
-						{
-							const auto a = diffuse(state[0] ^ read_u64(ptr));
-							const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
+						state[0] = state[2];
+						state[1] = state[3];
+						state[2] = a;
+						state[3] = b;
+						written += 16;
+						break;
+					}
+					case 17:
+					case 18:
+					case 19:
+					case 20:
+					case 21:
+					case 22:
+					case 23:
+					{
+						const auto a = diffuse(state[0] ^ read_u64(ptr));
+						const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
 
-							state[0] = state[2];
-							state[1] = state[3];
-							state[2] = a;
-							state[3] = b;
-							tail = read_buff(ptr + 16, excess -= 16);
-							tail_n = excess;
-							written += 16;
-							break;
-						}
-						case 24:
-						{
-							const auto a = diffuse(state[0] ^ read_u64(ptr));
-							const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
-							const auto c = diffuse(state[2] ^ read_u64(ptr + 16));
+						state[0] = state[2];
+						state[1] = state[3];
+						state[2] = a;
+						state[3] = b;
+						tail = read_buff(ptr + 16, excess -= 16);
+						tail_n = excess;
+						written += 16;
+						break;
+					}
+					case 24:
+					{
+						const auto a = diffuse(state[0] ^ read_u64(ptr));
+						const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
+						const auto c = diffuse(state[2] ^ read_u64(ptr + 16));
 
-							state[0] = state[3];
-							state[1] = a;
-							state[2] = b;
-							state[3] = c;
-							written += 24;
-							break;
-						}
-						default:
-						{
-							const auto a = diffuse(state[0] ^ read_u64(ptr));
-							const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
-							const auto c = diffuse(state[2] ^ read_u64(ptr + 16));
-							state[0] = state[3];
-							state[1] = a;
-							state[2] = b;
-							state[3] = c;
-							tail = read_buff(ptr + 24, excess -= 24);
-							tail_n = excess;
-							written += 24;
-						}
+						state[0] = state[3];
+						state[1] = a;
+						state[2] = b;
+						state[3] = c;
+						written += 24;
+						break;
+					}
+					default:
+					{
+						const auto a = diffuse(state[0] ^ read_u64(ptr));
+						const auto b = diffuse(state[1] ^ read_u64(ptr + 8));
+						const auto c = diffuse(state[2] ^ read_u64(ptr + 16));
+						state[0] = state[3];
+						state[1] = a;
+						state[2] = b;
+						state[3] = c;
+						tail = read_buff(ptr + 24, excess -= 24);
+						tail_n = excess;
+						written += 24;
 					}
 				}
-				return *this;
 			}
+		}
+		constexpr void push_u64(std::uint64_t x) noexcept
+		{
+			x = diffuse(state[0] ^ x);
+			state[0] = state[1];
+			state[1] = state[2];
+			state[2] = state[3];
+			state[3] = x;
+			written += 8;
+		}
 
-			[[nodiscard]] constexpr std::uint64_t finalize() noexcept
-			{
-				const auto a = tail_n > 0 ? diffuse(state[0] ^ read_buff(&tail, tail_n)) : 0;
-				return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^
-				               static_cast<std::uint64_t>(written) +
-				               static_cast<std::uint64_t>(tail_n));
-			}
-
-			/* Initial state seeds from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html#19`. */
-			std::uint64_t state[4] = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
-			std::uint64_t tail = 0;
-			std::size_t tail_n = 0;
-			std::size_t written = 0;
-		};
-	}
+		/* Initial state seeds from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html#19`. */
+		std::uint64_t state[4] = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
+		std::uint64_t tail = 0;
+		std::size_t tail_n = 0;
+		std::size_t written = 0;
+	};
 
 	/** @brief SeaHash byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
 	[[nodiscard]] TPP_SEAHASH_CONSTEXPR std::size_t seahash(const void *data, std::size_t n) noexcept
 	{
-		return static_cast<std::size_t>(detail::seahash_state{}.push(data, n).finalize());
+		return static_cast<std::size_t>(seahash_builder{}.write(data, n).finish());
 	}
 	/** @copydoc seahash
 	 * @param[in] seed Seed used for the hash algorithm. */
 	[[nodiscard]] TPP_SEAHASH_CONSTEXPR std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
 	{
-		return static_cast<std::size_t>(detail::seahash_state{seed}.push(data, n).finalize());
+		return static_cast<std::size_t>(seahash_builder{seed}.write(data, n).finish());
 	}
 
 	/** @brief Generic hash functor used to hash a value of type `T` using the specified byte hash algorithm. */

@@ -11,8 +11,7 @@
 #define TPP_STL_HASH_ALL
 #endif
 
-#include <tables-pp/hash.hpp>
-#include <tables-pp/stl_hash.hpp>
+#include <tpp/stl_hash.hpp>
 
 using namespace std::literals;
 
