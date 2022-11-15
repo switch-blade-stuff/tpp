@@ -329,6 +329,7 @@ namespace tpp
 			auto *src_bytes = static_cast<const std::uint8_t *>(src);
 			auto *dst_bytes = static_cast<std::uint8_t *>(dst) + off;
 
+			/* If constantly evaluated, use a simple compile-time loop to enable `constexpr`. */
 			TPP_SEAHASH_CONSTEVAL(for (std::size_t i = 0; i < n; ++i) { dst_bytes[i] = src_bytes[i]; },
 			                      std::memcpy(dst_bytes, src_bytes, n))
 		}

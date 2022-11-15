@@ -87,7 +87,9 @@ endif ()
 
 set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
 add_library(tpp INTERFACE
+        # Common utilities
         ${TPP_SOURCE_DIR}/detail/common.hpp
+        ${TPP_SOURCE_DIR}/detail/table_util.hpp
 
         # Hash utilities
         ${TPP_SOURCE_DIR}/hash.hpp
