@@ -16,10 +16,22 @@
 
 namespace tpp::detail
 {
-	template<typename V, typename KGet, template<typename> typename L>
-	struct dense_bucket_node : L<dense_bucket_node<V, KGet, L>>, ebo_container<V>
+	template<typename V, typename K, typename KHash, typename KCmp, typename A>
+	struct dense_table_traits : table_traits<V, K, A>
+	{
+		typedef KHash key_hash;
+		typedef KCmp key_equal;
+	};
+
+	template<typename V, typename K, typename KGet, typename A, typename Link>
+	struct dense_bucket_node : Link, ebo_container<V>
 	{
 		using value_base = ebo_container<V>;
+
+		using size_type = typename table_traits<V, K, A>::size_type;
+		using difference_type = typename table_traits<V, K, A>::difference_type;
+
+		constexpr static auto npos = table_traits<V, K, A>::npos;
 
 		using value_base::value;
 
@@ -42,33 +54,14 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr V *get() noexcept { return &value(); }
 		[[nodiscard]] constexpr const V *get() const noexcept { return &value(); }
-		[[nodiscard]] constexpr decltype(auto) key() const noexcept { return KGet{}(value()); }
+		[[nodiscard]] constexpr const K &key() const noexcept { return KGet{}(value()); }
 
 		std::size_t hash = 0;
-		std::size_t next = std::numeric_limits<std::size_t>::max();
+		size_type next = npos;
 	};
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename A>
-	struct dense_table_traits
-	{
-		typedef V value_type;
-		typedef K key_type;
-
-		typedef KHash key_hash;
-		typedef KCmp key_equal;
-		typedef A allocator_type;
-
-		typedef std::size_t size_type;
-		typedef std::ptrdiff_t difference_type;
-
-		constexpr static float initial_load_factor = .875f;
-
-		constexpr static size_type npos = std::numeric_limits<size_type>::max();
-		constexpr static size_type initial_capacity = 8;
-	};
-
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename A = std::allocator<V>, template<typename> typename L = empty_link>
-	class dense_table : ebo_container<KHash>, ebo_container<KCmp>, table_header<dense_bucket_node<V, KGet, L>, L>
+	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename A = std::allocator<V>, typename Link = empty_link>
+	class dense_table : Link, ebo_container<KHash>, ebo_container<KCmp>
 	{
 		using traits_t = dense_table_traits<V, K, KHash, KCmp, A>;
 
@@ -81,15 +74,15 @@ namespace tpp::detail
 		typedef typename traits_t::allocator_type allocator_type;
 
 		typedef std::conjunction<detail::is_transparent<key_hash>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<L> is_ordered;
+		typedef detail::is_ordered<Link> is_ordered;
 
 		constexpr static auto initial_load_factor = traits_t::initial_load_factor;
 		constexpr static auto initial_capacity = traits_t::initial_capacity;
 		constexpr static auto npos = traits_t::npos;
 
 	private:
-		using bucket_node = dense_bucket_node<value_type, KGet, L>;
-		using bucket_link = L<bucket_node>;
+		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, Link>;
+		using bucket_link = Link;
 
 		using dense_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<bucket_node>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;
@@ -102,12 +95,12 @@ namespace tpp::detail
 		using sparse_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<size_type>;
 		using sparse_t = std::vector<size_type, sparse_alloc_t>;
 
-		using header_base = table_header<bucket_node, L>;
 		using hash_base = ebo_container<key_hash>;
 		using cmp_base = ebo_container<key_equal>;
+		using header_base = bucket_link;
 
-		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<value_type, bucket_node>, bucket_node *>;
-		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const value_type, bucket_node>, const bucket_node *>;
+		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node>, bucket_node *>;
+		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const bucket_node>, const bucket_node *>;
 
 	public:
 
@@ -124,38 +117,26 @@ namespace tpp::detail
 		constexpr dense_table() = default;
 
 		constexpr dense_table(const dense_table &other)
-				: hash_base(other), cmp_base(other),
+				: hash_base(other), cmp_base(other), header_base(other),
 				  m_sparse(other.m_sparse),
 				  m_dense(other.m_dense),
-				  max_load_factor(other.max_load_factor)
-		{
-			relink_header();
-		}
+				  max_load_factor(other.max_load_factor) {}
 		constexpr dense_table(const dense_table &other, const allocator_type &alloc)
-				: hash_base(other), cmp_base(other),
+				: hash_base(other), cmp_base(other), header_base(other),
 				  m_sparse(other.m_sparse, sparse_alloc_t{alloc}),
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
-				  max_load_factor(other.max_load_factor)
-		{
-			relink_header();
-		}
+				  max_load_factor(other.max_load_factor) {}
 
 		constexpr dense_table(dense_table &&other) noexcept
-				: hash_base(std::move(other)), cmp_base(std::move(other)),
+				: hash_base(std::move(other)), cmp_base(std::move(other)), header_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
-				  max_load_factor(other.max_load_factor)
-		{
-			relink_header();
-		}
+				  max_load_factor(other.max_load_factor) {}
 		constexpr dense_table(dense_table &&other, const allocator_type &alloc) noexcept
-				: hash_base(std::move(other)), cmp_base(std::move(other)),
+				: hash_base(std::move(other)), cmp_base(std::move(other)), header_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
-				  max_load_factor(other.max_load_factor)
-		{
-			relink_header();
-		}
+				  max_load_factor(other.max_load_factor) {}
 
 		constexpr dense_table(const allocator_type &alloc)
 				: m_sparse(initial_capacity, npos, sparse_alloc_t{alloc}),
@@ -173,14 +154,13 @@ namespace tpp::detail
 		{
 			if (this != &other)
 			{
+				header_base::operator=(other);
 				hash_base::operator=(other);
 				cmp_base::operator=(other);
 
 				m_sparse = other.m_sparse;
 				m_dense = other.m_dense;
 				max_load_factor = other.max_load_factor;
-
-				relink_header();
 			}
 			return *this;
 		}
@@ -190,14 +170,13 @@ namespace tpp::detail
 		{
 			if (this != &other)
 			{
+				header_base::operator=(std::move(other));
 				hash_base::operator=(std::move(other));
 				cmp_base::operator=(std::move(other));
 
 				m_sparse = std::move(other.m_sparse);
 				m_dense = std::move(other.m_dense);
 				max_load_factor = other.max_load_factor;
-
-				relink_header();
 			}
 			return *this;
 		}
@@ -225,6 +204,38 @@ namespace tpp::detail
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_sparse.size(); }
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_sparse.max_size(); }
 
+		constexpr void clear()
+		{
+			std::fill_n(m_sparse.data(), bucket_count(), npos);
+			m_dense.clear();
+
+			/* Update header link. */
+			if constexpr (is_ordered::value)
+			{
+				auto *h = header_link();
+				h->relink(h, h);
+			}
+		}
+		constexpr void reserve(size_type n)
+		{
+			[[maybe_unused]] const auto front_pos = front_node() - m_dense.data();
+			[[maybe_unused]] const auto back_pos = back_node() - m_dense.data();
+
+			m_dense.reserve(n);
+			rehash(static_cast<size_type>(static_cast<float>(n) / max_load_factor));
+
+			if constexpr (is_ordered::value)
+			{
+				/* Update header link only if it does not point to itself. */
+				if (!m_dense.empty())
+				{
+					auto *new_front = m_dense.data() + front_pos;
+					auto *new_back = m_dense.data() + back_pos;
+					header_link()->relink(new_front, new_back);
+				}
+			}
+		}
+
 		[[nodiscard]] constexpr bool contains(const auto &key) const noexcept { return *find_node(hash(key), key).second != npos; }
 
 		[[nodiscard]] constexpr iterator find(const auto &key) noexcept { return to_iter(find_node(hash(key), key).first); }
@@ -246,15 +257,15 @@ namespace tpp::detail
 			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
 		}
 
-		template<typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
-		constexpr std::pair<iterator, bool> insert_or_assign(const auto &key, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
+		template<typename T, typename U, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		constexpr std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl({}, key, std::forward<T>(value));
+			return insert_or_assign_impl({}, key, std::forward<U>(value));
 		}
-		template<typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
-		constexpr iterator insert_or_assign(const_iterator hint, const auto &key, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
+		template<typename T, typename U, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		constexpr iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl(to_underlying(hint), key, std::forward<T>(value)).first;
+			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
 		}
 
 		template<typename... Args>
@@ -296,17 +307,12 @@ namespace tpp::detail
 			                    std::forward_as_tuple(std::forward<Args>(args)...)).first;
 		}
 
-		constexpr void clear()
+		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
+		constexpr iterator erase(const T &key) { return erase_impl(hash(key), key); }
+		constexpr iterator erase(const_iterator where)
 		{
-			std::fill_n(m_sparse.data(), bucket_count(), npos);
-			m_dense.clear();
-
-			/* Update header link. */
-			if constexpr (is_ordered::value)
-			{
-				auto *h = header_link();
-				h->relink(h, h);
-			}
+			const auto &node = *to_underlying(where);
+			return erase_impl(node.hash, node.key());
 		}
 
 		constexpr void rehash(size_type new_cap)
@@ -316,25 +322,6 @@ namespace tpp::detail
 			/* Adjust the capacity to be at least large enough to fit the current size. */
 			new_cap = max(max(static_cast<size_type>(static_cast<float>(size()) / max_load_factor), new_cap), initial_capacity);
 			if (new_cap != m_sparse.capacity()) rehash_impl(new_cap);
-		}
-		constexpr void reserve(size_type n)
-		{
-			[[maybe_unused]] const auto front_pos = front_node() - m_dense.data();
-			[[maybe_unused]] const auto back_pos = back_node() - m_dense.data();
-
-			m_dense.reserve(n);
-			rehash(static_cast<size_type>(static_cast<float>(n) / max_load_factor));
-
-			if constexpr (is_ordered::value)
-			{
-				/* Update header link only if it does not point to itself. */
-				if (!m_dense.empty())
-				{
-					auto *new_front = m_dense.data() + front_pos;
-					auto *new_back = m_dense.data() + back_pos;
-					header_link()->relink(new_front, new_back);
-				}
-			}
 		}
 
 		[[nodiscard]] constexpr auto allocator() const noexcept { return m_dense.get_allocator(); }
@@ -364,7 +351,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto *begin_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->next);
+				return static_cast<bucket_node *>(header_link()->off(header_link()->next));
 			else
 				return const_cast<bucket_node *>(m_dense.data());
 		}
@@ -372,7 +359,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto *back_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->prev);
+				return static_cast<bucket_node *>(header_link()->off(header_link()->prev));
 			else
 				return const_cast<bucket_node *>(m_dense.data()) + (size() - 1);
 		}
@@ -402,7 +389,7 @@ namespace tpp::detail
 		constexpr iterator commit_node([[maybe_unused]] const_node_iterator hint, size_type pos, auto *chain_idx, std::size_t h, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
-			if constexpr (is_ordered::value) node->link(hint.link ? *hint.link : *back_node());
+			if constexpr (is_ordered::value) node->link(hint.link ? hint.link : back_node());
 			*chain_idx = pos;
 
 			/* Initialize the hash & rehash the table. Doing it now so
@@ -443,7 +430,7 @@ namespace tpp::detail
 				return {commit_node(hint, pos, chain_idx, h, &tmp), true};
 			else
 			{
-				candidate->replace(std::move(tmp.value()));
+				candidate->replace(std::move(tmp.value()), h);
 				m_dense.pop_back();
 				return {to_iter(candidate), false};
 			}
@@ -452,7 +439,9 @@ namespace tpp::detail
 		template<typename... Args>
 		constexpr iterator emplace_at(const_node_iterator hint, auto *chain_idx, std::size_t h, Args &&...args)
 		{
-			return commit_node(hint, size(), chain_idx, h, &m_dense.emplace_back(std::forward<Args>(args)...));
+			const auto pos = size();
+			auto &node = m_dense.emplace_back(std::forward<Args>(args)...);
+			return commit_node(hint, pos, chain_idx, h, &node);
 		}
 
 		template<typename T>
@@ -471,10 +460,10 @@ namespace tpp::detail
 			/* If a candidate was found, replace the entry. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node(h, key); *chain_idx == npos)
-				return {emplace_at(hint, chain_idx, h, std::forward<T>(value)), true};
+				return {emplace_at(hint, chain_idx, h, key, std::forward<T>(value)), true};
 			else
 			{
-				candidate->replace(std::forward<T>(value), h);
+				candidate->replace(V{key, std::forward<T>(value)}, h);
 				return {to_iter(candidate), false};
 			}
 		}
@@ -485,15 +474,16 @@ namespace tpp::detail
 			{
 				const auto pos = *chain_idx;
 				auto *entry_ptr = m_dense.data() + static_cast<difference_type>(pos);
-				if (entry_ptr->hash == h && key_comp(key, entry_ptr->key()))
+				if (entry_ptr->hash == h && cmp(key, entry_ptr->key()))
 				{
 					bucket_node *next = entry_ptr; /* Save the next pointer for returning. */
 
 					/* Unlink the entry from both bucket & insertion chains. */
 					if constexpr (is_ordered::value)
 					{
-						next = entry_ptr->bucket_link::next;
-						entry_ptr->unlink();
+						auto *entry_link = static_cast<bucket_link *>(entry_ptr);
+						next = static_cast<bucket_node *>(entry_link->off(entry_link->next));
+						entry_link->unlink();
 					}
 					*chain_idx = entry_ptr->next;
 
@@ -537,16 +527,6 @@ namespace tpp::detail
 				auto *chain_idx = get_chain(entry.hash);
 				entry.next = *chain_idx;
 				*chain_idx = i;
-			}
-		}
-
-		constexpr void relink_header() noexcept
-		{
-			if constexpr (is_ordered::value)
-			{
-				/* Only relink the header if there are nodes. */
-				if (auto *h = header_link(); !m_dense.empty())
-					h->relink(h->next, h->prev);
 			}
 		}
 

@@ -98,53 +98,90 @@ namespace tpp::detail
 	template<typename T>
 	constexpr void swap(ebo_container<T> &a, ebo_container<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
 
-	/* Placeholder node link. */
-	template<typename N>
-	struct empty_link {};
+	template<typename V, typename K, typename A>
+	struct table_traits
+	{
+		typedef V value_type;
+		typedef K key_type;
+		typedef A allocator_type;
 
+		typedef typename std::allocator_traits<A>::size_type size_type;
+		typedef typename std::allocator_traits<A>::difference_type difference_type;
+
+		constexpr static float initial_load_factor = .875f;
+
+		constexpr static size_type npos = std::numeric_limits<size_type>::max();
+		constexpr static size_type initial_capacity = 8;
+	};
+
+	/* Placeholder node link. */
+	struct empty_link {};
 	/* Node link used for ordered tables. */
-	template<typename N>
 	struct ordered_link
 	{
-		constexpr ordered_link() noexcept = default;
-		constexpr ordered_link(const ordered_link &) noexcept = default;
-		constexpr ordered_link &operator=(const ordered_link &) noexcept = default;
+		[[nodiscard]] constexpr static std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
+		{
+			const auto a_bytes = static_cast<const std::uint8_t *>(a);
+			const auto b_bytes = static_cast<const std::uint8_t *>(b);
+			return a_bytes - b_bytes;
+		}
+		[[nodiscard]] constexpr static const void *byte_off(const void *p, std::ptrdiff_t n) noexcept
+		{
+			return static_cast<const std::uint8_t *>(p) + n;
+		}
+		[[nodiscard]] constexpr static void *byte_off(void *p, std::ptrdiff_t n) noexcept
+		{
+			return static_cast<std::uint8_t *>(p) + n;
+		}
 
-		constexpr ordered_link(ordered_link &&other) noexcept { relink(other.next, other.prev); }
+		constexpr ordered_link() noexcept = default;
+		constexpr ordered_link(ordered_link &&other) noexcept { relink_from(other); }
 		constexpr ordered_link &operator=(ordered_link &&other) noexcept
 		{
-			relink(other.next, other.prev);
+			relink_from(other);
 			return *this;
 		}
 
-		constexpr void relink(ordered_link *new_next, ordered_link *new_prev) noexcept
+		constexpr void link(std::ptrdiff_t prev_off) noexcept { link(off(prev_off)); }
+		constexpr void link(ordered_link *prev_ptr) noexcept
 		{
-			if ((next = new_next) != nullptr)
-				new_next->prev = this;
-			if ((prev = new_prev) != nullptr)
-				new_prev->next = this;
+			const auto next_ptr = prev_ptr->off(prev_ptr->next);
+			next_ptr->prev = -(next = byte_diff(next_ptr, this));
+			prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
 		}
 
-		constexpr void link(ordered_link &new_prev) noexcept
+		constexpr void relink_from(ordered_link &other) noexcept
 		{
-			prev = &new_prev;
-			if ((next = std::exchange(new_prev.next, this)) != nullptr)
-				next->prev = this;
+			next = prev = 0;
+			if (other.next != 0)
+			{
+				auto *next_ptr = other.off(std::exchange(other.next, 0));
+				next_ptr->prev = -(next = byte_diff(next_ptr, this));
+			}
+			if (other.prev != 0)
+			{
+				auto *prev_ptr = other.off(std::exchange(other.prev, 0));
+				prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
+			}
 		}
 		constexpr void unlink() noexcept
 		{
-			prev->next = next;
-			next->prev = prev;
-			prev = nullptr;
-			next = nullptr;
+			auto *next_ptr = off(std::exchange(next, 0));
+			auto *prev_ptr = off(std::exchange(prev, 0));
+			next_ptr->prev = byte_diff(prev_ptr, next_ptr);
+			prev_ptr->next = byte_diff(next_ptr, prev_ptr);
 		}
 
-		ordered_link *next = nullptr;
-		ordered_link *prev = nullptr;
+		[[nodiscard]] constexpr ordered_link *off(std::ptrdiff_t n) noexcept { return static_cast<ordered_link *>(byte_off(this, n)); }
+		[[nodiscard]] constexpr const ordered_link *off(std::ptrdiff_t n) const noexcept { return static_cast<const ordered_link *>(byte_off(this, n)); }
+
+		/* Offsets from `this` to next & previous links in bytes. */
+		std::ptrdiff_t next = 0; /* next_ptr - this */
+		std::ptrdiff_t prev = 0; /* prev_ptr - this */
 	};
 
 	/* Helper used to check if the link is ordered. */
-	template<template<typename> typename>
+	template<typename>
 	struct is_ordered : std::false_type {};
 	template<>
 	struct is_ordered<ordered_link> : std::true_type {};
@@ -155,27 +192,24 @@ namespace tpp::detail
 	template<typename T>
 	struct is_transparent<T, std::void_t<typename T::is_transparent>> : std::true_type {};
 
-	template<typename N, template<typename> typename L>
-	struct table_header : L<N> { constexpr table_header() noexcept { if constexpr (is_ordered<L>::value) L<N>::relink(this, this); }};
-
-	template<typename T, typename N>
+	template<typename N>
 	struct ordered_iterator
 	{
-		using link_t = ordered_link<N>;
+		using link_t = ordered_link;
 
-		typedef T value_type;
-		typedef T &reference;
-		typedef T *pointer;
+		typedef N value_type;
+		typedef N &reference;
+		typedef N *pointer;
 
-		typedef std::size_t size_type;
-		typedef std::ptrdiff_t difference_type;
+		typedef typename N::size_type size_type;
+		typedef typename N::difference_type difference_type;
 		typedef std::bidirectional_iterator_tag iterator_category;
 
 		constexpr ordered_iterator() noexcept = default;
 
 		/** Implicit conversion from a const iterator. */
-		template<typename U, typename = std::enable_if_t<std::is_same_v<U, std::remove_const_t<T>> && !std::is_same_v<U, T>>>
-		constexpr ordered_iterator(const ordered_iterator<U, N> &other) noexcept : link(other.link) {}
+		template<typename U, typename = std::enable_if_t<std::is_same_v<U, std::remove_const_t<N>> && !std::is_same_v<U, N>>>
+		constexpr ordered_iterator(const ordered_iterator<U> &other) noexcept : link(other.link) {}
 
 		constexpr explicit ordered_iterator(link_t *link) noexcept : link(link) {}
 		constexpr explicit ordered_iterator(N *node) noexcept : ordered_iterator(static_cast<link_t *>(node)) {}
@@ -188,7 +222,7 @@ namespace tpp::detail
 		}
 		constexpr ordered_iterator &operator++() noexcept
 		{
-			link = link->next;
+			link = link->off(link->next);
 			return *this;
 		}
 		constexpr ordered_iterator operator--(int) noexcept
@@ -199,11 +233,11 @@ namespace tpp::detail
 		}
 		constexpr ordered_iterator &operator--() noexcept
 		{
-			link = link->prev;
+			link = link->off(link->prev);
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return static_cast<N *>(link)->get(); }
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return static_cast<pointer>(link); }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
@@ -269,7 +303,11 @@ namespace tpp::detail
 	template<typename V, typename I>
 	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>
 	{
+		// @formatter:off
+		template<typename U, typename J>
+		friend class table_iterator;
 		friend struct random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>;
+		// @formatter:on
 
 		template<typename U, typename J>
 		friend constexpr auto to_underlying(table_iterator<U, J>) noexcept;
@@ -287,7 +325,7 @@ namespace tpp::detail
 
 	public:
 		constexpr table_iterator() noexcept = default;
-		template<typename U, typename J, typename = std::enable_if_t<!std::is_same_v<I, J> && std::is_constructible_v<I, const J &>>>
+		template<typename U, typename J, typename = std::enable_if_t<!std::is_same_v<I, J> && std::is_constructible_v<I, std::add_const_t<J> &>>>
 		constexpr table_iterator(const table_iterator<U, J> &other) noexcept : m_iter(other.m_iter) {}
 
 		constexpr explicit table_iterator(I iter) noexcept : m_iter(iter) {}
@@ -315,13 +353,7 @@ namespace tpp::detail
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept
-		{
-			if constexpr (std::is_pointer_v<I>) /* Pointer to node. */
-				return m_iter->get();
-			else
-				return m_iter.operator->();
-		}
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return m_iter->get(); }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
