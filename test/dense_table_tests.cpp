@@ -11,12 +11,8 @@
 
 #include <tpp/detail/dense_table.hpp>
 
-void test_dense_table() noexcept
+static void test_table(auto &table) noexcept
 {
-	using value_t = std::pair<std::string, int>;
-	using table_t = tpp::detail::dense_table<value_t, const std::string, std::hash<std::string>, std::equal_to<>, tpp::detail::key_first>;
-
-	table_t table;
 	assert(table.size() == 0);
 
 	assert(table.emplace("0", 0).second);
@@ -99,6 +95,14 @@ void test_dense_table() noexcept
 	assert(table2.begin() == table2.end());
 }
 
+void test_dense_table() noexcept
+{
+	using value_t = std::pair<std::string, int>;
+	using table_t = tpp::detail::dense_table<value_t, const std::string, std::hash<std::string>, std::equal_to<>, tpp::detail::key_first>;
+
+	table_t table;
+	test_table(table);
+}
 void test_ordered_dense_table() noexcept
 {
 	using value_t = std::pair<std::string_view, int>;
@@ -148,5 +152,7 @@ void test_ordered_dense_table() noexcept
 	assert(*table2.find("0") == table2.front());
 	assert(*table2.find("1") == table2.back());
 
-	/* NOTE: Other tests are handled by `test_dense_table`. */
+	/* NOTE: Other tests are handled by `test_table`. */
+	table2.clear();
+	test_table(table2);
 }
