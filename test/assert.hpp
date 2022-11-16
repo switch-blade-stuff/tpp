@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <tpp/detail/common.hpp>
 #include <exception>
 #include <utility>
 #include <cstdio>
@@ -48,29 +49,19 @@
 #define PRETTY_FUNC __PRETTY_FUNCTION__
 #endif
 
-constexpr void test_assert([[maybe_unused]] bool cnd,
-                           [[maybe_unused]] const char *file,
-                           [[maybe_unused]] std::size_t line,
-                           [[maybe_unused]] const char *func,
-                           [[maybe_unused]] const char *cstr,
-                           [[maybe_unused]] const char *msg)
+inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 {
 	if (!cnd)[[unlikely]]
 	{
-		if (!std::is_constant_evaluated())
-		{
-			fprintf(stderr, "Assertion ");
-			if (cstr) fprintf(stderr, "(%s) ", cstr);
+		fprintf(stderr, "Assertion ");
+		if (cstr) fprintf(stderr, "(%s) ", cstr);
 
-			fprintf(stderr, "failed at '%s:%lu' in '%s'", file, line, func);
-			if (msg) fprintf(stderr, ": %s", msg);
-			fputc('\n', stderr);
+		fprintf(stderr, "failed at '%s:%lu' in '%s'", file, line, func);
+		if (msg) fprintf(stderr, ": %s", msg);
+		fputc('\n', stderr);
 
-			TEST_DEBUG_TRAP();
-			std::terminate();
-		}
-		else
-			[]() { throw 0; }();
+		TEST_DEBUG_TRAP();
+		std::terminate();
 	}
 }
 

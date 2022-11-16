@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 project(tpp)
 
-set(CMAKE_CXX_STANDARD 20)
-
 # Library options
 option(TPP_USE_MODULES "Toggles support for C++20 modules" ON)
 

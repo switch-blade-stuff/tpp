@@ -63,33 +63,33 @@ static auto test_hash()
 		const tpp::hash<value_t, A> hash = {};
 		for (std::size_t i = 0; i < 15; ++i)
 		{
-			assert(hash(a[i]) != hash(b[i]));
-			assert(hash(a[i]) == hash(c[i]));
-			assert(hash(b[i]) != hash(c[i]));
-			assert(hash(b[i]) == hash(d[i]));
+			const std::size_t h[] = {hash(a[i]), hash(b[i]), hash(c[i]), hash(d[i])};
+			TEST_ASSERT(h[0] == h[2]);
+			TEST_ASSERT(h[1] == h[3]);
+			TEST_ASSERT(h[0] == h[1] ? h[2] == h[3] : h[2] != h[3]);
 		}
 	}
 	{
 		const tpp::hash<std::monostate, A> hash = {};
-		assert(hash(std::monostate{}) == hash(std::monostate{}));
+		TEST_ASSERT(hash(std::monostate{}) == hash(std::monostate{}));
 	}
 	{
 		const tpp::hash<std::nullptr_t, A> hash = {};
-		assert(hash(nullptr) == hash(nullptr));
+		TEST_ASSERT(hash(nullptr) == hash(nullptr));
 	}
 	{
 		const tpp::hash<std::string_view, A> hash = {};
-		for (std::size_t i = 0; i < 1024; ++i)
+		for (std::size_t i = 0; i < 0x10000; ++i)
 		{
-			const auto a = std::to_string(rand());
-			const auto b = std::to_string(rand());
+			const auto a = std::to_string(i);
+			const auto b = std::to_string(i * 2 + 1);
 			const auto c = std::string_view{a};
 			const auto d = std::string_view{b};
 
-			assert(hash(a) != hash(b));
-			assert(hash(a) == hash(c));
-			assert(hash(b) != hash(c));
-			assert(hash(b) == hash(d));
+			const std::size_t h[] = {hash(a), hash(b), hash(c), hash(d)};
+			TEST_ASSERT(h[0] == h[2]);
+			TEST_ASSERT(h[1] == h[3]);
+			TEST_ASSERT(h[0] == h[1] ? h[2] == h[3] : h[2] != h[3]);
 		}
 	}
 }
@@ -101,9 +101,9 @@ void test_sdbm() noexcept { test_hash<tpp::sdbm>(); }
 void test_crc32() noexcept
 {
 	const auto a = "abcd"sv, b = "abcd"sv, c = "efgh"sv;
-	assert(tpp::crc32(a.data(), a.size()) == tpp::crc32(b.data(), b.size()));
-	assert(tpp::crc32(a.data(), a.size()) != tpp::crc32(c.data(), c.size()));
-	assert(tpp::crc32(b.data(), b.size()) != tpp::crc32(c.data(), c.size()));
+	TEST_ASSERT(tpp::crc32(a.data(), a.size()) == tpp::crc32(b.data(), b.size()));
+	TEST_ASSERT(tpp::crc32(a.data(), a.size()) != tpp::crc32(c.data(), c.size()));
+	TEST_ASSERT(tpp::crc32(b.data(), b.size()) != tpp::crc32(c.data(), c.size()));
 }
 void test_md5() noexcept
 {
@@ -114,7 +114,7 @@ void test_md5() noexcept
 	tpp::md5(b.data(), b.size(), md5_b);
 	tpp::md5(c.data(), c.size(), md5_c);
 
-	assert(std::equal(md5_a, md5_a + 16, md5_b));
-	assert(!std::equal(md5_a, md5_a + 16, md5_c));
-	assert(!std::equal(md5_b, md5_b + 16, md5_c));
+	TEST_ASSERT(std::equal(md5_a, md5_a + 16, md5_b));
+	TEST_ASSERT(!std::equal(md5_a, md5_a + 16, md5_c));
+	TEST_ASSERT(!std::equal(md5_b, md5_b + 16, md5_c));
 }

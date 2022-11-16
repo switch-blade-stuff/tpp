@@ -11,7 +11,8 @@
 #include <tpp/detail/dense_table.hpp>
 #include <tpp/stl_hash.hpp>
 
-static void test_table(auto &table) noexcept
+template<typename T>
+static void test_table(T &table) noexcept
 {
 	TEST_ASSERT(table.size() == 0);
 
@@ -113,7 +114,7 @@ void test_ordered_dense_table() noexcept
 	using namespace tpp;
 	using value_t = std::pair<std::string, int>;
 	using equal_t = std::equal_to<std::string>;
-	using hash_t = seahash_hash<std::string>;
+	using hash_t = std::hash<std::string>;
 	using alloc_t = std::allocator<value_t>;
 
 	using table_t = detail::dense_table<value_t, const std::string, hash_t, equal_t, detail::key_first, alloc_t, detail::ordered_link>;

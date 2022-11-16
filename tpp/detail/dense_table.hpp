@@ -46,8 +46,8 @@ namespace tpp::detail
 				value() = std::forward<T>(new_value);
 			else
 			{
-				std::destroy_at(get());
-				std::construct_at(get(), std::forward<T>(new_value));
+				if constexpr (!std::is_trivially_destructible_v<V>) get()->~V();
+				new(get()) V(std::forward<T>(new_value));
 			}
 			hash = new_hash;
 		}
@@ -76,9 +76,9 @@ namespace tpp::detail
 		typedef std::conjunction<detail::is_transparent<key_hash>, detail::is_transparent<key_equal>> is_transparent;
 		typedef detail::is_ordered<Link> is_ordered;
 
-		constexpr static auto initial_load_factor = traits_t::initial_load_factor;
-		constexpr static auto initial_capacity = traits_t::initial_capacity;
-		constexpr static auto npos = traits_t::npos;
+		constexpr static float initial_load_factor = traits_t::initial_load_factor;
+		constexpr static typename traits_t::size_type initial_capacity = traits_t::initial_capacity;
+		constexpr static typename traits_t::size_type npos = traits_t::npos;
 
 	private:
 		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, Link>;
@@ -232,10 +232,13 @@ namespace tpp::detail
 			}
 		}
 
-		[[nodiscard]] constexpr bool contains(const auto &key) const noexcept { return *find_node(hash(key), key).second != npos; }
+		template<typename T>
+		[[nodiscard]] constexpr bool contains(const T &key) const noexcept { return (*find_node(hash(key), key).second) != npos; }
 
-		[[nodiscard]] constexpr iterator find(const auto &key) noexcept { return to_iter(find_node(hash(key), key).first); }
-		[[nodiscard]] constexpr const_iterator find(const auto &key) const noexcept { return to_iter(find_node(hash(key), key).first); }
+		template<typename T>
+		[[nodiscard]] constexpr iterator find(const T &key) noexcept { return to_iter(find_node(hash(key), key).first); }
+		template<typename T>
+		[[nodiscard]] constexpr const_iterator find(const T &key) const noexcept { return to_iter(find_node(hash(key), key).first); }
 
 		constexpr std::pair<iterator, bool> insert(const value_type &value) { return insert_impl({}, KGet{}(value), value); }
 		constexpr std::pair<iterator, bool> insert(value_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
@@ -333,14 +336,16 @@ namespace tpp::detail
 
 			std::swap(m_sparse, other.m_sparse);
 			std::swap(m_dense, other.m_dense);
-			std::swap(initial_load_factor, other.initial_load_factor);
+			std::swap(max_load_factor, other.max_load_factor);
 		}
 
 	private:
 		[[nodiscard]] constexpr auto to_capacity(size_type n) const noexcept { return static_cast<size_type>(static_cast<float>(n) * max_load_factor); }
 
-		[[nodiscard]] constexpr auto hash(const auto &k) const { return get_hash()(k); }
-		[[nodiscard]] constexpr auto cmp(const auto &a, const auto &b) const { return get_cmp()(a, b); }
+		template<typename T>
+		[[nodiscard]] constexpr std::size_t hash(const T &k) const { return get_hash()(k); }
+		template<typename T, typename U>
+		[[nodiscard]] constexpr bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
 
 		/* Using `const_cast` here to avoid non-const function duplicates. Pointers will be converted to appropriate const-ness either way. */
 		[[nodiscard]] constexpr auto *header_link() const noexcept { return const_cast<bucket_link *>(static_cast<const bucket_link *>(this)); }
@@ -369,7 +374,8 @@ namespace tpp::detail
 
 		/* Same reason for `const_cast` as with node getters above. */
 		[[nodiscard]] constexpr auto *get_chain(std::size_t h) const noexcept { return const_cast<size_type *>(m_sparse.data()) + (h % bucket_count()); }
-		[[nodiscard]] constexpr auto find_node(std::size_t h, const auto &key) const noexcept -> std::pair<bucket_node *, size_type *>
+		template<typename T>
+		[[nodiscard]] constexpr auto find_node(std::size_t h, const T &key) const noexcept -> std::pair<bucket_node *, size_type *>
 		{
 			auto *idx = get_chain(h);
 			while (*idx != npos)
@@ -382,7 +388,7 @@ namespace tpp::detail
 			return {end_node(), idx};
 		}
 
-		constexpr iterator commit_node([[maybe_unused]] const_node_iterator hint, size_type pos, auto *chain_idx, std::size_t h, bucket_node *node)
+		constexpr iterator commit_node([[maybe_unused]] const_node_iterator hint, size_type pos, size_type *chain_idx, std::size_t h, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
 			if constexpr (is_ordered::value) node->link(hint.link ? hint.link : back_node());
@@ -433,38 +439,39 @@ namespace tpp::detail
 		}
 
 		template<typename... Args>
-		constexpr iterator emplace_at(const_node_iterator hint, auto *chain_idx, std::size_t h, Args &&...args)
+		constexpr iterator emplace_at(const_node_iterator hint, size_type *chain_idx, std::size_t h, Args &&...args)
 		{
 			const auto pos = size();
 			auto &node = m_dense.emplace_back(std::forward<Args>(args)...);
 			return commit_node(hint, pos, chain_idx, h, &node);
 		}
 
-		template<typename T>
-		constexpr auto insert_impl(const_node_iterator hint, const auto &key, T &&value) -> std::pair<iterator, bool>
+		template<typename T, typename U>
+		constexpr auto insert_impl(const_node_iterator hint, const T &key, U &&value) -> std::pair<iterator, bool>
 		{
 			/* If a candidate was found, do nothing. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node(h, key); *chain_idx == npos)
-				return {emplace_at(hint, chain_idx, h, std::forward<T>(value)), true};
+				return {emplace_at(hint, chain_idx, h, std::forward<U>(value)), true};
 			else
 				return {to_iter(candidate), false};
 		}
-		template<typename T>
-		constexpr auto insert_or_assign_impl(const_node_iterator hint, const auto &key, T &&value) -> std::pair<iterator, bool>
+		template<typename T, typename U>
+		constexpr auto insert_or_assign_impl(const_node_iterator hint, const T &key, U &&value) -> std::pair<iterator, bool>
 		{
 			/* If a candidate was found, replace the entry. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node(h, key); *chain_idx == npos)
-				return {emplace_at(hint, chain_idx, h, key, std::forward<T>(value)), true};
+				return {emplace_at(hint, chain_idx, h, key, std::forward<U>(value)), true};
 			else
 			{
-				candidate->replace(V{key, std::forward<T>(value)}, h);
+				candidate->replace(V{key, std::forward<U>(value)}, h);
 				return {to_iter(candidate), false};
 			}
 		}
 
-		constexpr iterator erase_impl(std::size_t h, const auto &key)
+		template<typename T>
+		constexpr iterator erase_impl(std::size_t h, const T &key)
 		{
 			for (auto *chain_idx = get_chain(h); *chain_idx != npos;)
 			{

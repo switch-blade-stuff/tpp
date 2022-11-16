@@ -11,6 +11,7 @@
 #include <iterator>
 #include <utility>
 #include <cstdint>
+#include <limits>
 
 #else
 
@@ -119,6 +120,14 @@ namespace tpp::detail
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
+		template<typename T, typename U>
+		[[nodiscard]] constexpr static auto const_exchange(T &a, U &&b) noexcept
+		{
+			const auto old = a;
+			a = std::forward<U>(b);
+			return old;
+		}
+
 		[[nodiscard]] constexpr static std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
 		{
 			const auto a_bytes = static_cast<const std::uint8_t *>(a);
@@ -155,19 +164,19 @@ namespace tpp::detail
 			next = prev = 0;
 			if (other.next != 0)
 			{
-				auto *next_ptr = other.off(std::exchange(other.next, 0));
+				auto *next_ptr = other.off(const_exchange(other.next, 0));
 				next_ptr->prev = -(next = byte_diff(next_ptr, this));
 			}
 			if (other.prev != 0)
 			{
-				auto *prev_ptr = other.off(std::exchange(other.prev, 0));
+				auto *prev_ptr = other.off(const_exchange(other.prev, 0));
 				prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
 			}
 		}
 		constexpr void unlink() noexcept
 		{
-			auto *next_ptr = off(std::exchange(next, 0));
-			auto *prev_ptr = off(std::exchange(prev, 0));
+			auto *next_ptr = off(const_exchange(next, 0));
+			auto *prev_ptr = off(const_exchange(prev, 0));
 			next_ptr->prev = byte_diff(prev_ptr, next_ptr);
 			prev_ptr->next = byte_diff(next_ptr, prev_ptr);
 		}
@@ -375,6 +384,14 @@ namespace tpp::detail
 	template<typename V, typename I>
 	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I> iter) noexcept { return iter.m_iter; }
 
-	struct key_identity { [[nodiscard]] constexpr auto &operator()(auto &value) const noexcept { return value; }};
-	struct key_first { [[nodiscard]] constexpr auto &operator()(auto &value) const noexcept { return value.first; }};
+	struct key_identity
+	{
+		template<typename T>
+		[[nodiscard]] constexpr T &operator()(T &value) const noexcept { return value; }
+	};
+	struct key_first
+	{
+		template<typename T>
+		[[nodiscard]] constexpr auto &operator()(T &value) const noexcept { return value.first; }
+	};
 }
