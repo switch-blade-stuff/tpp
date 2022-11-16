@@ -117,20 +117,19 @@ namespace tpp::detail
 			return *this;
 		}
 
-		constexpr void relink(ordered_link &new_next, ordered_link &new_prev) noexcept
+		constexpr void relink(ordered_link *new_next, ordered_link *new_prev) noexcept
 		{
-			new_next.prev = this;
-			next = new_next;
-
-			new_prev.next = this;
-			prev = new_prev;
+			if ((next = new_next) != nullptr)
+				new_next->prev = this;
+			if ((prev = new_prev) != nullptr)
+				new_prev->next = this;
 		}
 
 		constexpr void link(ordered_link &new_prev) noexcept
 		{
 			prev = &new_prev;
-			if ((next = std::exchange(new_prev.m_next, this)) != nullptr)
-				next->m_prev = this;
+			if ((next = std::exchange(new_prev.next, this)) != nullptr)
+				next->prev = this;
 		}
 		constexpr void unlink() noexcept
 		{
@@ -154,16 +153,10 @@ namespace tpp::detail
 	template<typename, typename = void>
 	struct is_transparent : std::false_type {};
 	template<typename T>
-	struct is_transparent<T, std::void_t<T>> : std::true_type {};
+	struct is_transparent<T, std::void_t<typename T::is_transparent>> : std::true_type {};
 
 	template<typename N, template<typename> typename L>
-	struct table_header : ebo_container<L<N>>
-	{
-		using ebo_container<L<N>>::value;
-		using ebo_container<L<N>>::swap;
-
-		constexpr table_header() noexcept { if constexpr (is_ordered<L>::value) value().relink(value(), value()); }
-	};
+	struct table_header : L<N> { constexpr table_header() noexcept { if constexpr (is_ordered<L>::value) L<N>::relink(this, this); }};
 
 	template<typename T, typename N>
 	struct ordered_iterator
@@ -185,6 +178,7 @@ namespace tpp::detail
 		constexpr ordered_iterator(const ordered_iterator<U, N> &other) noexcept : link(other.link) {}
 
 		constexpr explicit ordered_iterator(link_t *link) noexcept : link(link) {}
+		constexpr explicit ordered_iterator(N *node) noexcept : ordered_iterator(static_cast<link_t *>(node)) {}
 
 		constexpr ordered_iterator operator++(int) noexcept
 		{
@@ -241,21 +235,54 @@ namespace tpp::detail
 	template<typename V, typename I>
 	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I>) noexcept;
 
-	template<typename V, typename I>
-	class table_iterator : public iterator_concept_base<I>
-	{
-		using traits_t = std::iterator_traits<I>;
+	template<typename, typename = void>
+	struct iter_size { using type = std::size_t; };
+	template<typename T>
+	struct iter_size<T, std::void_t<typename T::size_type>> { using type = typename T::size_type; };
 
-		template<typename, typename>
-		friend constexpr auto to_underlying(table_iterator<V, I>) noexcept;
+	template<typename, typename = void>
+	struct iter_diff { using type = std::ptrdiff_t; };
+	template<typename T>
+	struct iter_diff<T, std::void_t<typename T::difference_type>> { using type = typename T::difference_type; };
+
+	template<typename, typename, typename = void>
+	struct random_access_iterator_base;
+	template<typename I, typename T>
+	struct random_access_iterator_base<I, T, std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, typename T::iterator_category>>>
+	{
+		constexpr I &operator+=(typename iter_diff<T>::type n) noexcept { return iter() += n; }
+		constexpr I &operator-=(typename iter_diff<T>::type n) noexcept { return iter() -= n; }
+
+		[[nodiscard]] constexpr I operator+(typename iter_diff<T>::type n) const noexcept { return I{iter() + n}; }
+		[[nodiscard]] constexpr I operator-(typename iter_diff<T>::type n) const noexcept { return I{iter() - n}; }
+		[[nodiscard]] constexpr typename iter_diff<T>::type operator-(const I &other) const noexcept { return iter() - other.m_iter; }
+
+		[[nodiscard]] constexpr auto &operator[](typename iter_diff<T>::type i) const noexcept { return *operator+(i); }
+
+	private:
+		[[nodiscard]] constexpr auto &iter() noexcept { return static_cast<I *>(this)->m_iter; }
+		[[nodiscard]] constexpr const auto &iter() const noexcept { return static_cast<const I *>(this)->m_iter; }
+	};
+	template<typename I, typename T>
+	struct random_access_iterator_base<I, T, std::enable_if_t<!std::is_base_of_v<std::random_access_iterator_tag, typename T::iterator_category>>> {};
+
+	template<typename V, typename I>
+	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>
+	{
+		friend struct random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>;
+
+		template<typename U, typename J>
+		friend constexpr auto to_underlying(table_iterator<U, J>) noexcept;
+
+		using traits_t = std::iterator_traits<I>;
 
 	public:
 		typedef V value_type;
 		typedef V &reference;
 		typedef V *pointer;
 
-		typedef typename traits_t::size_type size_type;
-		typedef typename traits_t::difference_type difference_type;
+		typedef typename iter_size<traits_t>::type size_type;
+		typedef typename iter_diff<traits_t>::type difference_type;
 		typedef typename traits_t::iterator_category iterator_category;
 
 	public:
@@ -288,26 +315,6 @@ namespace tpp::detail
 			return *this;
 		}
 
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		constexpr table_iterator &operator+=(difference_type n) noexcept
-		{
-			m_iter += n;
-			return *this;
-		}
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		constexpr table_iterator &operator-=(difference_type n) noexcept
-		{
-			m_iter -= n;
-			return *this;
-		}
-
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		[[nodiscard]] constexpr table_iterator operator+(difference_type n) const noexcept { return table_iterator{m_iter + n}; }
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		[[nodiscard]] constexpr table_iterator operator-(difference_type n) const noexcept { return table_iterator{m_iter - n}; }
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		[[nodiscard]] constexpr difference_type operator-(const table_iterator &other) const noexcept { return m_iter - other.m_iter; }
-
 		[[nodiscard]] constexpr pointer operator->() const noexcept
 		{
 			if constexpr (std::is_pointer_v<I>) /* Pointer to node. */
@@ -316,9 +323,6 @@ namespace tpp::detail
 				return m_iter.operator->();
 		}
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
-
-		template<typename = std::enable_if_t<std::is_base_of_v<std::random_access_iterator_tag, iterator_category>>>
-		[[nodiscard]] constexpr reference operator[](difference_type n) const noexcept { return *operator+(n); }
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
 

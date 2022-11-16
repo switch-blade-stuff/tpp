@@ -8,13 +8,13 @@ preserving tables) and `bimap`s (1:1 associative tables).
 
 Here is a brief list of the features of this library:
 
-* SwissHash
+* SwissHash based containers
     * `tpp::swiss_set`
     * `tpp::swiss_map`
     * `tpp::swiss_bimap`
     * `tpp::ordered_swiss_set`
     * `tpp::ordered_swiss_map`
-* DenseHash
+* Dense set based containers
     * `tpp::dense_set`
     * `tpp::dense_map`
     * `tpp::dense_bimap`
@@ -148,7 +148,7 @@ In the future, a module interface may be provided for the library as an alternat
 
 ## Notes
 
-While both SwissHash- and DenseHash- based containers are largely API-compatible with `std::unordered_map`
+While both SwissHash and dense set based containers are largely API-compatible with `std::unordered_map`
 and `std::unordered_set`, they are not guaranteed to be drop-in replacements for STL types, and neither provide the same
 pointer stability guarantees.
 

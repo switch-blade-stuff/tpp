@@ -17,9 +17,8 @@
 namespace tpp::detail
 {
 	template<typename V, typename KGet, template<typename> typename L>
-	struct dense_bucket_node : ebo_container<V>, ebo_container<L<dense_bucket_node<V, KGet, L>>>
+	struct dense_bucket_node : L<dense_bucket_node<V, KGet, L>>, ebo_container<V>
 	{
-		using link_base = ebo_container<L<dense_bucket_node>>;
 		using value_base = ebo_container<V>;
 
 		using value_base::value;
@@ -49,7 +48,7 @@ namespace tpp::detail
 		std::size_t next = std::numeric_limits<std::size_t>::max();
 	};
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc>
+	template<typename V, typename K, typename KHash, typename KCmp, typename A>
 	struct dense_table_traits
 	{
 		typedef V value_type;
@@ -57,7 +56,7 @@ namespace tpp::detail
 
 		typedef KHash key_hash;
 		typedef KCmp key_equal;
-		typedef Alloc allocator_type;
+		typedef A allocator_type;
 
 		typedef std::size_t size_type;
 		typedef std::ptrdiff_t difference_type;
@@ -68,10 +67,10 @@ namespace tpp::detail
 		constexpr static size_type initial_capacity = 8;
 	};
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename Alloc, template<typename> typename Link = empty_link>
-	class dense_table : ebo_container<KHash>, ebo_container<KCmp>, table_header<dense_bucket_node<V, KGet, Link>, Link>
+	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename A = std::allocator<V>, template<typename> typename L = empty_link>
+	class dense_table : ebo_container<KHash>, ebo_container<KCmp>, table_header<dense_bucket_node<V, KGet, L>, L>
 	{
-		using traits_t = dense_table_traits<V, K, KHash, KCmp, Alloc>;
+		using traits_t = dense_table_traits<V, K, KHash, KCmp, A>;
 
 	public:
 		typedef typename traits_t::value_type value_type;
@@ -81,27 +80,29 @@ namespace tpp::detail
 		typedef typename traits_t::key_equal key_equal;
 		typedef typename traits_t::allocator_type allocator_type;
 
-		typedef typename traits_t::size_type size_type;
-		typedef typename traits_t::difference_type difference_type;
-
 		typedef std::conjunction<detail::is_transparent<key_hash>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<Link> is_ordered;
+		typedef detail::is_ordered<L> is_ordered;
 
-		using traits_t::initial_load_factor;
-		using traits_t::initial_capacity;
-		using traits_t::npos;
+		constexpr static auto initial_load_factor = traits_t::initial_load_factor;
+		constexpr static auto initial_capacity = traits_t::initial_capacity;
+		constexpr static auto npos = traits_t::npos;
 
 	private:
-		using bucket_node = dense_bucket_node<value_type, KGet, Link>;
-		using bucket_link = Link<bucket_node>;
+		using bucket_node = dense_bucket_node<value_type, KGet, L>;
+		using bucket_link = L<bucket_node>;
 
-		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<size_type>;
-		using sparse_t = std::vector<size_type, sparse_alloc_t>;
-
-		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<size_type>;
+		using dense_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<bucket_node>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;
 
-		using header_base = table_header<bucket_node, Link>;
+	public:
+		typedef typename dense_t::size_type size_type;
+		typedef typename dense_t::difference_type difference_type;
+
+	private:
+		using sparse_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<size_type>;
+		using sparse_t = std::vector<size_type, sparse_alloc_t>;
+
+		using header_base = table_header<bucket_node, L>;
 		using hash_base = ebo_container<key_hash>;
 		using cmp_base = ebo_container<key_equal>;
 
@@ -109,6 +110,7 @@ namespace tpp::detail
 		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const value_type, bucket_node>, const bucket_node *>;
 
 	public:
+
 		typedef table_iterator<value_type, node_iterator> iterator;
 		typedef table_iterator<const value_type, const_node_iterator> const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -223,10 +225,10 @@ namespace tpp::detail
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_sparse.size(); }
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_sparse.max_size(); }
 
-		[[nodiscard]] constexpr bool contains(const auto &key) const noexcept { return *find_node(key_hash(key), key).second != npos; }
+		[[nodiscard]] constexpr bool contains(const auto &key) const noexcept { return *find_node(hash(key), key).second != npos; }
 
-		[[nodiscard]] constexpr iterator find(const auto &key) noexcept { return to_iter(find_node(key_hash(key), key).first); }
-		[[nodiscard]] constexpr const_iterator find(const auto &key) const noexcept { return to_iter(find_node(key_hash(key), key).first); }
+		[[nodiscard]] constexpr iterator find(const auto &key) noexcept { return to_iter(find_node(hash(key), key).first); }
+		[[nodiscard]] constexpr const_iterator find(const auto &key) const noexcept { return to_iter(find_node(hash(key), key).first); }
 
 		constexpr std::pair<iterator, bool> insert(const value_type &value) { return insert_impl({}, KGet{}(value), value); }
 		constexpr std::pair<iterator, bool> insert(value_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
@@ -303,7 +305,7 @@ namespace tpp::detail
 			if constexpr (is_ordered::value)
 			{
 				auto *h = header_link();
-				h->relink(*h, *h);
+				h->relink(h, h);
 			}
 		}
 
@@ -330,7 +332,7 @@ namespace tpp::detail
 				{
 					auto *new_front = m_dense.data() + front_pos;
 					auto *new_back = m_dense.data() + back_pos;
-					header_link()->relink(*new_front, *new_back);
+					header_link()->relink(new_front, new_back);
 				}
 			}
 		}
@@ -354,8 +356,11 @@ namespace tpp::detail
 	private:
 		[[nodiscard]] constexpr auto to_capacity(size_type n) const noexcept { return static_cast<size_type>(static_cast<float>(n) * max_load_factor); }
 
+		[[nodiscard]] constexpr auto hash(const auto &k) const { return get_hash()(k); }
+		[[nodiscard]] constexpr auto cmp(const auto &a, const auto &b) const { return get_cmp()(a, b); }
+
 		/* Using `const_cast` here to avoid non-const function duplicates. Pointers will be converted to appropriate const-ness either way. */
-		[[nodiscard]] constexpr auto *header_link() const noexcept { return const_cast<bucket_link *>(&header_base::value()); }
+		[[nodiscard]] constexpr auto *header_link() const noexcept { return const_cast<bucket_link *>(static_cast<const bucket_link *>(this)); }
 		[[nodiscard]] constexpr auto *begin_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
@@ -367,25 +372,20 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto *back_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link().prev);
+				return static_cast<bucket_node *>(header_link()->prev);
 			else
-				return const_cast<bucket_node *>(m_dense.data()) + (m_dense.size() - 1);
+				return const_cast<bucket_node *>(m_dense.data()) + (size() - 1);
 		}
 		[[nodiscard]] constexpr auto *end_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link());
 			else
-				return const_cast<bucket_node *>(m_dense.data()) + m_dense.size();
+				return const_cast<bucket_node *>(m_dense.data()) + size();
 		}
 
 		/* Same reason for `const_cast` as with node getters above. */
 		[[nodiscard]] constexpr auto *get_chain(std::size_t h) const noexcept { return const_cast<size_type *>(m_sparse.data()) + (h % bucket_count()); }
-
-		[[nodiscard]] constexpr auto hash(const auto &k) const { return get_hash()(k); }
-		[[nodiscard]] constexpr auto cmp(const auto &a, const auto &b) const { return get_cmp()(a, b); }
-
-		/* Return both target bucket & it's chain pointer to use with replace operations. */
 		[[nodiscard]] constexpr auto find_node(std::size_t h, const auto &key) const noexcept -> std::pair<bucket_node *, size_type *>
 		{
 			auto *idx = get_chain(h);
@@ -393,8 +393,8 @@ namespace tpp::detail
 			{
 				auto &entry = m_dense[*idx];
 				if (entry.hash == h && cmp(key, entry.key()))
-					return {&entry, idx};
-				idx = &entry.next;
+					return {const_cast<bucket_node *>(&entry), idx};
+				idx = const_cast<size_type *>(&entry.next);
 			}
 			return {end_node(), idx};
 		}
@@ -405,8 +405,8 @@ namespace tpp::detail
 			if constexpr (is_ordered::value) node->link(hint.link ? *hint.link : *back_node());
 			*chain_idx = pos;
 
-			/* Initialize the hash & rehash the table. Doing it only now
-			 * so that any temporary nodes do not affect table hashing. */
+			/* Initialize the hash & rehash the table. Doing it now so
+			 * that any temporary nodes do not affect table hashing. */
 			node->hash = h;
 			maybe_rehash();
 
@@ -419,11 +419,11 @@ namespace tpp::detail
 			/* Create a temporary object to check if it already exists within the table. */
 			const auto pos = size();
 			auto &tmp = m_dense.emplace_back(std::forward<Args>(args)...);
-			const auto hash = key_hash(tmp.key());
+			const auto h = hash(tmp.key());
 
 			/* If there is no conflict, commit the temporary to the table. Otherwise, destroy the temporary. */
-			if (const auto [candidate, chain_idx] = find_node(hash, tmp.key()); *chain_idx == npos)
-				return {commit_node(hint, pos, chain_idx, hash, &tmp), true};
+			if (const auto [candidate, chain_idx] = find_node(h, tmp.key()); *chain_idx == npos)
+				return {commit_node(hint, pos, chain_idx, h, &tmp), true};
 			else
 			{
 				m_dense.pop_back();
@@ -436,11 +436,11 @@ namespace tpp::detail
 			/* Create a temporary object to check if it already exists within the table. */
 			const auto pos = size();
 			auto &tmp = m_dense.emplace_back(std::forward<Args>(args)...);
-			const auto hash = key_hash(tmp.key());
+			const auto h = hash(tmp.key());
 
 			/* If there is no conflict, commit the temporary to the table. Otherwise, replace the existing with the temporary. */
-			if (const auto [candidate, chain_idx] = find_node(hash, tmp.key()); *chain_idx == npos)
-				return {commit_node(hint, pos, chain_idx, hash, &tmp), true};
+			if (const auto [candidate, chain_idx] = find_node(h, tmp.key()); *chain_idx == npos)
+				return {commit_node(hint, pos, chain_idx, h, &tmp), true};
 			else
 			{
 				candidate->replace(std::move(tmp.value()));
@@ -531,7 +531,7 @@ namespace tpp::detail
 			m_sparse.resize(new_cap, npos);
 
 			/* Go through each entry & re-insert it. */
-			for (size_type i = 0; i < m_dense.size(); ++i)
+			for (size_type i = 0; i < size(); ++i)
 			{
 				auto &entry = m_dense[i];
 				auto *chain_idx = get_chain(entry.hash);
@@ -550,7 +550,7 @@ namespace tpp::detail
 			}
 		}
 
-		sparse_t m_sparse = {initial_capacity, npos};
+		sparse_t m_sparse = sparse_t(initial_capacity, npos);
 		dense_t m_dense;
 
 	public:
