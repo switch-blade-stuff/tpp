@@ -32,3 +32,9 @@ import std;
 #elif defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
 #define TPP_IF_CONSTEVAL(t, f) if (__builtin_is_constant_evaluated()) { t; } else { f; }
 #endif
+
+#if __cplusplus >= 202002L
+#define TPP_REQUIRES(cnd) requires cnd
+#else
+#define TPP_REQUIRES(cnd)
+#endif

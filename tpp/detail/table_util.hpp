@@ -166,11 +166,10 @@ namespace tpp::detail
 	};
 
 	template<typename T, typename N>
-	class ordered_iterator
+	struct ordered_iterator
 	{
 		using link_t = ordered_link<N>;
 
-	public:
 		typedef T value_type;
 		typedef T &reference;
 		typedef T *pointer;
@@ -179,14 +178,13 @@ namespace tpp::detail
 		typedef std::ptrdiff_t difference_type;
 		typedef std::bidirectional_iterator_tag iterator_category;
 
-	public:
 		constexpr ordered_iterator() noexcept = default;
 
 		/** Implicit conversion from a const iterator. */
 		template<typename U, typename = std::enable_if_t<std::is_same_v<U, std::remove_const_t<T>> && !std::is_same_v<U, T>>>
-		constexpr ordered_iterator(const ordered_iterator<U, N> &other) noexcept : m_link(other.m_link) {}
+		constexpr ordered_iterator(const ordered_iterator<U, N> &other) noexcept : link(other.link) {}
 
-		constexpr explicit ordered_iterator(link_t *link) noexcept : m_link(link) {}
+		constexpr explicit ordered_iterator(link_t *link) noexcept : link(link) {}
 
 		constexpr ordered_iterator operator++(int) noexcept
 		{
@@ -196,7 +194,7 @@ namespace tpp::detail
 		}
 		constexpr ordered_iterator &operator++() noexcept
 		{
-			m_link = m_link->next;
+			link = link->next;
 			return *this;
 		}
 		constexpr ordered_iterator operator--(int) noexcept
@@ -207,27 +205,26 @@ namespace tpp::detail
 		}
 		constexpr ordered_iterator &operator--() noexcept
 		{
-			m_link = m_link->prev;
+			link = link->prev;
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return static_cast<N *>(m_link)->get(); }
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return static_cast<N *>(link)->get(); }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
-		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return m_link == other.m_link; }
+		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
 
 #if __cplusplus >= 202002L
-		[[nodiscard]] constexpr auto operator<=>(const ordered_iterator &other) const noexcept { return m_link <=> other.m_link; }
+		[[nodiscard]] constexpr auto operator<=>(const ordered_iterator &other) const noexcept { return link <=> other.link; }
 #else
-		[[nodiscard]] constexpr bool operator!=(const ordered_iterator &other) const noexcept { return m_link != other.m_link; }
-		[[nodiscard]] constexpr bool operator<=(const ordered_iterator &other) const noexcept { return m_link <= other.m_link; }
-		[[nodiscard]] constexpr bool operator>=(const ordered_iterator &other) const noexcept { return m_link >= other.m_link; }
-		[[nodiscard]] constexpr bool operator<(const ordered_iterator &other) const noexcept { return m_link < other.m_link; }
-		[[nodiscard]] constexpr bool operator>(const ordered_iterator &other) const noexcept { return m_link > other.m_link; }
+		[[nodiscard]] constexpr bool operator!=(const ordered_iterator &other) const noexcept { return link != other.link; }
+		[[nodiscard]] constexpr bool operator<=(const ordered_iterator &other) const noexcept { return link <= other.link; }
+		[[nodiscard]] constexpr bool operator>=(const ordered_iterator &other) const noexcept { return link >= other.link; }
+		[[nodiscard]] constexpr bool operator<(const ordered_iterator &other) const noexcept { return link < other.link; }
+		[[nodiscard]] constexpr bool operator>(const ordered_iterator &other) const noexcept { return link > other.link; }
 #endif
 
-	private:
-		link_t *m_link = nullptr;
+		link_t *link = nullptr;
 	};
 
 	template<typename>
@@ -238,10 +235,19 @@ namespace tpp::detail
 	struct iterator_concept_base<I> { typedef std::contiguous_iterator_tag iterator_concept; };
 #endif
 
+	template<typename, typename>
+	class table_iterator;
+
+	template<typename V, typename I>
+	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I>) noexcept;
+
 	template<typename V, typename I>
 	class table_iterator : public iterator_concept_base<I>
 	{
 		using traits_t = std::iterator_traits<I>;
+
+		template<typename, typename>
+		friend constexpr auto to_underlying(table_iterator<V, I>) noexcept;
 
 	public:
 		typedef V value_type;
@@ -329,6 +335,9 @@ namespace tpp::detail
 	private:
 		I m_iter = {};
 	};
+
+	template<typename V, typename I>
+	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I> iter) noexcept { return iter.m_iter; }
 
 	struct key_identity { [[nodiscard]] constexpr auto &operator()(auto &value) const noexcept { return value; }};
 	struct key_first { [[nodiscard]] constexpr auto &operator()(auto &value) const noexcept { return value.first; }};
