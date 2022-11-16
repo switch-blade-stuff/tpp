@@ -16,22 +16,22 @@
 
 namespace tpp::detail
 {
-	template<typename V, typename K, typename KHash, typename KCmp, typename A>
-	struct dense_table_traits : table_traits<V, K, A>
+	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc>
+	struct dense_table_traits : table_traits<V, K, Alloc>
 	{
 		typedef KHash key_hash;
 		typedef KCmp key_equal;
 	};
 
-	template<typename V, typename K, typename KGet, typename A, typename Link>
+	template<typename V, typename K, typename KGet, typename Alloc, typename Link>
 	struct dense_bucket_node : Link, ebo_container<V>
 	{
 		using value_base = ebo_container<V>;
 
-		using size_type = typename table_traits<V, K, A>::size_type;
-		using difference_type = typename table_traits<V, K, A>::difference_type;
+		using size_type = typename table_traits<V, K, Alloc>::size_type;
+		using difference_type = typename table_traits<V, K, Alloc>::difference_type;
 
-		constexpr static auto npos = table_traits<V, K, A>::npos;
+		constexpr static auto npos = table_traits<V, K, Alloc>::npos;
 
 		using value_base::value;
 
@@ -60,10 +60,10 @@ namespace tpp::detail
 		size_type next = npos;
 	};
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename A = std::allocator<V>, typename Link = empty_link>
+	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename Alloc, typename Link = empty_link>
 	class dense_table : Link, ebo_container<KHash>, ebo_container<KCmp>
 	{
-		using traits_t = dense_table_traits<V, K, KHash, KCmp, A>;
+		using traits_t = dense_table_traits<V, K, KHash, KCmp, Alloc>;
 
 	public:
 		typedef typename traits_t::value_type value_type;
@@ -84,7 +84,7 @@ namespace tpp::detail
 		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, Link>;
 		using bucket_link = Link;
 
-		using dense_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<bucket_node>;
+		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;
 
 	public:
@@ -92,7 +92,7 @@ namespace tpp::detail
 		typedef typename dense_t::difference_type difference_type;
 
 	private:
-		using sparse_alloc_t = typename std::allocator_traits<A>::template rebind_alloc<size_type>;
+		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<size_type>;
 		using sparse_t = std::vector<size_type, sparse_alloc_t>;
 
 		using hash_base = ebo_container<key_hash>;

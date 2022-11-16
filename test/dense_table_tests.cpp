@@ -97,22 +97,26 @@ static void test_table(auto &table) noexcept
 
 void test_dense_table() noexcept
 {
+	using namespace tpp;
 	using value_t = std::pair<std::string, int>;
-	using table_t = tpp::detail::dense_table<value_t, const std::string, std::hash<std::string>, std::equal_to<>, tpp::detail::key_first>;
+	using alloc_t = std::allocator<value_t>;
+	using hash_t = std::hash<std::string>;
+	using equal_t = std::equal_to<>;
+
+	using table_t = detail::dense_table<value_t, const std::string, hash_t, equal_t, detail::key_first, alloc_t>;
 
 	table_t table;
 	test_table(table);
 }
 void test_ordered_dense_table() noexcept
 {
-	using value_t = std::pair<std::string_view, int>;
-	using table_t = tpp::detail::dense_table<value_t,
-	                                         const std::string_view,
-	                                         std::hash<std::string_view>,
-	                                         std::equal_to<>,
-	                                         tpp::detail::key_first,
-	                                         std::allocator<value_t>,
-	                                         tpp::detail::ordered_link>;
+	using namespace tpp;
+	using value_t = std::pair<std::string, int>;
+	using alloc_t = std::allocator<value_t>;
+	using hash_t = std::hash<std::string>;
+	using equal_t = std::equal_to<>;
+
+	using table_t = detail::dense_table<value_t, const std::string, hash_t, equal_t, detail::key_first, alloc_t, detail::ordered_link>;
 
 	table_t table;
 	assert(table.size() == 0);
