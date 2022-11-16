@@ -65,7 +65,7 @@ static void test_table(T &table) noexcept
 	TEST_ASSERT(table2.find("1") == table2.end());
 	TEST_ASSERT(table2.begin() == table2.end());
 
-	const int n = 10000;
+	const int n = 0x10000;
 	for (int i = 0; i < n; ++i)
 	{
 		const auto key = std::to_string(i);
@@ -114,7 +114,7 @@ void test_ordered_dense_table() noexcept
 	using namespace tpp;
 	using value_t = std::pair<std::string, int>;
 	using equal_t = std::equal_to<std::string>;
-	using hash_t = std::hash<std::string>;
+	using hash_t = seahash_hash<std::string>;
 	using alloc_t = std::allocator<value_t>;
 
 	using table_t = detail::dense_table<value_t, const std::string, hash_t, equal_t, detail::key_first, alloc_t, detail::ordered_link>;

@@ -38,3 +38,11 @@ import std;
 #else
 #define TPP_REQUIRES(cnd)
 #endif
+
+#if defined(_MSC_VER)
+#define TPP_FORCEINLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define TPP_FORCEINLINE __attribute__((always_inline)) inline
+#else
+#define TPP_FORCEINLINE inline
+#endif

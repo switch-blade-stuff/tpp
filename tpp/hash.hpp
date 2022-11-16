@@ -315,7 +315,7 @@ namespace tpp
 	 * @note Reference implementation at <a href="https://docs.rs/seahash/latest/src/seahash/stream.rs.html">https://docs.rs/seahash/latest/src/seahash/stream.rs.html</a>. */
 	class seahash_builder
 	{
-		[[nodiscard]] constexpr static std::uint64_t read_u64_buff(const void *data, std::size_t n) noexcept
+		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_buff(const void *data, std::size_t n) noexcept
 		{
 			switch (n)
 			{
@@ -350,11 +350,11 @@ namespace tpp
 				default: return 0;
 			}
 		}
-		[[nodiscard]] constexpr static std::uint64_t read_u64_aligned(const void *data) noexcept
+		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_aligned(const void *data) noexcept
 		{
 			return *static_cast<const std::uint64_t *>(data);
 		}
-		[[nodiscard]] constexpr static std::uint64_t diffuse(std::uint64_t x) noexcept
+		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t diffuse(std::uint64_t x) noexcept
 		{
 			/* Diffuse constants from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/helper.rs.html#85`. */
 			const std::uint64_t c = 0x6eed0e9da4d94a4f;
@@ -404,7 +404,7 @@ namespace tpp
 		}
 
 	private:
-		constexpr void push(const void *data, std::size_t n) noexcept
+		constexpr TPP_FORCEINLINE void push(const void *data, std::size_t n) noexcept
 		{
 			const auto overflow = 8 - tail_n;
 			const auto copy_n = overflow < n ? overflow : n;
@@ -529,7 +529,7 @@ namespace tpp
 				}
 			}
 		}
-		constexpr void push_u64(std::uint64_t x) noexcept
+		constexpr TPP_FORCEINLINE void push_u64(std::uint64_t x) noexcept
 		{
 			x = diffuse(state[0] ^ x);
 			state[0] = state[1];

@@ -49,7 +49,7 @@
 #define PRETTY_FUNC __PRETTY_FUNCTION__
 #endif
 
-inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
+static inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 {
 	if (!cnd)[[unlikely]]
 	{
