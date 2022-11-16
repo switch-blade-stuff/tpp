@@ -39,6 +39,18 @@ import std;
 #define TPP_REQUIRES(cnd)
 #endif
 
+#if __cplusplus > 202002L
+#define TPP_ASSUME(x) [[assume(x)]]
+#elif defined(_MSC_VER)
+#define TPP_ASSUME(x) __assume(x)
+#elif defined(__clang__)
+#define TPP_ASSUME(x) __builtin_assume(x)
+#elif defined(__GNUC__)
+#define TPP_ASSUME(x) if (!(x)) __builtin_unreachable()
+#else
+#define TPP_ASSUME(x)
+#endif
+
 #if defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)

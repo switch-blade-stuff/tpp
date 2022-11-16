@@ -317,6 +317,7 @@ namespace tpp
 	{
 		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_buff(const void *data, std::size_t n) noexcept
 		{
+			TPP_ASSUME(n < 8);
 			switch (n)
 			{
 				case 1: return static_cast<std::uint64_t>(*static_cast<const std::uint8_t *>(data));
@@ -389,7 +390,7 @@ namespace tpp
 		 * @return Reference to this hash builder. */
 		constexpr seahash_builder &write(const void *data, std::size_t n) noexcept
 		{
-			push(data, n);
+			push(data, static_cast<std::uint64_t>(n));
 			return *this;
 		}
 
@@ -398,15 +399,13 @@ namespace tpp
 		[[nodiscard]] constexpr std::uint64_t finish() noexcept
 		{
 			const auto a = tail_n > 0 ? diffuse(state[0] ^ read_u64_buff(&tail, tail_n)) : 0;
-			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^
-			               static_cast<std::uint64_t>(written) +
-			               static_cast<std::uint64_t>(tail_n));
+			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^ written + tail_n);
 		}
 
 	private:
-		constexpr TPP_FORCEINLINE void push(const void *data, std::size_t n) noexcept
+		constexpr TPP_FORCEINLINE void push(const void *data, std::uint64_t n) noexcept
 		{
-			const auto overflow = 8 - tail_n;
+			const auto overflow = std::uint64_t{8} - tail_n;
 			const auto copy_n = overflow < n ? overflow : n;
 			auto *bytes = static_cast<const std::uint8_t *>(data);
 
@@ -423,7 +422,7 @@ namespace tpp
 				tail = 0;
 
 				const auto *ptr = bytes + copy_n;
-				const auto *end = ptr + ((n - copy_n) & ~static_cast<std::size_t>(0x1F));
+				const auto *end = ptr + ((n - copy_n) & ~std::uint64_t{0x1F});
 				while (ptr < end)
 				{
 					state[0] = diffuse(state[0] ^ read_u64_aligned(ptr));
@@ -435,6 +434,7 @@ namespace tpp
 				}
 
 				auto excess = bytes + n - ptr;
+				TPP_ASSUME(excess < 32);
 				switch (excess)
 				{
 					case 0: break;
@@ -542,8 +542,8 @@ namespace tpp
 		/* Initial state seeds from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html#19`. */
 		std::uint64_t state[4] = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
 		std::uint64_t tail = 0;
-		std::size_t tail_n = 0;
-		std::size_t written = 0;
+		std::uint64_t tail_n = 0;
+		std::uint64_t written = 0;
 	};
 
 	/** @brief SeaHash byte hash function.
