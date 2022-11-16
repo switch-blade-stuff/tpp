@@ -117,23 +117,23 @@ namespace tpp::detail
 		constexpr dense_table() = default;
 
 		constexpr dense_table(const dense_table &other)
-				: hash_base(other), cmp_base(other), header_base(other),
+				: header_base(other), hash_base(other), cmp_base(other),
 				  m_sparse(other.m_sparse),
 				  m_dense(other.m_dense),
 				  max_load_factor(other.max_load_factor) {}
 		constexpr dense_table(const dense_table &other, const allocator_type &alloc)
-				: hash_base(other), cmp_base(other), header_base(other),
+				: header_base(other), hash_base(other), cmp_base(other),
 				  m_sparse(other.m_sparse, sparse_alloc_t{alloc}),
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}
 
 		constexpr dense_table(dense_table &&other) noexcept
-				: hash_base(std::move(other)), cmp_base(std::move(other)), header_base(std::move(other)),
+				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
 				  max_load_factor(other.max_load_factor) {}
 		constexpr dense_table(dense_table &&other, const allocator_type &alloc) noexcept
-				: hash_base(std::move(other)), cmp_base(std::move(other)), header_base(std::move(other)),
+				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}

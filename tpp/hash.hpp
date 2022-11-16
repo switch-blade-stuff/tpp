@@ -320,6 +320,7 @@ namespace tpp
 			TPP_ASSUME(n < 8);
 			switch (n)
 			{
+				case 0: return 0;
 				case 1: return static_cast<std::uint64_t>(*static_cast<const std::uint8_t *>(data));
 				case 2: return static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
 				case 3:
@@ -348,7 +349,7 @@ namespace tpp
 					const auto c = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
 					return c | (a << 32) | (b << 48);
 				}
-				default: return 0;
+				default: TPP_UNREACHABLE();
 			}
 		}
 		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_aligned(const void *data) noexcept
@@ -399,7 +400,7 @@ namespace tpp
 		[[nodiscard]] constexpr std::uint64_t finish() noexcept
 		{
 			const auto a = tail_n > 0 ? diffuse(state[0] ^ read_u64_buff(&tail, tail_n)) : 0;
-			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^ written + tail_n);
+			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^ (std::uint64_t{written} + std::uint64_t{tail_n}));
 		}
 
 	private:
@@ -513,7 +514,13 @@ namespace tpp
 						written += 24;
 						break;
 					}
-					default:
+					case 25:
+					case 26:
+					case 27:
+					case 28:
+					case 29:
+					case 30:
+					case 31:
 					{
 						const auto a = diffuse(state[0] ^ read_u64_aligned(ptr));
 						const auto b = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
@@ -525,7 +532,9 @@ namespace tpp
 						tail = read_u64_buff(ptr + 24, excess -= 24);
 						tail_n = excess;
 						written += 24;
+						break;
 					}
+					default: TPP_UNREACHABLE();
 				}
 			}
 		}
@@ -542,8 +551,8 @@ namespace tpp
 		/* Initial state seeds from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html#19`. */
 		std::uint64_t state[4] = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
 		std::uint64_t tail = 0;
-		std::uint64_t tail_n = 0;
-		std::uint64_t written = 0;
+		std::size_t tail_n = 0;
+		std::size_t written = 0;
 	};
 
 	/** @brief SeaHash byte hash function.

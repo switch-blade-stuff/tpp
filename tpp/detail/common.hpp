@@ -21,6 +21,7 @@ import std;
 #else
 
 #include <type_traits>
+#include <utility>
 
 #endif
 
@@ -50,6 +51,19 @@ import std;
 #else
 #define TPP_ASSUME(x)
 #endif
+
+#if __cplusplus > 202002L
+#define TPP_UNREACHABLE() std::unreachable()
+#elif defined(_MSC_VER)
+#define TPP_UNREACHABLE() __assume(false)
+#elif defined(__clang__)
+#define TPP_UNREACHABLE() __builtin_assume(x)
+#elif defined(__GNUC__)
+#define TPP_UNREACHABLE() __builtin_unreachable()
+#else
+#define TPP_UNREACHABLE()
+#endif
+
 
 #if defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline

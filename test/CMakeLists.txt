@@ -11,6 +11,12 @@ add_executable(tpp-tests
 target_link_libraries(tpp-tests PRIVATE tpp)
 target_compile_features(tpp-tests PRIVATE cxx_std_17)
 
+if(MSVC)
+    target_compile_options(tpp-tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(tpp-tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 enable_testing()
 
 macro(make_test)
