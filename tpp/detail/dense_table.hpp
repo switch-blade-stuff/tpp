@@ -206,15 +206,11 @@ namespace tpp::detail
 
 		constexpr void clear()
 		{
+			/* Reset header link. */
+			if constexpr (is_ordered::value) *header_link() = bucket_link{};
+
 			std::fill_n(m_sparse.data(), bucket_count(), npos);
 			m_dense.clear();
-
-			/* Update header link. */
-			if constexpr (is_ordered::value)
-			{
-				auto *h = header_link();
-				h->relink(h, h);
-			}
 		}
 		constexpr void reserve(size_type n)
 		{
