@@ -52,14 +52,14 @@ import std;
 #define TPP_ASSUME(x)
 #endif
 
-#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
-#define TPP_UNREACHABLE() std::unreachable()
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 #define TPP_UNREACHABLE() __assume(false)
 #elif defined(__clang__)
 #define TPP_UNREACHABLE() __builtin_assume(x)
 #elif defined(__GNUC__)
 #define TPP_UNREACHABLE() __builtin_unreachable()
+#elif defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+#define TPP_UNREACHABLE() std::unreachable()
 #else
 #define TPP_UNREACHABLE() TPP_ASSUME(false)
 #endif
