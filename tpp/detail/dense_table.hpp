@@ -38,29 +38,16 @@ namespace tpp::detail
 		template<typename... Args>
 		constexpr dense_bucket_node(Args &&...args) noexcept(nothrow_ctor<V, Args...>) : value_base(std::forward<Args>(args)...) {}
 
-		template<typename T>
-		constexpr void replace(T &&new_value, std::size_t new_hash)
-		{
-			/* If move-assign is possible, do that. Otherwise, re-init the value. */
-			if constexpr (std::is_assignable_v<V, T &&>)
-				value() = std::forward<T>(new_value);
-			else
-			{
-				if constexpr (!std::is_trivially_destructible_v<V>) get()->~V();
-				new(get()) V(std::forward<T>(new_value));
-			}
-			hash = new_hash;
-		}
-
 		[[nodiscard]] constexpr V *get() noexcept { return &value(); }
 		[[nodiscard]] constexpr const V *get() const noexcept { return &value(); }
-		[[nodiscard]] constexpr const K &key() const noexcept { return KGet{}(value()); }
+
+		[[nodiscard]] constexpr auto &key() const noexcept { return KGet{}(value()); }
 
 		std::size_t hash = 0;
 		size_type next = npos;
 	};
 
-	template<typename V, typename K, typename Traits, typename KHash, typename KCmp, typename KGet, typename Alloc,
+	template<typename V, typename K, typename Traits, typename KHash, typename KCmp, typename KGet, typename MGet, typename Alloc,
 	         typename Link = empty_link>
 	class dense_table : Link, ebo_container<KHash>, ebo_container<KCmp>
 	{
@@ -174,6 +161,38 @@ namespace tpp::detail
 		typedef typename const_iterator::reference const_reference;
 		typedef typename iterator::pointer pointer;
 		typedef typename const_iterator::pointer const_pointer;
+
+	private:
+		template<typename T>
+		constexpr static void replace_value(bucket_node &node, T &&value)
+		{
+			auto &mapped = MGet{}(node.value());
+			using mapped_t = std::remove_reference_t<decltype(mapped)>;
+
+			/* If move-assign is possible, do that. Otherwise, re-init the value. */
+			if constexpr (std::is_assignable_v<mapped_t, T>)
+				mapped = std::forward<T>(value);
+			else
+			{
+				if constexpr (!std::is_trivially_destructible_v<mapped_t>)
+					mapped.~mapped_t();
+
+				static_assert(std::is_constructible_v<mapped_t, T>);
+				new(&mapped) mapped_t(std::forward<T>(value));
+			}
+		}
+		template<typename... Args>
+		constexpr static void replace_value(bucket_node &node, Args &&...args)
+		{
+			auto &mapped = MGet{}(node.value());
+			using mapped_t = std::remove_reference_t<decltype(mapped)>;
+
+			if constexpr (!std::is_trivially_destructible_v<mapped_t>)
+				mapped.~mapped_t();
+
+			static_assert(std::is_constructible_v<mapped_t, Args...>);
+			new(&mapped) mapped_t(std::forward<Args>(args)...);
+		}
 
 	public:
 		constexpr dense_table()
@@ -350,12 +369,12 @@ namespace tpp::detail
 			for (; first != last; ++first) insert(*first);
 		}
 
-		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<V, T, U> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename T, typename U>
 		constexpr std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl({}, key, std::forward<U>(value));
 		}
-		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<V, T, U> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename T, typename U>
 		constexpr iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
@@ -372,36 +391,32 @@ namespace tpp::detail
 			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
-		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
-		constexpr std::pair<iterator, bool> emplace_or_replace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		template<typename U, typename... Args>
+		constexpr std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_or_replace_impl({}, std::forward<Args>(args)...);
+			return insert_or_assign_impl({}, key, std::forward<Args>(args)...);
 		}
-		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
-		constexpr iterator emplace_or_replace(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		template<typename U, typename... Args>
+		constexpr iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_or_replace_impl(to_underlying(hint), std::forward<Args>(args)...).first;
+			return insert_or_assign_impl(to_underlying(hint), key, std::forward<Args>(args)...);
 		}
 
-		template<typename U, typename... Args, typename = std::enable_if_t<
-				std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args &&...>> &&
-				!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename U, typename... Args>
 		constexpr std::pair<iterator, bool> try_emplace(U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return emplace_impl({}, hash(key), key, std::piecewise_construct,
-			                    std::forward_as_tuple(std::forward<U>(key)),
-			                    std::forward_as_tuple(std::forward<Args>(args)...));
+			return insert_impl({}, key, std::piecewise_construct,
+			                   std::forward_as_tuple(std::forward<U>(key)),
+			                   std::forward_as_tuple(std::forward<Args>(args)...));
 		}
-		template<typename U, typename... Args, typename = std::enable_if_t<
-				std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args &&...>> &&
-				!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename U, typename... Args>
 		constexpr iterator try_emplace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return emplace_impl(to_underlying(hint), hash(key), key, std::piecewise_construct,
-			                    std::forward_as_tuple(std::forward<U>(key)),
-			                    std::forward_as_tuple(std::forward<Args>(args)...)).first;
+			return insert_impl(to_underlying(hint), key, std::piecewise_construct,
+			                   std::forward_as_tuple(std::forward<U>(key)),
+			                   std::forward_as_tuple(std::forward<Args>(args)...)).first;
 		}
 
 		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
@@ -510,6 +525,14 @@ namespace tpp::detail
 		}
 
 		template<typename... Args>
+		constexpr iterator emplace_at(const_node_iterator hint, size_type *chain_idx, std::size_t h, Args &&...args)
+		{
+			const auto pos = size();
+			auto &node = m_dense.emplace_back(std::forward<Args>(args)...);
+			return commit_node(hint, pos, chain_idx, h, &node);
+		}
+
+		template<typename... Args>
 		constexpr auto emplace_impl(const_node_iterator hint, Args &&...args) -> std::pair<iterator, bool>
 		{
 			/* Create a temporary object to check if it already exists within the table. */
@@ -526,53 +549,26 @@ namespace tpp::detail
 				return {to_iter(candidate), false};
 			}
 		}
-		template<typename... Args>
-		constexpr auto emplace_or_replace_impl(const_node_iterator hint, Args &&...args) -> std::pair<iterator, bool>
-		{
-			/* Create a temporary object to check if it already exists within the table. */
-			const auto pos = size();
-			auto &tmp = m_dense.emplace_back(std::forward<Args>(args)...);
-			const auto h = hash(tmp.key());
-
-			/* If there is no conflict, commit the temporary to the table. Otherwise, replace the existing with the temporary. */
-			if (const auto [candidate, chain_idx] = find_node(h, tmp.key()); *chain_idx == npos)
-				return {commit_node(hint, pos, chain_idx, h, &tmp), true};
-			else
-			{
-				candidate->replace(std::move(tmp.value()), h);
-				m_dense.pop_back();
-				return {to_iter(candidate), false};
-			}
-		}
-
-		template<typename... Args>
-		constexpr iterator emplace_at(const_node_iterator hint, size_type *chain_idx, std::size_t h, Args &&...args)
-		{
-			const auto pos = size();
-			auto &node = m_dense.emplace_back(std::forward<Args>(args)...);
-			return commit_node(hint, pos, chain_idx, h, &node);
-		}
-
-		template<typename T, typename U>
-		constexpr auto insert_impl(const_node_iterator hint, const T &key, U &&value) -> std::pair<iterator, bool>
+		template<typename T, typename... Args>
+		constexpr auto insert_impl(const_node_iterator hint, const T &key, Args &&...args) -> std::pair<iterator, bool>
 		{
 			/* If a candidate was found, do nothing. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node(h, key); *chain_idx == npos)
-				return {emplace_at(hint, chain_idx, h, std::forward<U>(value)), true};
+				return {emplace_at(hint, chain_idx, h, std::forward<Args>(args)...), true};
 			else
 				return {to_iter(candidate), false};
 		}
-		template<typename T, typename U>
-		constexpr auto insert_or_assign_impl(const_node_iterator hint, const T &key, U &&value) -> std::pair<iterator, bool>
+		template<typename T, typename... Args>
+		constexpr auto insert_or_assign_impl(const_node_iterator hint, T &&key, Args &&...args) -> std::pair<iterator, bool>
 		{
 			/* If a candidate was found, replace the entry. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node(h, key); *chain_idx == npos)
-				return {emplace_at(hint, chain_idx, h, key, std::forward<U>(value)), true};
+				return {emplace_at(hint, chain_idx, h, std::forward<T>(key), std::forward<Args>(args)...), true};
 			else
 			{
-				candidate->replace(V{key, std::forward<U>(value)}, h);
+				replace_value(*candidate, std::forward<Args>(args)...);
 				return {to_iter(candidate), false};
 			}
 		}

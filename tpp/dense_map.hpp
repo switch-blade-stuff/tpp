@@ -68,7 +68,7 @@ namespace tpp
 		typedef std::pair<const key_type, mapped_type> value_type;
 
 	private:
-		struct value_traits
+		struct traits_t
 		{
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
@@ -76,7 +76,7 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, value_traits, KeyHash, KeyCmp, detail::key_first, Alloc>;
+		using table_t = detail::dense_table<insert_type, Key, traits_t, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc>;
 
 	public:
 		typedef typename table_t::reference reference;
@@ -270,10 +270,23 @@ namespace tpp
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
 		template<typename T>
 		constexpr std::pair<iterator, bool> insert_or_assign(const key_type &key, T &&value) { return m_table.insert_or_assign(key, std::forward<T>(value)); }
+		/** @copydoc insert_or_assign */
+		template<typename T>
+		constexpr std::pair<iterator, bool> insert_or_assign(key_type &&key, T &&value)
+		{
+			return m_table.insert_or_assign(std::forward<key_type>(key), std::forward<T>(value));
+		}
 		/** @copydoc insert_or_assign
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr std::pair<iterator, bool> insert_or_assign(const K &key, T &&value) { return m_table.insert_or_assign(key, std::forward<T>(value)); }
+		/** @copydoc insert_or_assign */
+		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> insert_or_assign(K &&key, T &&value)
+		{
+			return m_table.insert_or_assign(std::forward<K>(key), std::forward<T>(value));
+		}
+
 		/** @copybrief insert_or_assign
 		 * @param key Key of the element to insert or assign.
 		 * @param value Value to be assigned to the key.
@@ -284,12 +297,24 @@ namespace tpp
 		{
 			return m_table.insert_or_assign(hint, key, std::forward<T>(value));
 		}
+		/** @copydoc insert_or_assign */
+		template<typename T>
+		constexpr iterator insert_or_assign(const_iterator hint, key_type &&key, T &&value)
+		{
+			return m_table.insert_or_assign(hint, std::forward<key_type>(key), std::forward<T>(value));
+		}
 		/** @copydoc insert_or_assign
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator insert_or_assign(const_iterator hint, const K &key, T &&value)
 		{
 			return m_table.insert_or_assign(hint, key, std::forward<T>(value));
+		}
+		/** @copydoc insert_or_assign */
+		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator insert_or_assign(const_iterator hint, K &&key, T &&value)
+		{
+			return m_table.insert_or_assign(hint, std::forward<K>(key), std::forward<T>(value));
 		}
 
 		/** @brief Inserts an in-place constructed element (of `value_type`) into the map if it does not exist yet.
@@ -310,13 +335,58 @@ namespace tpp
 		 * @return Pair where `first` is the iterator to the inserted or replaced element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
 		template<typename... Args>
-		constexpr std::pair<iterator, bool> emplace_or_replace(Args &&...args) { return m_table.emplace_or_replace(std::forward<Args>(args)...); }
+		constexpr std::pair<iterator, bool> emplace_or_replace(const key_type &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		constexpr std::pair<iterator, bool> emplace_or_replace(key_type &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> emplace_or_replace(const K &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> emplace_or_replace(K &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(std::forward<K>(key), std::forward<Args>(args)...);
+		}
+
 		/** @copybrief emplace_or_replace
 		 * @param args Arguments passed to constructor of `value_type`.
 		 * @return Iterator to the inserted or replaced element.
 		 * @note \p hint has no effect, this overload exists for API compatibility. */
 		template<typename... Args>
-		constexpr iterator emplace_or_replace(const_iterator hint, Args &&...args) { return m_table.emplace_or_replace(hint, std::forward<Args>(args)...); }
+		constexpr iterator emplace_or_replace(const_iterator hint, const key_type &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		constexpr iterator emplace_or_replace(const_iterator hint, key_type &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator emplace_or_replace(const_iterator hint, const K &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator emplace_or_replace(const_iterator hint, K &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
 
 		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
 		 * @param key Key of the element to insert.
@@ -431,16 +501,16 @@ namespace tpp
 		/** Returns reference to the specified element. If the element is not present within the map, inserts a default-constructed instance.
 		 * @param key Key of the element to search for.
 		 * @return Reference to the specified element. */
-		[[nodiscard]] constexpr reference operator[](const key_type &key) { return *try_emplace(key).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](const key_type &key) { return try_emplace(key).first->second; }
 		/** @copydoc operator[] */
-		[[nodiscard]] constexpr reference operator[](key_type &key) { return *try_emplace(std::forward<key_type>(key)).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](key_type &key) { return try_emplace(std::forward<key_type>(key)).first->second; }
 		/** @copydoc operator[]
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] constexpr reference operator[](const K &key) { return *try_emplace(key).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](const K &key) { return try_emplace(key).first->second; }
 		/** @copydoc operator[] */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] constexpr reference operator[](K &key) { return *try_emplace(std::forward<K>(key)).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
 		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
@@ -553,7 +623,7 @@ namespace tpp
 		typedef std::pair<const key_type, mapped_type> value_type;
 
 	private:
-		struct value_traits
+		struct traits_t
 		{
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
@@ -561,7 +631,7 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, value_traits, KeyHash, KeyCmp, detail::key_first, Alloc, detail::ordered_link>;
+		using table_t = detail::dense_table<insert_type, Key, traits_t, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, detail::ordered_link>;
 
 	public:
 		typedef typename table_t::reference reference;
@@ -749,10 +819,22 @@ namespace tpp
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
 		template<typename T>
 		constexpr std::pair<iterator, bool> insert_or_assign(const key_type &key, T &&value) { return m_table.insert_or_assign(key, std::forward<T>(value)); }
+		/** @copydoc insert_or_assign */
+		template<typename T>
+		constexpr std::pair<iterator, bool> insert_or_assign(key_type &&key, T &&value)
+		{
+			return m_table.insert_or_assign(std::forward<key_type>(key), std::forward<T>(value));
+		}
 		/** @copydoc insert_or_assign
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr std::pair<iterator, bool> insert_or_assign(const K &key, T &&value) { return m_table.insert_or_assign(key, std::forward<T>(value)); }
+		/** @copydoc insert_or_assign */
+		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> insert_or_assign(K &&key, T &&value)
+		{
+			return m_table.insert_or_assign(std::forward<K>(key), std::forward<T>(value));
+		}
 		/** @copybrief insert_or_assign
 		 * @param hint New position of the inserted element.
 		 * @param key Key of the element to insert or assign.
@@ -763,12 +845,24 @@ namespace tpp
 		{
 			return m_table.insert_or_assign(hint, key, std::forward<T>(value));
 		}
+		/** @copydoc insert_or_assign */
+		template<typename T>
+		constexpr iterator insert_or_assign(const_iterator hint, key_type &&key, T &&value)
+		{
+			return m_table.insert_or_assign(hint, std::forward<key_type>(key), std::forward<T>(value));
+		}
 		/** @copydoc insert_or_assign
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator insert_or_assign(const_iterator hint, const K &key, T &&value)
 		{
 			return m_table.insert_or_assign(hint, key, std::forward<T>(value));
+		}
+		/** @copydoc insert_or_assign */
+		template<typename K, typename T, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator insert_or_assign(const_iterator hint, K &&key, T &&value)
+		{
+			return m_table.insert_or_assign(hint, std::forward<K>(key), std::forward<T>(value));
 		}
 
 		/** @brief Inserts an in-place constructed element (of `value_type`) into the map if it does not exist yet.
@@ -789,13 +883,58 @@ namespace tpp
 		 * @return Pair where `first` is the iterator to the inserted or replaced element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
 		template<typename... Args>
-		constexpr std::pair<iterator, bool> emplace_or_replace(Args &&...args) { return m_table.emplace_or_replace(std::forward<Args>(args)...); }
+		constexpr std::pair<iterator, bool> emplace_or_replace(const key_type &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		constexpr std::pair<iterator, bool> emplace_or_replace(key_type &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> emplace_or_replace(const K &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr std::pair<iterator, bool> emplace_or_replace(K &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(std::forward<K>(key), std::forward<Args>(args)...);
+		}
+
 		/** @copybrief emplace_or_replace
 		 * @param hint New position of the inserted element.
 		 * @param args Arguments passed to constructor of `value_type`.
 		 * @return Iterator to the inserted or replaced element. */
 		template<typename... Args>
-		constexpr iterator emplace_or_replace(const_iterator hint, Args &&...args) { return m_table.emplace_or_replace(hint, std::forward<Args>(args)...); }
+		constexpr iterator emplace_or_replace(const_iterator hint, const key_type &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		constexpr iterator emplace_or_replace(const_iterator hint, key_type &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator emplace_or_replace(const_iterator hint, const K &key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		constexpr iterator emplace_or_replace(const_iterator hint, K &&key, Args &&...args)
+		{
+			return m_table.emplace_or_replace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
 
 		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
 		 * @param key Key of the element to insert.
@@ -910,16 +1049,16 @@ namespace tpp
 		/** Returns reference to the specified element. If the element is not present within the map, inserts a default-constructed instance.
 		 * @param key Key of the element to search for.
 		 * @return Reference to the specified element. */
-		[[nodiscard]] constexpr reference operator[](const key_type &key) { return *try_emplace(key).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](const key_type &key) { return try_emplace(key).first->second; }
 		/** @copydoc operator[] */
-		[[nodiscard]] constexpr reference operator[](key_type &key) { return *try_emplace(std::forward<key_type>(key)).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](key_type &key) { return try_emplace(std::forward<key_type>(key)).first->second; }
 		/** @copydoc operator[]
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] constexpr reference operator[](const K &key) { return *try_emplace(key).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](const K &key) { return try_emplace(key).first->second; }
 		/** @copydoc operator[] */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] constexpr reference operator[](K &key) { return *try_emplace(std::forward<K>(key)).first; }
+		[[nodiscard]] constexpr mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
 		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }

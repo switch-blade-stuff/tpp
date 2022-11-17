@@ -22,7 +22,7 @@ namespace tpp
 	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class dense_set
 	{
-		struct value_traits
+		struct traits_t
 		{
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -30,7 +30,7 @@ namespace tpp
 			using const_reference = const Key &;
 		};
 
-		using table_t = detail::dense_table<Key, Key, value_traits, KeyHash, KeyCmp, detail::key_identity, Alloc>;
+		using table_t = detail::dense_table<Key, Key, traits_t, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;
@@ -348,7 +348,7 @@ namespace tpp
 	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class ordered_dense_set
 	{
-		struct value_traits
+		struct traits_t
 		{
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -356,7 +356,7 @@ namespace tpp
 			using const_reference = const Key &;
 		};
 
-		using table_t = detail::dense_table<Key, Key, value_traits, KeyHash, KeyCmp, detail::key_identity, Alloc, detail::ordered_link>;
+		using table_t = detail::dense_table<Key, Key, traits_t, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, detail::ordered_link>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;

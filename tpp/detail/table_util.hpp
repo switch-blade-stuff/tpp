@@ -385,15 +385,20 @@ namespace tpp::detail
 	template<typename V, typename T, typename I>
 	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I> iter) noexcept { return iter.m_iter; }
 
-	struct key_identity
+	struct identity
 	{
 		template<typename T>
 		[[nodiscard]] constexpr T &operator()(T &value) const noexcept { return value; }
 	};
-	struct key_first
+	struct pair_first
 	{
 		template<typename T>
 		[[nodiscard]] constexpr auto &operator()(T &value) const noexcept { return value.first; }
+	};
+	struct pair_second
+	{
+		template<typename T>
+		[[nodiscard]] constexpr auto &operator()(T &value) const noexcept { return value.second; }
 	};
 
 	template<typename N>

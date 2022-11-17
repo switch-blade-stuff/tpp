@@ -22,18 +22,18 @@ static void test_map(T &&map) noexcept
 {
 	TEST_ASSERT(map.size() == 0);
 
-	TEST_ASSERT(map.emplace("0", 0).second);
+	TEST_ASSERT(map.try_emplace("0", 0).second);
 	TEST_ASSERT(map.size() == 1);
 	TEST_ASSERT(map.contains("0"));
 	TEST_ASSERT(map.find("0")->second == 0);
 
-	TEST_ASSERT(map.emplace("1", 1).second);
+	TEST_ASSERT(map.try_emplace("1", 1).second);
 	TEST_ASSERT(map.size() == 2);
 	TEST_ASSERT(map.contains("1"));
 	TEST_ASSERT(map.find("1")->second == 1);
 	TEST_ASSERT(map.find("1") != map.find("0"));
 
-	TEST_ASSERT(!map.emplace("0", 1).second);
+	TEST_ASSERT(!map.try_emplace("0", 1).second);
 	TEST_ASSERT(map.size() == 2);
 	TEST_ASSERT(map.contains("0"));
 	TEST_ASSERT(map.find("0")->second == 0);
@@ -102,23 +102,20 @@ static void test_map(T &&map) noexcept
 	TEST_ASSERT(map2.begin() == map2.end());
 }
 
-void test_dense_map() noexcept
-{
-	test_map(dense_map<std::string, int>{});
-}
+void test_dense_map() noexcept { test_map(dense_map<std::string, int>{}); }
 void test_ordered_dense_map() noexcept
 {
 	ordered_dense_map<std::string, int> map;
 	TEST_ASSERT(map.size() == 0);
 
-	TEST_ASSERT(map.emplace("0", 0).second);
+	TEST_ASSERT(map.try_emplace("0", 0).second);
 	TEST_ASSERT(map.size() == 1);
 	TEST_ASSERT(map.contains("0"));
 	TEST_ASSERT(map.find("0")->second == 0);
 	TEST_ASSERT(map.find("0") == map.begin());
 	TEST_ASSERT(*map.find("0") == map.front());
 
-	TEST_ASSERT(map.emplace("1", 1).second);
+	TEST_ASSERT(map.try_emplace("1", 1).second);
 	TEST_ASSERT(map.size() == 2);
 	TEST_ASSERT(map.contains("1"));
 	TEST_ASSERT(map.find("1")->second == 1);
@@ -126,7 +123,7 @@ void test_ordered_dense_map() noexcept
 	TEST_ASSERT(*map.find("1") == map.back());
 	TEST_ASSERT(map.find("1") != map.find("0"));
 
-	TEST_ASSERT(!map.emplace("0", 1).second);
+	TEST_ASSERT(!map.try_emplace("0", 1).second);
 	TEST_ASSERT(map.size() == 2);
 	TEST_ASSERT(map.contains("0"));
 	TEST_ASSERT(map.find("0")->second == 0);
