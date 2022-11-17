@@ -575,8 +575,8 @@ namespace tpp
 
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
-	template<typename K, typename H, typename C, typename A, typename P>
-	constexpr typename dense_map<K, H, C, A>::size_type erase_if(dense_map<K, H, C, A> &map, P pred)
+	template<typename K, typename M, typename H, typename C, typename A, typename P>
+	constexpr typename dense_map<K, M, H, C, A>::size_type erase_if(dense_map<K, M, H, C, A> &map, P pred)
 	{
 		typename dense_map<K, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
@@ -592,8 +592,8 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename H, typename C, typename A>
-	constexpr void swap(dense_map<K, H, C, A> &a, dense_map<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
+	template<typename K, typename M, typename H, typename C, typename A>
+	constexpr void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
 
 	/** @brief Ordered hash map based on dense hash table.
 	 *
@@ -1129,8 +1129,8 @@ namespace tpp
 
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
-	template<typename K, typename H, typename C, typename A, typename P>
-	constexpr typename ordered_dense_map<K, H, C, A>::size_type erase_if(ordered_dense_map<K, H, C, A> &map, P pred)
+	template<typename K, typename M, typename H, typename C, typename A, typename P>
+	constexpr typename ordered_dense_map<K, M, H, C, A>::size_type erase_if(ordered_dense_map<K, M, H, C, A> &map, P pred)
 	{
 		typename dense_map<K, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
@@ -1146,8 +1146,9 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename H, typename C, typename A>
-	constexpr void swap(ordered_dense_map<K, H, C, A> &a, ordered_dense_map<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, H, C, A>>)
+	template<typename K, typename M, typename H, typename C, typename A>
+	constexpr void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
+	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>)
 	{
 		a.swap(b);
 	}
