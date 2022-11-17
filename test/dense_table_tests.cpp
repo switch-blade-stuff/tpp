@@ -9,6 +9,7 @@
 #endif
 
 #include <tpp/detail/dense_table.hpp>
+#include <tpp/dense_set.hpp>
 #include <tpp/stl_hash.hpp>
 
 template<typename T>

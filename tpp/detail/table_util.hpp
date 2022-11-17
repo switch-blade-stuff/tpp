@@ -8,6 +8,7 @@
 
 #ifndef TPP_USE_IMPORT
 
+#include <initializer_list>
 #include <iterator>
 #include <cstdint>
 #include <limits>
@@ -312,7 +313,7 @@ namespace tpp::detail
 	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>
 	{
 		// @formatter:off
-		template<typename U, typename J>
+		template<typename, typename>
 		friend class table_iterator;
 		friend struct random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>;
 		// @formatter:on
@@ -392,5 +393,12 @@ namespace tpp::detail
 	{
 		template<typename T>
 		[[nodiscard]] constexpr auto &operator()(T &value) const noexcept { return value.first; }
+	};
+
+	template<typename N>
+	struct bucket_link
+	{
+		typename N::size_type bucket_next = N::npos;
+		typename N::size_type bucket_prev = N::npos;
 	};
 }

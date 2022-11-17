@@ -47,24 +47,14 @@
 #define PRETTY_FUNC __PRETTY_FUNCTION__
 #endif
 
-static inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
+static inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr) noexcept
 {
 	if (!cnd)
 	{
-		fprintf(stderr, "Assertion ");
-		if (cstr) fprintf(stderr, "(%s) ", cstr);
-
-		fprintf(stderr, "failed at '%s:%lu' in '%s'", file, line, func);
-		if (msg) fprintf(stderr, ": %s", msg);
-		fputc('\n', stderr);
-
+		fprintf(stderr, "Assertion (%s) failed at '%s:%lu' in '%s'\n", cstr, file, line, func);
 		TEST_DEBUG_TRAP();
 		TPP_UNREACHABLE();
 	}
 }
 
-#define TEST_ASSERT_2(cnd, msg) test_assert((cnd), (__FILE__), (__LINE__), (PRETTY_FUNC), (#cnd), (msg))
-#define TEST_ASSERT_1(cnd) TEST_ASSERT_2(cnd, nullptr)
-
-#define GET_MACRO_2(_1, _2, MACRO, ...) MACRO
-#define TEST_ASSERT(...) GET_MACRO_2(__VA_ARGS__, TEST_ASSERT_2, TEST_ASSERT_1)(__VA_ARGS__)
+#define TEST_ASSERT(cnd) test_assert((cnd), (__FILE__), (__LINE__), (PRETTY_FUNC), (#cnd))

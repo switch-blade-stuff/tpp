@@ -6,16 +6,16 @@
 
 #include "detail/common.hpp"
 
-#ifndef TPP_NO_HASH
-
-/* If there is no modules support, include what we need. */
 #ifndef TPP_USE_IMPORT
 
+#include <functional>
 #include <cstring>
 #include <cstdint>
 #include <climits>
 
 #endif
+
+#ifndef TPP_NO_HASH
 
 namespace tpp
 {
@@ -317,7 +317,6 @@ namespace tpp
 	{
 		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_buff(const void *data, std::size_t n) noexcept
 		{
-			TPP_ASSUME(n < 8);
 			switch (n)
 			{
 				case 0: return 0;
@@ -410,8 +409,7 @@ namespace tpp
 			const auto copy_n = overflow < n ? overflow : n;
 			auto *bytes = static_cast<const std::uint8_t *>(data);
 
-			std::uint64_t tail_tmp = read_u64_buff(bytes + tail_n, copy_n);
-			if (copy_n + tail_n != 8)
+			if (auto tail_tmp = read_u64_buff(bytes + tail_n, copy_n); copy_n + tail_n != 8)
 			{
 				tail = tail_tmp;
 				tail_n += copy_n;
@@ -422,6 +420,7 @@ namespace tpp
 				tail_n = 0;
 				tail = 0;
 
+				/* Handle 64-bit aligned byte sequences. */
 				const auto *ptr = bytes + copy_n;
 				const auto *end = ptr + ((n - copy_n) & ~std::uint64_t{0x1F});
 				while (ptr < end)
@@ -434,9 +433,8 @@ namespace tpp
 					ptr += 32;
 				}
 
-				auto excess = bytes + n - ptr;
-				TPP_ASSUME(excess < 32);
-				switch (excess)
+				/* Handle incomplete byte sequences. */
+				switch (auto excess = bytes + n - ptr; excess)
 				{
 					case 0: break;
 					case 1:
@@ -671,5 +669,19 @@ struct tpp::hash<std::nullptr_t, Algo>
 {
 	[[nodiscard]] constexpr std::size_t operator()(std::nullptr_t) const noexcept { return 0; }
 };
+
+namespace tpp::detail
+{
+	template<typename T>
+	using default_hash = seahash_hash<T>;
+}
+
+#else
+
+namespace tpp::detail
+{
+	template<typename T>
+	using default_hash = std::hash<T>;
+}
 
 #endif

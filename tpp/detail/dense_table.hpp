@@ -19,7 +19,7 @@ namespace tpp::detail
 	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc>
 	struct dense_table_traits : table_traits<V, K, Alloc>
 	{
-		typedef KHash key_hash;
+		typedef KHash hasher;
 		typedef KCmp key_equal;
 	};
 
@@ -69,11 +69,11 @@ namespace tpp::detail
 		typedef typename traits_t::value_type value_type;
 		typedef typename traits_t::key_type key_type;
 
-		typedef typename traits_t::key_hash key_hash;
+		typedef typename traits_t::hasher hasher;
 		typedef typename traits_t::key_equal key_equal;
 		typedef typename traits_t::allocator_type allocator_type;
 
-		typedef std::conjunction<detail::is_transparent<key_hash>, detail::is_transparent<key_equal>> is_transparent;
+		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
 		typedef detail::is_ordered<Link> is_ordered;
 
 		constexpr static float initial_load_factor = traits_t::initial_load_factor;
@@ -95,19 +95,78 @@ namespace tpp::detail
 		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<size_type>;
 		using sparse_t = std::vector<size_type, sparse_alloc_t>;
 
-		using hash_base = ebo_container<key_hash>;
+		using hash_base = ebo_container<hasher>;
 		using cmp_base = ebo_container<key_equal>;
 		using header_base = bucket_link;
 
 		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node>, bucket_node *>;
 		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const bucket_node>, const bucket_node *>;
 
-	public:
+		template<typename N>
+		class bucket_iterator
+		{
+			// @formatter:off
+			template<typename>
+			friend class bucket_iterator;
+			// @formatter:on
 
+		public:
+			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> value_type;
+			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> &reference;
+			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> *pointer;
+
+			typedef typename bucket_node::size_type size_type;
+			typedef typename bucket_node::difference_type difference_type;
+			typedef std::forward_iterator_tag iterator_category;
+
+		public:
+			constexpr bucket_iterator() noexcept = default;
+			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<U *, std::add_const_t<N> *>>>
+			constexpr bucket_iterator(const bucket_iterator<U> &other) noexcept : m_base(other.m_base), m_off(other.m_off) {}
+
+			constexpr explicit bucket_iterator(N *base, size_type off) noexcept : m_base(base), m_off(off) {}
+
+			constexpr bucket_iterator operator++(int) noexcept
+			{
+				auto tmp = *this;
+				operator++();
+				return tmp;
+			}
+			constexpr bucket_iterator &operator++() noexcept
+			{
+				m_off = node()->next;
+				return *this;
+			}
+
+			[[nodiscard]] constexpr pointer operator->() const noexcept { return node()->get(); }
+			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
+
+			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_off == other.m_off; }
+
+#if __cplusplus >= 202002L
+			[[nodiscard]] constexpr auto operator<=>(const bucket_iterator &other) const noexcept { return m_off <=> other.m_off; }
+#else
+			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_off != other.m_off; }
+			[[nodiscard]] constexpr bool operator<=(const bucket_iterator &other) const noexcept { return m_off <= other.m_off; }
+			[[nodiscard]] constexpr bool operator>=(const bucket_iterator &other) const noexcept { return m_off >= other.m_off; }
+			[[nodiscard]] constexpr bool operator<(const bucket_iterator &other) const noexcept { return m_off < other.m_off; }
+			[[nodiscard]] constexpr bool operator>(const bucket_iterator &other) const noexcept { return m_off > other.m_off; }
+#endif
+
+		private:
+			[[nodiscard]] constexpr N *node() const noexcept { return m_base + m_off; }
+
+			N *m_base = nullptr;
+			size_type m_off = 0;
+		};
+
+	public:
 		typedef table_iterator<value_type, node_iterator> iterator;
 		typedef table_iterator<const value_type, const_node_iterator> const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+		typedef bucket_iterator<bucket_node> local_iterator;
+		typedef bucket_iterator<const bucket_node> const_local_iterator;
 
 	private:
 		[[nodiscard]] constexpr static auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
@@ -141,13 +200,13 @@ namespace tpp::detail
 		constexpr dense_table(const allocator_type &alloc)
 				: m_sparse(initial_capacity, npos, sparse_alloc_t{alloc}),
 				  m_dense(dense_alloc_t{alloc}) {}
-		constexpr dense_table(size_type bucket_count, const key_hash &hash, const key_equal &cmp, const allocator_type &alloc)
+		constexpr dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: hash_base(hash), cmp_base(cmp),
 				  m_sparse(bucket_count, npos, sparse_alloc_t{alloc}),
 				  m_dense(dense_alloc_t{alloc}) {}
 
 		template<typename I>
-		constexpr dense_table(I first, I last, size_type bucket_count, const key_hash &hash, const key_equal &cmp, const allocator_type &alloc)
+		constexpr dense_table(I first, I last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: dense_table(bucket_count, hash, cmp, alloc) { insert(first, last); }
 
 		constexpr dense_table &operator=(const dense_table &other)
@@ -165,7 +224,7 @@ namespace tpp::detail
 			return *this;
 		}
 		constexpr dense_table &operator=(dense_table &&other)
-		noexcept(nothrow_assign<key_hash, key_hash &&> && nothrow_assign<key_equal, key_equal &&> &&
+		noexcept(nothrow_assign<hasher, hasher &&> && nothrow_assign<key_equal, key_equal &&> &&
 		         nothrow_assign<sparse_t, sparse_t &&> && nothrow_assign<dense_t, dense_t &&>)
 		{
 			if (this != &other)
@@ -201,8 +260,16 @@ namespace tpp::detail
 		[[nodiscard]] constexpr size_type max_size() const noexcept { return to_capacity(std::min(m_dense.max_size(), npos - 1)); }
 		[[nodiscard]] constexpr float load_factor() const noexcept { return static_cast<float>(size()) / static_cast<float>(bucket_count()); }
 
+		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return local_iterator{m_dense.data(), m_sparse[n]}; }
+		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return const_local_iterator{m_dense.data(), m_sparse[n]}; }
+		[[nodiscard]] constexpr local_iterator end(size_type) noexcept { return local_iterator{}; }
+		[[nodiscard]] constexpr const_local_iterator end(size_type) const noexcept { return const_local_iterator{}; }
+
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_sparse.size(); }
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_sparse.max_size(); }
+		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return static_cast<size_type>(std::distance(begin(n), end(n))); }
+		template<typename T>
+		[[nodiscard]] constexpr size_type bucket(const T &key) const { return hash(key) % bucket_count(); }
 
 		constexpr void clear()
 		{
@@ -233,12 +300,12 @@ namespace tpp::detail
 		}
 
 		template<typename T>
-		[[nodiscard]] constexpr bool contains(const T &key) const noexcept { return (*find_node(hash(key), key).second) != npos; }
+		[[nodiscard]] constexpr bool contains(const T &key) const { return (*find_node(hash(key), key).second) != npos; }
 
 		template<typename T>
-		[[nodiscard]] constexpr iterator find(const T &key) noexcept { return to_iter(find_node(hash(key), key).first); }
+		[[nodiscard]] constexpr iterator find(const T &key) { return to_iter(find_node(hash(key), key).first); }
 		template<typename T>
-		[[nodiscard]] constexpr const_iterator find(const T &key) const noexcept { return to_iter(find_node(hash(key), key).first); }
+		[[nodiscard]] constexpr const_iterator find(const T &key) const { return to_iter(find_node(hash(key), key).first); }
 
 		constexpr std::pair<iterator, bool> insert(const value_type &value) { return insert_impl({}, KGet{}(value), value); }
 		constexpr std::pair<iterator, bool> insert(value_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
@@ -254,6 +321,18 @@ namespace tpp::detail
 		constexpr iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
 			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
+		}
+
+		template<typename I>
+		constexpr void insert(I first, I last)
+		{
+			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<I>::iterator_category>)
+			{
+				const auto n = static_cast<size_type>(std::distance(first, last));
+				reserve(n);
+				rehash(n);
+			}
+			for (; first != last; ++first) insert(*first);
 		}
 
 		template<typename T, typename U, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
@@ -313,6 +392,12 @@ namespace tpp::detail
 			const auto &node = *to_underlying(where);
 			return erase_impl(node.hash, node.key());
 		}
+		constexpr iterator erase(const_iterator first, const_iterator last)
+		{
+			iterator result = end();
+			while (last != first) result = erase(--last);
+			return result;
+		}
 
 		constexpr void rehash(size_type new_cap)
 		{
@@ -323,15 +408,15 @@ namespace tpp::detail
 			if (new_cap != m_sparse.capacity()) rehash_impl(new_cap);
 		}
 
-		[[nodiscard]] constexpr auto allocator() const noexcept { return m_dense.get_allocator(); }
+		[[nodiscard]] constexpr auto get_allocator() const { return m_dense.get_allocator(); }
 		[[nodiscard]] constexpr auto &get_hash() const noexcept { return hash_base::value(); }
 		[[nodiscard]] constexpr auto &get_cmp() const noexcept { return cmp_base::value(); }
 
 		constexpr void swap(dense_table &other)
-		noexcept(std::is_nothrow_swappable_v<key_hash> && std::is_nothrow_swappable_v<key_equal> &&
+		noexcept(std::is_nothrow_swappable_v<hasher> && std::is_nothrow_swappable_v<key_equal> &&
 		         std::is_nothrow_swappable_v<sparse_t> && std::is_nothrow_swappable_v<dense_t>)
 		{
-			key_hash::swap(other);
+			hasher::swap(other);
 			key_equal::swap(other);
 
 			std::swap(m_sparse, other.m_sparse);
