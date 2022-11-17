@@ -5,7 +5,6 @@
 #pragma once
 
 #include <tpp/detail/common.hpp>
-#include <exception>
 #include <cstdio>
 
 #if defined(__has_builtin) && !defined(__ibmxl__)
