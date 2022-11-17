@@ -40,7 +40,7 @@ import std;
 #define TPP_REQUIRES(cnd)
 #endif
 
-#if __cplusplus > 202002L
+#if defined(__has_cpp_attribute) && __has_cpp_attribute(assume)
 #define TPP_ASSUME(x) [[assume(x)]]
 #elif defined(_MSC_VER)
 #define TPP_ASSUME(x) __assume(x)
@@ -52,7 +52,7 @@ import std;
 #define TPP_ASSUME(x)
 #endif
 
-#if __cplusplus > 202002L
+#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
 #define TPP_UNREACHABLE() std::unreachable()
 #elif defined(_MSC_VER)
 #define TPP_UNREACHABLE() __assume(false)
@@ -61,9 +61,8 @@ import std;
 #elif defined(__GNUC__)
 #define TPP_UNREACHABLE() __builtin_unreachable()
 #else
-#define TPP_UNREACHABLE()
+#define TPP_UNREACHABLE() TPP_ASSUME(false)
 #endif
-
 
 #if defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline
