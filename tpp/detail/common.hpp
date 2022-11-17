@@ -54,9 +54,7 @@ import std;
 
 #if defined(_MSC_VER)
 #define TPP_UNREACHABLE() __assume(false)
-#elif defined(__clang__)
-#define TPP_UNREACHABLE() __builtin_assume(x)
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
 #define TPP_UNREACHABLE() __builtin_unreachable()
 #elif defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
 #define TPP_UNREACHABLE() std::unreachable()

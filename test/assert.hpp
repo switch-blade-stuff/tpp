@@ -50,7 +50,7 @@
 
 static inline void test_assert(bool cnd, const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 {
-	if (!cnd)[[unlikely]]
+	if (!cnd)
 	{
 		fprintf(stderr, "Assertion ");
 		if (cstr) fprintf(stderr, "(%s) ", cstr);
@@ -60,7 +60,7 @@ static inline void test_assert(bool cnd, const char *file, std::size_t line, con
 		fputc('\n', stderr);
 
 		TEST_DEBUG_TRAP();
-		std::terminate();
+		TPP_UNREACHABLE();
 	}
 }
 
