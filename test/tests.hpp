@@ -8,8 +8,10 @@
 
 #include "assert.hpp"
 
-void test_dense_table() noexcept;
-void test_ordered_dense_table() noexcept;
+void test_dense_map() noexcept;
+void test_ordered_dense_map() noexcept;
+void test_dense_set() noexcept;
+void test_ordered_dense_set() noexcept;
 
 void test_seahash() noexcept;
 void test_crc32() noexcept;
@@ -18,8 +20,10 @@ void test_sdbm() noexcept;
 void test_md5() noexcept;
 
 constexpr static std::pair<std::string_view, void (*)()> tests[] = {
-		{"dense_table",         test_dense_table},
-		{"ordered_dense_table", test_ordered_dense_table},
+		{"dense_map",         test_dense_map},
+		{"ordered_dense_map", test_ordered_dense_map},
+		{"dense_set",           test_dense_set},
+		{"ordered_dense_set",   test_ordered_dense_set},
 
 		{"seahash",             test_seahash},
 		{"crc32",               test_crc32},

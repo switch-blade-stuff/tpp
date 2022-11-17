@@ -45,6 +45,12 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>Toggles support for C++20 modules</td>
   </tr>
   <tr>
+    <td>TPP_NO_SIMD</td>
+    <td>-DTPP_NO_SIMD</td>
+    <td>OFF</td>
+    <td>Toggles availability of SIMD optimizations for swiss tables</td>
+  </tr>
+  <tr>
     <td>TPP_NO_HASH</td>
     <td>-DTPP_NO_HASH</td>
     <td>OFF</td>
@@ -54,73 +60,73 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>TPP_OPTIONAL_HASH</td>
     <td>-DTPP_OPTIONAL_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/optional">&lt;optional&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/optional">&lt;optional&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_VARIANT_HASH</td>
     <td>-DTPP_VARIANT_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/variant">&lt;variant&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/variant">&lt;variant&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_STRING_HASH</td>
     <td>-DTPP_STRING_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/string">&lt;string&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/string">&lt;string&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_STRING_VIEW_HASH</td>
     <td>-DTPP_STRING_VIEW_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/string_view">&lt;string_view&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/string_view">&lt;string_view&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_BITSET_HASH</td>
     <td>-DTPP_BITSET_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/bitset">&lt;bitset&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/bitset">&lt;bitset&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_MEMORY_HASH</td>
     <td>-DTPP_MEMORY_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/memory">&lt;memory&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/memory">&lt;memory&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_TYPEINDEX_HASH</td>
     <td>-DTPP_TYPEINDEX_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/typeindex">&lt;typeindex&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/typeindex">&lt;typeindex&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_FILESYSTEM_HASH</td>
     <td>-DTPP_FILESYSTEM_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/filesystem">&lt;filesystem&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/filesystem">&lt;filesystem&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_THREAD_HASH</td>
     <td>-DTPP_THREAD_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/thread">&lt;thread&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/thread">&lt;thread&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_SYSTEM_ERROR_HASH</td>
     <td>-DTPP_SYSTEM_ERROR_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/system_error">&lt;system_error&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/system_error">&lt;system_error&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_COROUTINE_HASH</td>
     <td>-DTPP_COROUTINE_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/coroutine">&lt;coroutine&gt;</a> header</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/coroutine">&lt;coroutine&gt;</a> header</td>
   </tr>
   <tr>
     <td>TPP_STACKTRACE_HASH</td>
     <td>-DTPP_STACKTRACE_HASH</td>
     <td>OFF</td>
-    <td>Enable hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/stacktrace">&lt;stacktrace&gt;</a> header (requires C++23)</td>
+    <td>Enables hash specializations for the <a href="https://en.cppreference.com/w/cpp/header/stacktrace">&lt;stacktrace&gt;</a> header (requires C++23)</td>
   </tr>
   <tr>
     <td>TPP_STL_HASH_ALL</td>
@@ -132,7 +138,7 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>N/A</td>
     <td>-DTPP_TESTS</td>
     <td>OFF</td>
-    <td>Enable unit test target</td>
+    <td>Enables unit test target</td>
   </tr>
 </table>
 

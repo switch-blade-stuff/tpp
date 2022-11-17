@@ -8,6 +8,12 @@ if (${TPP_USE_MODULES})
     add_compile_definitions(TPP_USE_MODULES)
 endif ()
 
+option(TPP_NO_SIMD "Toggles availability of SIMD optimizations for swiss tables" OFF)
+
+if (${TPP_NO_SIMD})
+    add_compile_definitions(TPP_NO_SIMD)
+endif ()
+
 option(TPP_NO_HASH "Toggles availability of hash function utilities" OFF)
 option(TPP_OPTIONAL_HASH "Enable hash specializations for the <optional> header" OFF)
 option(TPP_VARIANT_HASH "Enable hash specializations for the <variant> header" OFF)

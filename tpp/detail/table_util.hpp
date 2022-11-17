@@ -99,9 +99,10 @@ namespace tpp::detail
 	template<typename T>
 	constexpr void swap(ebo_container<T> &a, ebo_container<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
 
-	template<typename V, typename K, typename A>
+	template<typename I, typename V, typename K, typename A>
 	struct table_traits
 	{
+		typedef I insert_type;
 		typedef V value_type;
 		typedef K key_type;
 		typedef A allocator_type;
@@ -204,7 +205,7 @@ namespace tpp::detail
 	template<typename N>
 	struct ordered_iterator
 	{
-		using link_t = ordered_link;
+		using link_t = std::conditional_t<std::is_const_v<N>, std::add_const_t<ordered_link>, ordered_link>;
 
 		typedef N value_type;
 		typedef N &reference;
@@ -272,11 +273,11 @@ namespace tpp::detail
 	struct iterator_concept_base<I> { typedef std::contiguous_iterator_tag iterator_concept; };
 #endif
 
-	template<typename, typename>
+	template<typename, typename, typename>
 	class table_iterator;
 
-	template<typename V, typename I>
-	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I>) noexcept;
+	template<typename V, typename T, typename I>
+	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I>) noexcept;
 
 	template<typename, typename = void>
 	struct iter_size { using type = std::size_t; };
@@ -309,24 +310,24 @@ namespace tpp::detail
 	template<typename I, typename T>
 	struct random_access_iterator_base<I, T, std::enable_if_t<!std::is_base_of_v<std::random_access_iterator_tag, typename T::iterator_category>>> {};
 
-	template<typename V, typename I>
-	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>
+	template<typename V, typename Traits, typename I>
+	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>
 	{
 		// @formatter:off
-		template<typename, typename>
+		template<typename, typename, typename>
 		friend class table_iterator;
-		friend struct random_access_iterator_base<table_iterator<V, I>, std::iterator_traits<I>>;
+		friend struct random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>;
 		// @formatter:on
 
-		template<typename U, typename J>
-		friend constexpr auto to_underlying(table_iterator<U, J>) noexcept;
+		template<typename U, typename T, typename J>
+		friend constexpr auto to_underlying(table_iterator<U, T, J>) noexcept;
 
 		using traits_t = std::iterator_traits<I>;
 
 	public:
 		typedef V value_type;
-		typedef V &reference;
-		typedef V *pointer;
+		typedef std::conditional_t<std::is_const_v<V>, typename Traits::const_pointer, typename Traits::pointer> pointer;
+		typedef std::conditional_t<std::is_const_v<V>, typename Traits::const_reference, typename Traits::reference> reference;
 
 		typedef typename iter_size<traits_t>::type size_type;
 		typedef typename iter_diff<traits_t>::type difference_type;
@@ -335,7 +336,7 @@ namespace tpp::detail
 	public:
 		constexpr table_iterator() noexcept = default;
 		template<typename U, typename J, typename = std::enable_if_t<!std::is_same_v<I, J> && std::is_constructible_v<I, std::add_const_t<J> &>>>
-		constexpr table_iterator(const table_iterator<U, J> &other) noexcept : m_iter(other.m_iter) {}
+		constexpr table_iterator(const table_iterator<U, Traits, J> &other) noexcept : m_iter(other.m_iter) {}
 
 		constexpr explicit table_iterator(I iter) noexcept : m_iter(iter) {}
 
@@ -362,7 +363,7 @@ namespace tpp::detail
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return m_iter->get(); }
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{m_iter->get()}; }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
@@ -381,8 +382,8 @@ namespace tpp::detail
 		I m_iter = {};
 	};
 
-	template<typename V, typename I>
-	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, I> iter) noexcept { return iter.m_iter; }
+	template<typename V, typename T, typename I>
+	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I> iter) noexcept { return iter.m_iter; }
 
 	struct key_identity
 	{

@@ -22,16 +22,25 @@ namespace tpp
 	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class dense_set
 	{
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::key_identity, Alloc>;
+		struct value_traits
+		{
+			using pointer = const Key *;
+			using const_pointer = const Key *;
+			using reference = const Key &;
+			using const_reference = const Key &;
+		};
+
+		using table_t = detail::dense_table<Key, Key, value_traits, KeyHash, KeyCmp, detail::key_identity, Alloc>;
 
 	public:
+		typedef typename table_t::insert_type insert_type;
 		typedef typename table_t::value_type value_type;
 		typedef typename table_t::key_type key_type;
 
-		typedef value_type &reference;
-		typedef const value_type &const_reference;
-		typedef value_type *pointer;
-		typedef const value_type *const_pointer;
+		typedef typename table_t::reference reference;
+		typedef typename table_t::const_reference const_reference;
+		typedef typename table_t::pointer pointer;
+		typedef typename table_t::const_pointer const_pointer;
 
 		typedef typename table_t::const_iterator iterator;
 		typedef typename table_t::const_iterator const_iterator;
@@ -79,11 +88,26 @@ namespace tpp
 		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
 		                    const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                    const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
 		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
 				: dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
 		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
 				: dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
@@ -111,11 +135,18 @@ namespace tpp
 			m_table.assign(il.begin(), il.end());
 			return *this;
 		}
+		/** @copydoc operator= */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr dense_set &operator=(std::initializer_list<T> il)
+		{
+			m_table.assign(il.begin(), il.end());
+			return *this;
+		}
 
 		/** Returns iterator to the first element of the set.
 		 * @note Elements are stored in no particular order. */
 		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
-		/** @copydoc end */
+		/** @copydoc begin */
 		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set.
 		 * @note Elements are stored in no particular order. */
@@ -148,20 +179,32 @@ namespace tpp
 		/** Erases all elements from the set. */
 		constexpr void clear() { m_table.clear(); }
 
-		/** @brief Inserts an element (of `value_type`) into the set if it does not exist yet, or returns iterator to an existing element.
+		/** @brief Inserts an element (of `value_type`) into the set if it does not exist yet.
 		 * @param value Value of the to-be inserted element.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
-		constexpr std::pair<iterator, bool> insert(const value_type &value) { return m_table.insert(value); }
+		constexpr std::pair<iterator, bool> insert(const insert_type &value) { return m_table.insert(value); }
 		/** @copydoc insert */
-		constexpr std::pair<iterator, bool> insert(value_type &&value) { return m_table.insert(std::forward<value_type>(value)); }
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr std::pair<iterator, bool> insert(const T &value) { return m_table.insert(value); }
+		/** @copydoc insert */
+		constexpr std::pair<iterator, bool> insert(insert_type &&value) { return m_table.insert(std::forward<insert_type>(value)); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&>>>
+		constexpr std::pair<iterator, bool> insert(T &&value) { return m_table.insert(std::forward<T>(value)); }
 		/** @copybrief insert
 		 * @param value Value of the to-be inserted element.
 		 * @return Iterator to the inserted or existing element.
 		 * @note \p hint has no effect, this overload exists for API compatibility. */
-		constexpr iterator insert(const_iterator hint, const value_type &value) { return m_table.insert(hint, value); }
+		constexpr iterator insert(const_iterator hint, const insert_type &value) { return m_table.insert(hint, value); }
 		/** @copydoc insert */
-		constexpr iterator insert(const_iterator hint, value_type &&value) { return m_table.insert(hint, std::forward<value_type>(value)); }
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr iterator insert(const_iterator hint, const T &value) { return m_table.insert(hint, value); }
+		/** @copydoc insert */
+		constexpr iterator insert(const_iterator hint, insert_type &&value) { return m_table.insert(hint, std::forward<insert_type>(value)); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&>>>
+		constexpr iterator insert(const_iterator hint, T &&value) { return m_table.insert(hint, std::forward<T>(value)); }
 
 		/** Inserts all elements from the range `[first, last)` into the set.
 		 * @param first Iterator to the first element of the source range.
@@ -170,8 +213,11 @@ namespace tpp
 		constexpr void insert(I first, I last) { return m_table.insert(first, last); }
 		/** Inserts all elements of an initializer list into the set. */
 		constexpr void insert(std::initializer_list<value_type> il) { return insert(il.begin(), il.end()); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr void insert(std::initializer_list<T> il) { return insert(il.begin(), il.end()); }
 
-		/** @brief Inserts an in-place constructed element (of `value_type`) into the set if it does not exist yet, or returns iterator to an existing element.
+		/** @brief Inserts an in-place constructed element (of `value_type`) into the set if it does not exist yet.
 		 * @param args Arguments passed to constructor of `value_type`.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
@@ -204,20 +250,20 @@ namespace tpp
 
 		/** Searches for the specified element within the set.
 		 * @param key Key of the element to search for.
-		 * @return Iterator to the found element, or `end()`. */
-		constexpr iterator find(const key_type &key) const { return m_table.find(key); }
+		 * @return Iterator to the specified element, or `end()`. */
+		[[nodiscard]] constexpr iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		constexpr iterator find(const K &key) const { return m_table.find(key); }
+		[[nodiscard]] constexpr iterator find(const K &key) const { return m_table.find(key); }
 		/** Checks if the specified element is present within the set as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
 		 * @return `true` if the element is present within the set, `false` otherwise. */
-		constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
+		[[nodiscard]] constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		constexpr bool contains(const K &key) const { return m_table.contains(key); }
+		[[nodiscard]] constexpr bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
 		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
@@ -302,16 +348,25 @@ namespace tpp
 	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class ordered_dense_set
 	{
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::key_identity, Alloc, detail::ordered_link>;
+		struct value_traits
+		{
+			using pointer = const Key *;
+			using const_pointer = const Key *;
+			using reference = const Key &;
+			using const_reference = const Key &;
+		};
+
+		using table_t = detail::dense_table<Key, Key, value_traits, KeyHash, KeyCmp, detail::key_identity, Alloc, detail::ordered_link>;
 
 	public:
+		typedef typename table_t::insert_type insert_type;
 		typedef typename table_t::value_type value_type;
 		typedef typename table_t::key_type key_type;
 
-		typedef value_type &reference;
-		typedef const value_type &const_reference;
-		typedef value_type *pointer;
-		typedef const value_type *const_pointer;
+		typedef typename table_t::reference reference;
+		typedef typename table_t::const_reference const_reference;
+		typedef typename table_t::pointer pointer;
+		typedef typename table_t::const_pointer const_pointer;
 
 		typedef typename table_t::const_iterator iterator;
 		typedef typename table_t::const_iterator const_iterator;
@@ -359,11 +414,26 @@ namespace tpp
 		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
 		                            const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                            const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
 		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
 		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		/** @copydoc dense_set */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
@@ -391,10 +461,17 @@ namespace tpp
 			m_table.assign(il.begin(), il.end());
 			return *this;
 		}
+		/** @copydoc operator= */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr ordered_dense_set &operator=(std::initializer_list<T> il)
+		{
+			m_table.assign(il.begin(), il.end());
+			return *this;
+		}
 
 		/** Returns iterator to the first element of the set. */
 		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
-		/** @copydoc end */
+		/** @copydoc begin */
 		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set. */
 		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
@@ -429,20 +506,32 @@ namespace tpp
 		/** Erases all elements from the set. */
 		constexpr void clear() { m_table.clear(); }
 
-		/** @brief Inserts an element (of `value_type`) into the set if it does not exist yet, or returns iterator to an existing element.
+		/** @brief Inserts an element (of `value_type`) into the set if it does not exist yet.
 		 * @param value Value of the to-be inserted element.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
-		constexpr std::pair<iterator, bool> insert(const value_type &value) { return m_table.insert(value); }
+		constexpr std::pair<iterator, bool> insert(const insert_type &value) { return m_table.insert(value); }
 		/** @copydoc insert */
-		constexpr std::pair<iterator, bool> insert(value_type &&value) { return m_table.insert(std::forward<value_type>(value)); }
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr std::pair<iterator, bool> insert(const T &value) { return m_table.insert(value); }
+		/** @copydoc insert */
+		constexpr std::pair<iterator, bool> insert(insert_type &&value) { return m_table.insert(std::forward<insert_type>(value)); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&>>>
+		constexpr std::pair<iterator, bool> insert(T &&value) { return m_table.insert(std::forward<T>(value)); }
 		/** @copybrief insert
+		 * @param hint New position of the inserted element.
 		 * @param value Value of the to-be inserted element.
-		 * @return Iterator to the inserted or existing element.
-		 * @note \p hint has no effect, this overload exists for API compatibility. */
-		constexpr iterator insert(const_iterator hint, const value_type &value) { return m_table.insert(hint, value); }
+		 * @return Iterator to the inserted or existing element. */
+		constexpr iterator insert(const_iterator hint, const insert_type &value) { return m_table.insert(hint, value); }
 		/** @copydoc insert */
-		constexpr iterator insert(const_iterator hint, value_type &&value) { return m_table.insert(hint, std::forward<value_type>(value)); }
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr iterator insert(const_iterator hint, const T &value) { return m_table.insert(hint, value); }
+		/** @copydoc insert */
+		constexpr iterator insert(const_iterator hint, insert_type &&value) { return m_table.insert(hint, std::forward<insert_type>(value)); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&>>>
+		constexpr iterator insert(const_iterator hint, T &&value) { return m_table.insert(hint, std::forward<T>(value)); }
 
 		/** Inserts all elements from the range `[first, last)` into the set.
 		 * @param first Iterator to the first element of the source range.
@@ -451,17 +540,20 @@ namespace tpp
 		constexpr void insert(I first, I last) { return m_table.insert(first, last); }
 		/** Inserts all elements of an initializer list into the set. */
 		constexpr void insert(std::initializer_list<value_type> il) { return insert(il.begin(), il.end()); }
+		/** @copydoc insert */
+		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
+		constexpr void insert(std::initializer_list<T> il) { return insert(il.begin(), il.end()); }
 
-		/** @brief Inserts an in-place constructed element (of `value_type`) into the set if it does not exist yet, or returns iterator to an existing element.
+		/** @brief Inserts an in-place constructed element (of `value_type`) into the set if it does not exist yet.
 		 * @param args Arguments passed to constructor of `value_type`.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
 		 * indicating whether insertion took place (`true` if element was inserted, `false` otherwise). */
 		template<typename... Args>
 		constexpr std::pair<iterator, bool> emplace(Args &&...args) { return m_table.emplace(std::forward<Args>(args)...); }
 		/** @copybrief emplace
+		 * @param hint New position of the inserted element.
 		 * @param args Arguments passed to constructor of `value_type`.
-		 * @return Iterator to the inserted or existing element.
-		 * @note \p hint has no effect, this overload exists for API compatibility. */
+		 * @return Iterator to the inserted or existing element. */
 		template<typename... Args>
 		constexpr iterator emplace_hint(const_iterator hint, Args &&...args) { return m_table.emplace_hint(hint, std::forward<Args>(args)...); }
 
@@ -485,20 +577,20 @@ namespace tpp
 
 		/** Searches for the specified element within the set.
 		 * @param key Key of the element to search for.
-		 * @return Iterator to the found element, or `end()`. */
-		constexpr iterator find(const key_type &key) const { return m_table.find(key); }
+		 * @return Iterator to the specified element, or `end()`. */
+		[[nodiscard]] constexpr iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		constexpr iterator find(const K &key) const { return m_table.find(key); }
+		[[nodiscard]] constexpr iterator find(const K &key) const { return m_table.find(key); }
 		/** Checks if the specified element is present within the set as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
 		 * @return `true` if the element is present within the set, `false` otherwise. */
-		constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
+		[[nodiscard]] constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		constexpr bool contains(const K &key) const { return m_table.contains(key); }
+		[[nodiscard]] constexpr bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
 		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }

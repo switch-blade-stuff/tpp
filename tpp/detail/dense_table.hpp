@@ -17,7 +17,7 @@
 namespace tpp::detail
 {
 	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc>
-	struct dense_table_traits : table_traits<V, K, Alloc>
+	struct dense_table_traits : table_traits<V, V, K, Alloc>
 	{
 		typedef KHash hasher;
 		typedef KCmp key_equal;
@@ -28,10 +28,10 @@ namespace tpp::detail
 	{
 		using value_base = ebo_container<V>;
 
-		using size_type = typename table_traits<V, K, Alloc>::size_type;
-		using difference_type = typename table_traits<V, K, Alloc>::difference_type;
+		using size_type = typename table_traits<V, V, K, Alloc>::size_type;
+		using difference_type = typename table_traits<V, V, K, Alloc>::difference_type;
 
-		constexpr static auto npos = table_traits<V, K, Alloc>::npos;
+		constexpr static auto npos = table_traits<V, V, K, Alloc>::npos;
 
 		using value_base::value;
 
@@ -60,12 +60,14 @@ namespace tpp::detail
 		size_type next = npos;
 	};
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename Alloc, typename Link = empty_link>
+	template<typename V, typename K, typename Traits, typename KHash, typename KCmp, typename KGet, typename Alloc,
+	         typename Link = empty_link>
 	class dense_table : Link, ebo_container<KHash>, ebo_container<KCmp>
 	{
 		using traits_t = dense_table_traits<V, K, KHash, KCmp, Alloc>;
 
 	public:
+		typedef typename traits_t::insert_type insert_type;
 		typedef typename traits_t::value_type value_type;
 		typedef typename traits_t::key_type key_type;
 
@@ -111,9 +113,9 @@ namespace tpp::detail
 			// @formatter:on
 
 		public:
-			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> value_type;
-			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> &reference;
-			typedef std::conditional_t<std::is_const_v<N>, std::add_const_t<V>, V> *pointer;
+			typedef V value_type;
+			typedef std::conditional_t<std::is_const_v<N>, typename Traits::const_pointer, typename Traits::pointer> pointer;
+			typedef std::conditional_t<std::is_const_v<N>, typename Traits::const_reference, typename Traits::reference> reference;
 
 			typedef typename bucket_node::size_type size_type;
 			typedef typename bucket_node::difference_type difference_type;
@@ -138,7 +140,7 @@ namespace tpp::detail
 				return *this;
 			}
 
-			[[nodiscard]] constexpr pointer operator->() const noexcept { return node()->get(); }
+			[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{node()->get()}; }
 			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_off == other.m_off; }
@@ -161,16 +163,17 @@ namespace tpp::detail
 		};
 
 	public:
-		typedef table_iterator<value_type, node_iterator> iterator;
-		typedef table_iterator<const value_type, const_node_iterator> const_iterator;
+		typedef table_iterator<value_type, Traits, node_iterator> iterator;
+		typedef table_iterator<const value_type, Traits, const_node_iterator> const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 		typedef bucket_iterator<bucket_node> local_iterator;
 		typedef bucket_iterator<const bucket_node> const_local_iterator;
 
-	private:
-		[[nodiscard]] constexpr static auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
-		[[nodiscard]] constexpr static auto to_iter(const bucket_node *node) noexcept { return const_iterator{const_node_iterator{node}}; }
+		typedef typename iterator::reference reference;
+		typedef typename const_iterator::reference const_reference;
+		typedef typename iterator::pointer pointer;
+		typedef typename const_iterator::pointer const_pointer;
 
 	public:
 		constexpr dense_table()
@@ -221,8 +224,8 @@ namespace tpp::detail
 			m_dense.reserve(to_capacity(bucket_count));
 		}
 
-		template<typename I>
-		constexpr dense_table(I first, I last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
+		template<typename Iter>
+		constexpr dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: dense_table(bucket_count, hash, cmp, alloc) { insert(first, last); }
 
 		constexpr dense_table &operator=(const dense_table &other)
@@ -256,8 +259,8 @@ namespace tpp::detail
 			return *this;
 		}
 
-		template<typename I>
-		constexpr void assign(I first, I last)
+		template<typename Iter>
+		constexpr void assign(Iter first, Iter last)
 		{
 			clear();
 			insert(first, last);
@@ -273,10 +276,10 @@ namespace tpp::detail
 		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return reverse_iterator{begin()}; }
 		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
 
-		[[nodiscard]] constexpr value_type &front() noexcept { return front_node()->value(); }
-		[[nodiscard]] constexpr const value_type &front() const noexcept { return front_node()->value(); }
-		[[nodiscard]] constexpr value_type &back() noexcept { return back_node()->value(); }
-		[[nodiscard]] constexpr const value_type &back() const noexcept { return back_node()->value(); }
+		[[nodiscard]] constexpr reference front() noexcept { return *to_iter(front_node()); }
+		[[nodiscard]] constexpr const_reference front() const noexcept { return *to_iter(front_node()); }
+		[[nodiscard]] constexpr reference back() noexcept { return *to_iter(back_node()); }
+		[[nodiscard]] constexpr const_reference back() const noexcept { return *to_iter(back_node()); }
 
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_dense.size(); }
 		[[nodiscard]] constexpr size_type capacity() const noexcept { return to_capacity(bucket_count()); }
@@ -319,26 +322,26 @@ namespace tpp::detail
 		template<typename T>
 		[[nodiscard]] constexpr const_iterator find(const T &key) const { return to_iter(find_node(hash(key), key).first); }
 
-		constexpr std::pair<iterator, bool> insert(const value_type &value) { return insert_impl({}, KGet{}(value), value); }
-		constexpr std::pair<iterator, bool> insert(value_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
-		constexpr iterator insert(const_iterator hint, const value_type &value) { return insert_impl(to_underlying(hint), KGet{}(value), value).first; }
-		constexpr iterator insert(const_iterator hint, value_type &&value) { return insert_impl(to_underlying(hint), KGet{}(value), std::move(value)).first; }
+		constexpr std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, KGet{}(value), value); }
+		constexpr std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
+		constexpr iterator insert(const_iterator hint, const insert_type &value) { return insert_impl(to_underlying(hint), KGet{}(value), value).first; }
+		constexpr iterator insert(const_iterator hint, insert_type &&value) { return insert_impl(to_underlying(hint), KGet{}(value), std::move(value)).first; }
 
-		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T &&, value_type &&>>>
+		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		constexpr std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
 			return emplace_impl({}, std::forward<T>(value));
 		}
-		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T &&, value_type &&>>>
+		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		constexpr iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
 			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
 		}
 
-		template<typename I>
-		constexpr void insert(I first, I last)
+		template<typename Iter>
+		constexpr void insert(Iter first, Iter last)
 		{
-			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<I>::iterator_category>)
+			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
 			{
 				const auto n = static_cast<size_type>(std::distance(first, last));
 				reserve(n);
@@ -473,6 +476,9 @@ namespace tpp::detail
 				return const_cast<bucket_node *>(m_dense.data()) + size();
 		}
 
+		[[nodiscard]] constexpr auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
+		[[nodiscard]] constexpr auto to_iter(const bucket_node *node) const noexcept { return const_iterator{const_node_iterator{node}}; }
+
 		/* Same reason for `const_cast` as with node getters above. */
 		[[nodiscard]] constexpr auto *get_chain(std::size_t h) const noexcept { return const_cast<size_type *>(m_sparse.data()) + (h % bucket_count()); }
 		template<typename T>
@@ -492,7 +498,7 @@ namespace tpp::detail
 		constexpr iterator commit_node([[maybe_unused]] const_node_iterator hint, size_type pos, size_type *chain_idx, std::size_t h, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
-			if constexpr (is_ordered::value) node->link(hint.link ? hint.link : back_node());
+			if constexpr (is_ordered::value) node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
 			*chain_idx = pos;
 
 			/* Initialize the hash & rehash the table. Doing it now so
@@ -594,7 +600,13 @@ namespace tpp::detail
 					/* Swap the entry with the last if necessary & erase the last entry. */
 					if (const auto end_pos = size() - 1; pos != end_pos)
 					{
-						*entry_ptr = std::move(m_dense.back());
+						if constexpr (std::is_move_assignable_v<bucket_node>)
+							*entry_ptr = std::move(m_dense.back());
+						else
+						{
+							entry_ptr->~bucket_node();
+							new(entry_ptr) bucket_node(std::move(m_dense.back()));
+						}
 
 						/* Find the chain offset pointing to the old position & replace it with the new position. */
 						for (chain_idx = get_chain(entry_ptr->hash); *chain_idx != npos; chain_idx = &m_dense[*chain_idx].next)

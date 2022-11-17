@@ -81,8 +81,8 @@ namespace tpp
 	}
 
 	/** @brief CRC32 byte checksum function.
-	 * @param[in] data Pointer to bytes of input data.
-	 * @param[in] n Size of the \p data buffer. */
+ * @param[in] data Pointer to bytes of input data.
+ * @param[in] n Size of the \p data buffer. */
 	[[nodiscard]] constexpr std::uint32_t crc32(const void *data, std::size_t n) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);

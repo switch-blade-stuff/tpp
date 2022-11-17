@@ -24,8 +24,10 @@ macro(make_test)
 endmacro()
 
 # Dense table tests
-make_test(dense_table)
-make_test(ordered_dense_table)
+make_test(dense_map)
+make_test(ordered_dense_map)
+make_test(dense_set)
+make_test(ordered_dense_set)
 
 # Hash function tests
 make_test(seahash)
