@@ -6,7 +6,6 @@
 
 #include <tpp/detail/common.hpp>
 #include <exception>
-#include <utility>
 #include <cstdio>
 
 #if defined(__has_builtin) && !defined(__ibmxl__)

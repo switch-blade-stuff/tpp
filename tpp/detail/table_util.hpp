@@ -9,7 +9,6 @@
 #ifndef TPP_USE_IMPORT
 
 #include <iterator>
-#include <utility>
 #include <cstdint>
 #include <limits>
 
