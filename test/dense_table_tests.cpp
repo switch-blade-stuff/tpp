@@ -109,6 +109,15 @@ void test_dense_table() noexcept
 
 	table_t table;
 	test_table(table);
+
+	dense_set<std::string> set0 = {"0", "1", "2"};
+	dense_set<std::string> set1 = {"2", "1", "0"};
+	dense_set<std::string> set2 = {"1", "2", "0"};
+	dense_set<std::string> set3 = {"2", "0", "1"};
+
+	TEST_ASSERT(set0 == set1);
+	TEST_ASSERT(set0 == set2);
+	TEST_ASSERT(set0 == set3);
 }
 void test_ordered_dense_table() noexcept
 {
@@ -157,6 +166,36 @@ void test_ordered_dense_table() noexcept
 	TEST_ASSERT(table2.find("1") == std::prev(table2.end()));
 	TEST_ASSERT(*table2.find("0") == table2.front());
 	TEST_ASSERT(*table2.find("1") == table2.back());
+
+	ordered_dense_set<std::string> set0 = {"0", "1", "2"};
+	ordered_dense_set<std::string> set1 = {"2", "1", "0"};
+	ordered_dense_set<std::string> set2 = {"1", "2", "0"};
+	ordered_dense_set<std::string> set3 = {"2", "0", "1"};
+
+	TEST_ASSERT(set0 == set1);
+	TEST_ASSERT(set0 == set2);
+	TEST_ASSERT(set0 == set3);
+
+	TEST_ASSERT(set0.front() == "0");
+	TEST_ASSERT(set1.front() == "2");
+	TEST_ASSERT(set2.front() == "1");
+	TEST_ASSERT(set3.front() == "2");
+	TEST_ASSERT(set0.back() == "2");
+	TEST_ASSERT(set1.back() == "0");
+	TEST_ASSERT(set2.back() == "0");
+	TEST_ASSERT(set3.back() == "1");
+	TEST_ASSERT(set0.find("0") == set0.begin());
+	TEST_ASSERT(set1.find("2") == set1.begin());
+	TEST_ASSERT(set2.find("1") == set2.begin());
+	TEST_ASSERT(set3.find("2") == set3.begin());
+	TEST_ASSERT(set0.find("1") == std::next(set0.begin()));
+	TEST_ASSERT(set1.find("1") == std::next(set1.begin()));
+	TEST_ASSERT(set2.find("2") == std::next(set2.begin()));
+	TEST_ASSERT(set3.find("0") == std::next(set3.begin()));
+	TEST_ASSERT(set0.find("2") == std::prev(set0.end()));
+	TEST_ASSERT(set1.find("0") == std::prev(set1.end()));
+	TEST_ASSERT(set2.find("0") == std::prev(set2.end()));
+	TEST_ASSERT(set3.find("1") == std::prev(set3.end()));
 
 	/* Other tests are handled by `test_table`. */
 	table2.clear();

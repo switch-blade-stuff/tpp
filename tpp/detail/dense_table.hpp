@@ -173,7 +173,11 @@ namespace tpp::detail
 		[[nodiscard]] constexpr static auto to_iter(const bucket_node *node) noexcept { return const_iterator{const_node_iterator{node}}; }
 
 	public:
-		constexpr dense_table() = default;
+		constexpr dense_table()
+		{
+			m_sparse.resize(initial_capacity, npos);
+			m_dense.reserve(to_capacity(initial_capacity));
+		}
 
 		constexpr dense_table(const dense_table &other)
 				: header_base(other), hash_base(other), cmp_base(other),
@@ -186,24 +190,36 @@ namespace tpp::detail
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}
 
-		constexpr dense_table(dense_table &&other) noexcept
+		constexpr dense_table(dense_table &&other)
+		noexcept(nothrow_ctor<sparse_t, sparse_t &&> && nothrow_ctor<dense_t, dense_t &&> &&
+		         nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
 				  max_load_factor(other.max_load_factor) {}
-		constexpr dense_table(dense_table &&other, const allocator_type &alloc) noexcept
+		constexpr dense_table(dense_table &&other, const allocator_type &alloc)
+		noexcept(nothrow_ctor<sparse_t, sparse_t &&, sparse_alloc_t> && nothrow_ctor<dense_t, dense_t &&, dense_alloc_t> &&
+		         nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}
 
 		constexpr dense_table(const allocator_type &alloc)
-				: m_sparse(initial_capacity, npos, sparse_alloc_t{alloc}),
-				  m_dense(dense_alloc_t{alloc}) {}
+				: m_sparse(sparse_alloc_t{alloc}),
+				  m_dense(dense_alloc_t{alloc})
+		{
+			m_sparse.resize(initial_capacity, npos);
+			m_dense.reserve(to_capacity(initial_capacity));
+		}
 		constexpr dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: hash_base(hash), cmp_base(cmp),
-				  m_sparse(bucket_count, npos, sparse_alloc_t{alloc}),
-				  m_dense(dense_alloc_t{alloc}) {}
+				  m_sparse(sparse_alloc_t{alloc}),
+				  m_dense(dense_alloc_t{alloc})
+		{
+			m_sparse.resize(bucket_count, npos);
+			m_dense.reserve(to_capacity(bucket_count));
+		}
 
 		template<typename I>
 		constexpr dense_table(I first, I last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
@@ -238,6 +254,13 @@ namespace tpp::detail
 				max_load_factor = other.max_load_factor;
 			}
 			return *this;
+		}
+
+		template<typename I>
+		constexpr void assign(I first, I last)
+		{
+			clear();
+			insert(first, last);
 		}
 
 		[[nodiscard]] constexpr iterator begin() noexcept { return to_iter(begin_node()); }
@@ -286,17 +309,6 @@ namespace tpp::detail
 
 			m_dense.reserve(n);
 			rehash(static_cast<size_type>(static_cast<float>(n) / max_load_factor));
-
-			if constexpr (is_ordered::value)
-			{
-				/* Update header link only if it does not point to itself. */
-				if (!m_dense.empty())
-				{
-					auto *new_front = m_dense.data() + front_pos;
-					auto *new_back = m_dense.data() + back_pos;
-					header_link()->relink(new_front, new_back);
-				}
-			}
 		}
 
 		template<typename T>
@@ -335,12 +347,12 @@ namespace tpp::detail
 			for (; first != last; ++first) insert(*first);
 		}
 
-		template<typename T, typename U, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<V, T, U> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl({}, key, std::forward<U>(value));
 		}
-		template<typename T, typename U, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<V, T, U> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
@@ -357,18 +369,20 @@ namespace tpp::detail
 			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
-		template<typename... Args, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr std::pair<iterator, bool> emplace_or_replace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
 			return emplace_or_replace_impl({}, std::forward<Args>(args)...);
 		}
-		template<typename... Args, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...> && !std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr iterator emplace_or_replace(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
 			return emplace_or_replace_impl(to_underlying(hint), std::forward<Args>(args)...).first;
 		}
 
-		template<typename U, typename... Args, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename U, typename... Args, typename = std::enable_if_t<
+				std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args &&...>> &&
+				!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr std::pair<iterator, bool> try_emplace(U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
@@ -376,7 +390,9 @@ namespace tpp::detail
 			                    std::forward_as_tuple(std::forward<U>(key)),
 			                    std::forward_as_tuple(std::forward<Args>(args)...));
 		}
-		template<typename U, typename... Args, typename = std::enable_if_t<!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
+		template<typename U, typename... Args, typename = std::enable_if_t<
+				std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args &&...>> &&
+				!std::is_same_v<std::decay_t<K>, std::decay_t<V>>>>
 		constexpr iterator try_emplace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{

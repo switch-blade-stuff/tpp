@@ -47,8 +47,70 @@ namespace tpp
 		typedef typename table_t::key_equal key_equal;
 		typedef typename table_t::allocator_type allocator_type;
 
-	private:
+	public:
+		/** Initializes the set with default capacity. */
 		constexpr dense_set() = default;
+		/** Initializes the set with default capacity using the specified allocator. */
+		constexpr explicit dense_set(const allocator_type &alloc) : m_table(alloc) {}
+
+		/** Copy-constructs the set. */
+		constexpr dense_set(const dense_set &other) = default;
+		/** Copy-constructs the set using the specified allocator. */
+		constexpr dense_set(const dense_set &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
+
+		/** Move-constructs the set. */
+		constexpr dense_set(dense_set &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		/** Move-constructs the set using the specified allocator. */
+		constexpr dense_set(dense_set &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
+
+		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
+		constexpr explicit dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                             const allocator_type &alloc = allocator_type{})
+				: m_table(bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with the specified bucket count, hasher and allocator. */
+		constexpr dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: dense_set(bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with the specified bucket count and allocator. */
+		constexpr dense_set(size_type bucket_count, const allocator_type &alloc)
+				: dense_set(bucket_count, hasher{}, alloc) {}
+
+		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
+		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                    const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
+		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
+		constexpr dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+
+		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
+		template<typename I>
+		constexpr dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                    const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
+		template<typename I>
+		constexpr dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
+		template<typename I>
+		constexpr dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
+				: dense_set(first, last, bucket_count, hasher{}, alloc) {}
+
+		/** Copy-assigns the set. */
+		constexpr dense_set &operator=(const dense_set &) = default;
+		/** Move-assigns the set. */
+		constexpr dense_set &operator=(dense_set &&) noexcept(detail::nothrow_assign<dense_set, dense_set &&>) = default;
+
+		/** Replaces elements of the set with elements of the initializer list. */
+		constexpr dense_set &operator=(std::initializer_list<value_type> il)
+		{
+			m_table.assign(il.begin(), il.end());
+			return *this;
+		}
 
 		/** Returns iterator to the first element of the set.
 		 * @note Elements are stored in no particular order. */
@@ -128,7 +190,7 @@ namespace tpp
 		constexpr iterator erase(const key_type &key) { return m_table.erase(key); }
 		/** @copydoc erase
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator erase(const K &key) { return m_table.erase(key); }
 		/** Removes the specified element from the set.
 		 * @param pos Iterator pointing to the element to remove.
@@ -146,7 +208,7 @@ namespace tpp
 		constexpr iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator find(const K &key) const { return m_table.find(key); }
 		/** Checks if the specified element is present within the set as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
@@ -154,7 +216,7 @@ namespace tpp
 		constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
@@ -170,7 +232,7 @@ namespace tpp
 		[[nodiscard]] constexpr size_type bucket(const key_type &key) const { return m_table.bucket(key); }
 		/** @copydoc bucket
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] constexpr size_type bucket(const K &key) const { return m_table.bucket(key); }
 
 		/** Returns the current amount of buckets of the set. */
@@ -265,8 +327,70 @@ namespace tpp
 		typedef typename table_t::key_equal key_equal;
 		typedef typename table_t::allocator_type allocator_type;
 
-	private:
+	public:
+		/** Initializes the set with default capacity. */
 		constexpr ordered_dense_set() = default;
+		/** Initializes the set with default capacity using the specified allocator. */
+		constexpr explicit ordered_dense_set(const allocator_type &alloc) : m_table(alloc) {}
+
+		/** Copy-constructs the set. */
+		constexpr ordered_dense_set(const ordered_dense_set &other) = default;
+		/** Copy-constructs the set using the specified allocator. */
+		constexpr ordered_dense_set(const ordered_dense_set &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
+
+		/** Move-constructs the set. */
+		constexpr ordered_dense_set(ordered_dense_set &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		/** Move-constructs the set using the specified allocator. */
+		constexpr ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
+
+		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
+		constexpr explicit ordered_dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                     const allocator_type &alloc = allocator_type{})
+				: m_table(bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with the specified bucket count, hasher and allocator. */
+		constexpr ordered_dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_dense_set(bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with the specified bucket count and allocator. */
+		constexpr ordered_dense_set(size_type bucket_count, const allocator_type &alloc)
+				: ordered_dense_set(bucket_count, hasher{}, alloc) {}
+
+		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
+		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                            const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
+		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
+		constexpr ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+
+		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
+		template<typename I>
+		constexpr ordered_dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
+		                            const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
+		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
+		template<typename I>
+		constexpr ordered_dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
+		template<typename I>
+		constexpr ordered_dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
+				: ordered_dense_set(first, last, bucket_count, hasher{}, alloc) {}
+
+		/** Copy-assigns the set. */
+		constexpr ordered_dense_set &operator=(const ordered_dense_set &) = default;
+		/** Move-assigns the set. */
+		constexpr ordered_dense_set &operator=(ordered_dense_set &&) noexcept(detail::nothrow_assign<ordered_dense_set, ordered_dense_set &&>) = default;
+
+		/** Replaces elements of the set with elements of the initializer list. */
+		constexpr ordered_dense_set &operator=(std::initializer_list<value_type> il)
+		{
+			m_table.assign(il.begin(), il.end());
+			return *this;
+		}
 
 		/** Returns iterator to the first element of the set. */
 		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
@@ -347,7 +471,7 @@ namespace tpp
 		constexpr iterator erase(const key_type &key) { return m_table.erase(key); }
 		/** @copydoc erase
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator erase(const K &key) { return m_table.erase(key); }
 		/** Removes the specified element from the set.
 		 * @param pos Iterator pointing to the element to remove.
@@ -365,7 +489,7 @@ namespace tpp
 		constexpr iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr iterator find(const K &key) const { return m_table.find(key); }
 		/** Checks if the specified element is present within the set as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
@@ -373,7 +497,7 @@ namespace tpp
 		constexpr bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		constexpr bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
@@ -389,7 +513,7 @@ namespace tpp
 		[[nodiscard]] constexpr size_type bucket(const key_type &key) const { return m_table.bucket(key); }
 		/** @copydoc bucket
 		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value>>
+		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] constexpr size_type bucket(const K &key) const { return m_table.bucket(key); }
 
 		/** Returns the current amount of buckets of the set. */
