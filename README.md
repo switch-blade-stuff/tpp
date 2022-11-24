@@ -4,14 +4,14 @@ So, you need a hashtable? Well, good news, I've got some for you.
 
 This repository is a collection of different hashtable-based containers - several flavors of API-compatible alternatives
 for `std::unordered_map` and `std::unordered_set`, as well as accompanying `ordered_*` versions (insertion-order
-preserving tables) and `bimap`s (1:1 associative tables).
+preserving tables) and `multiset`s (1:1 associative tables).
 
 Here is a brief list of the features of this library:
 
 * SwissHash based containers
     * `tpp::swiss_set`
     * `tpp::swiss_map`
-    * `tpp::swiss_bimap`
+    * `tpp::swiss_multiset`
     * `tpp::ordered_swiss_set`
     * `tpp::ordered_swiss_map`
 * Dense set based containers
@@ -154,7 +154,7 @@ In the future, a module interface may be provided for the library as an alternat
 
 ## Notes
 
-While both SwissHash and dense set based containers are largely API-compatible with `std::unordered_map`
+While both SwissHash and dense set -based containers are largely API-compatible with `std::unordered_map`
 and `std::unordered_set`, they are not guaranteed to be drop-in replacements for STL types, and neither provide the same
 pointer stability guarantees.
 
