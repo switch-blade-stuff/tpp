@@ -17,7 +17,7 @@ Here is a brief list of the features of this library:
 * Dense set based containers
     * `tpp::dense_set`
     * `tpp::dense_map`
-    * `tpp::dense_bimap`
+    * `tpp::dense_multiset`
     * `tpp::ordered_dense_set`
     * `tpp::ordered_dense_map`
 * Utilities & hash functions

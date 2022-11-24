@@ -5,7 +5,6 @@
 #pragma once
 
 #include "detail/dense_table.hpp"
-#include "stl_hash.hpp"
 
 namespace tpp
 {
@@ -58,7 +57,7 @@ namespace tpp
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-	         typename Alloc = std::allocator<Key>>
+	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class dense_map
 	{
 	public:
@@ -613,7 +612,7 @@ namespace tpp
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-	         typename Alloc = std::allocator<Key>>
+	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class ordered_dense_map
 	{
 	public:

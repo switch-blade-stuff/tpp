@@ -103,7 +103,7 @@ add_library(tpp INTERFACE
         ${TPP_SOURCE_DIR}/detail/dense_table.hpp
         ${TPP_SOURCE_DIR}/dense_set.hpp
         ${TPP_SOURCE_DIR}/dense_map.hpp
-        ${TPP_SOURCE_DIR}/dense_bimap.hpp
+        ${TPP_SOURCE_DIR}/dense_multiset.hpp
 
         # SwissHash table containers
         #${TPP_SOURCE_DIR}/detail/swiss_table.hpp

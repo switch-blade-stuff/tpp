@@ -212,16 +212,16 @@ namespace tpp::detail
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}
 
-		constexpr dense_table(dense_table &&other)
-		noexcept(nothrow_ctor<sparse_t, sparse_t &&> && nothrow_ctor<dense_t, dense_t &&> &&
-		         nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_table(dense_table &&other) noexcept(nothrow_ctor<sparse_t, sparse_t &&> && nothrow_ctor<dense_t, dense_t &&> &&
+		                                                    nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
 				  max_load_factor(other.max_load_factor) {}
-		constexpr dense_table(dense_table &&other, const allocator_type &alloc)
-		noexcept(nothrow_ctor<sparse_t, sparse_t &&, sparse_alloc_t> && nothrow_ctor<dense_t, dense_t &&, dense_alloc_t> &&
-		         nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_table(dense_table &&other, const allocator_type &alloc) noexcept(nothrow_ctor<sparse_t, sparse_t &&, sparse_alloc_t> &&
+		                                                                                 nothrow_ctor<dense_t, dense_t &&, dense_alloc_t> &&
+		                                                                                 nothrow_ctor<hasher, hasher &&> &&
+		                                                                                 nothrow_ctor<key_equal, key_equal &&>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
@@ -261,9 +261,8 @@ namespace tpp::detail
 			}
 			return *this;
 		}
-		constexpr dense_table &operator=(dense_table &&other)
-		noexcept(nothrow_assign<hasher, hasher &&> && nothrow_assign<key_equal, key_equal &&> &&
-		         nothrow_assign<sparse_t, sparse_t &&> && nothrow_assign<dense_t, dense_t &&>)
+		constexpr dense_table &operator=(dense_table &&other) noexcept(nothrow_assign<hasher, hasher &&> && nothrow_assign<key_equal, key_equal &&> &&
+		                                                               nothrow_assign<sparse_t, sparse_t &&> && nothrow_assign<dense_t, dense_t &&>)
 		{
 			if (this != &other)
 			{
@@ -361,11 +360,7 @@ namespace tpp::detail
 		constexpr void insert(Iter first, Iter last)
 		{
 			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
-			{
-				const auto n = static_cast<size_type>(std::distance(first, last));
-				reserve(n);
-				rehash(n);
-			}
+				reserve(static_cast<size_type>(std::distance(first, last)));
 			for (; first != last; ++first) insert(*first);
 		}
 
@@ -446,9 +441,8 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &get_hash() const noexcept { return hash_base::value(); }
 		[[nodiscard]] constexpr auto &get_cmp() const noexcept { return cmp_base::value(); }
 
-		constexpr void swap(dense_table &other)
-		noexcept(std::is_nothrow_swappable_v<hasher> && std::is_nothrow_swappable_v<key_equal> &&
-		         std::is_nothrow_swappable_v<sparse_t> && std::is_nothrow_swappable_v<dense_t>)
+		constexpr void swap(dense_table &other) noexcept(std::is_nothrow_swappable_v<hasher> && std::is_nothrow_swappable_v<key_equal> &&
+		                                                 std::is_nothrow_swappable_v<sparse_t> && std::is_nothrow_swappable_v<dense_t>)
 		{
 			hasher::swap(other);
 			key_equal::swap(other);

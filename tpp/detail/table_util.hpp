@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "common.hpp"
+#include "../stl_hash.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -407,4 +407,42 @@ namespace tpp::detail
 		typename N::size_type bucket_next = N::npos;
 		typename N::size_type bucket_prev = N::npos;
 	};
+
+	template<typename T, typename U, typename... Us>
+	struct is_pack_element : is_pack_element<T, Us...> {};
+	template<typename T, typename... Us>
+	struct is_pack_element<T, T, Us...> : std::true_type {};
+	template<typename T>
+	struct is_pack_element<T, T> : std::true_type {};
+	template<typename T, typename U>
+	struct is_pack_element<T, U> : std::false_type {};
+
+	/** @brief Helper structure used to specify keys of a multiset. */
+	template<typename... Ks>
+	struct multikey { static_assert(sizeof...(Ks) != 0, "Multikey must have at least one key type"); };
+
+	template<typename>
+	struct multiset_alloc;
+	template<typename>
+	struct multiset_hash;
+	template<typename>
+	struct multiset_eq;
+
+	template<typename... Ks>
+	struct multiset_alloc<multikey<Ks...>> : std::allocator<std::tuple<Ks...>> {};
+	template<typename... Ks>
+	struct multiset_hash<multikey<Ks...>>
+	{
+		template<typename T, typename = std::enable_if_t<is_pack_element<T, Ks...>::value>>
+		[[nodiscard]] constexpr auto operator()(const T &key) const { return default_hash<T>{}(key); }
+	};
+	template<typename... Ks>
+	struct multiset_eq<multikey<Ks...>>
+	{
+		template<typename T, typename = std::enable_if_t<is_pack_element<T, Ks...>::value>>
+		[[nodiscard]] constexpr auto operator()(const T &a, const T &b) const { return std::equal_to<>{}(a, b); }
+	};
+
+	template<std::size_t I, typename T>
+	[[nodiscard]] constexpr static decltype(auto) forward_i(T &&value) noexcept { return std::forward<T>(value); }
 }

@@ -28,6 +28,7 @@ make_test(dense_map)
 make_test(ordered_dense_map)
 make_test(dense_set)
 make_test(ordered_dense_set)
+make_test(dense_multiset)
 
 # Hash function tests
 make_test(seahash)

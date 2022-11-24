@@ -5,7 +5,6 @@
 #pragma once
 
 #include "detail/dense_table.hpp"
-#include "stl_hash.hpp"
 
 namespace tpp
 {

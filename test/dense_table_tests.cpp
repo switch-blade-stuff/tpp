@@ -14,6 +14,7 @@
 
 #include <tpp/dense_set.hpp>
 #include <tpp/dense_map.hpp>
+#include <tpp/dense_multiset.hpp>
 
 using namespace tpp;
 
@@ -190,4 +191,34 @@ void test_ordered_dense_set() noexcept
 	TEST_ASSERT(set1.find("0") == std::prev(set1.end()));
 	TEST_ASSERT(set2.find("0") == std::prev(set2.end()));
 	TEST_ASSERT(set3.find("1") == std::prev(set3.end()));
+}
+
+void test_dense_multiset() noexcept
+{
+	dense_multiset<multikey<int, std::string>> mset;
+
+	TEST_ASSERT(mset.emplace(0, "a").second);
+	TEST_ASSERT(mset.emplace(1, "b").second);
+	TEST_ASSERT(!mset.emplace(0, "b").second);
+	TEST_ASSERT(!mset.emplace(0, "c").second);
+	TEST_ASSERT(!mset.emplace(1, "a").second);
+	TEST_ASSERT(!mset.emplace(1, "c").second);
+
+	TEST_ASSERT(mset.contains<0>(0));
+	TEST_ASSERT(mset.contains<0>(1));
+	TEST_ASSERT(!mset.contains<0>(2));
+	TEST_ASSERT(mset.contains<1>("a"));
+	TEST_ASSERT(mset.contains<1>("b"));
+	TEST_ASSERT(!mset.contains<1>("c"));
+
+	TEST_ASSERT(mset.find<0>(0) == mset.find<1>("a"));
+	TEST_ASSERT(mset.find<0>(1) == mset.find<1>("b"));
+
+	mset.erase<0>(0);
+	TEST_ASSERT(!mset.contains<0>(0));
+	TEST_ASSERT(!mset.contains<1>("a"));
+
+	mset.erase<1>("b");
+	TEST_ASSERT(!mset.contains<0>(1));
+	TEST_ASSERT(!mset.contains<1>("b"));
 }
