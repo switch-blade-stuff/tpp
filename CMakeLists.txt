@@ -99,17 +99,17 @@ add_library(tpp INTERFACE
         ${TPP_SOURCE_DIR}/hash.hpp
         ${TPP_SOURCE_DIR}/stl_hash.hpp
 
-        # DenseHash table containers
+        # Dense table containers
         ${TPP_SOURCE_DIR}/detail/dense_table.hpp
         ${TPP_SOURCE_DIR}/dense_set.hpp
         ${TPP_SOURCE_DIR}/dense_map.hpp
         ${TPP_SOURCE_DIR}/dense_multiset.hpp
 
-        # SwissHash table containers
-        #${TPP_SOURCE_DIR}/detail/swiss_table.hpp
-        #${TPP_SOURCE_DIR}/swiss_set.hpp
-        #${TPP_SOURCE_DIR}/swiss_map.hpp
-        #${TPP_SOURCE_DIR}/swiss_bimap.hpp
+        # Swiss table containers
+        ${TPP_SOURCE_DIR}/detail/swiss_table.hpp
+        ${TPP_SOURCE_DIR}/swiss_set.hpp
+        ${TPP_SOURCE_DIR}/swiss_map.hpp
+        ${TPP_SOURCE_DIR}/swiss_multiset.hpp
         )
 
 # Unit tests

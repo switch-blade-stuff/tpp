@@ -6,8 +6,9 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
 add_executable(tpp-tests
         ${CMAKE_CURRENT_LIST_DIR}/main.cpp
         ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp
         ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp)
+        ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
 target_link_libraries(tpp-tests PRIVATE tpp)
 target_compile_features(tpp-tests PRIVATE cxx_std_17)
 

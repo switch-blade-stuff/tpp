@@ -221,4 +221,44 @@ void test_dense_multiset() noexcept
 	mset.erase<1>("b");
 	TEST_ASSERT(!mset.contains<0>(1));
 	TEST_ASSERT(!mset.contains<1>("b"));
+
+	mset = {{0, "0"}, {1, "1"}};
+
+	TEST_ASSERT(mset.contains<0>(0));
+	TEST_ASSERT(mset.contains<0>(1));
+	TEST_ASSERT(!mset.contains<0>(2));
+	TEST_ASSERT(mset.contains<1>("0"));
+	TEST_ASSERT(mset.contains<1>("1"));
+	TEST_ASSERT(!mset.contains<1>("2"));
+
+	TEST_ASSERT(mset.find<0>(0) == mset.find<1>("0"));
+	TEST_ASSERT(mset.find<0>(1) == mset.find<1>("1"));
+
+	mset.clear();
+	TEST_ASSERT(mset.empty());
+	TEST_ASSERT(mset.find<0>(0) == mset.end());
+	TEST_ASSERT(mset.find<0>(1) == mset.end());
+	TEST_ASSERT(mset.find<1>("0") == mset.end());
+	TEST_ASSERT(mset.find<1>("1") == mset.end());
+
+	const int n = 0x10000;
+	for (int i = 0; i < n; ++i)
+	{
+		const auto str = std::to_string(i);
+		const auto result = mset.emplace(i, str);
+
+		TEST_ASSERT(result.second);
+		TEST_ASSERT(result.first == mset.find<0>(i));
+		TEST_ASSERT(result.first == mset.find<1>(str));
+	}
+
+	TEST_ASSERT(mset.size() == n);
+
+	for (int i = 0; i < n; ++i)
+	{
+		const auto str = std::to_string(i);
+		TEST_ASSERT(mset.contains<0>(i));
+		TEST_ASSERT(mset.contains<1>(str));
+		TEST_ASSERT(mset.find<0>(i) == mset.find<1>(str));
+	}
 }
