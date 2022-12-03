@@ -151,10 +151,10 @@ void test_ordered_dense_map() noexcept
 
 void test_dense_set() noexcept
 {
-	dense_set<std::string> set0 = {"0", "1", "2"};
-	dense_set<std::string> set1 = {"2", "1", "0"};
-	dense_set<std::string> set2 = {"1", "2", "0"};
-	dense_set<std::string> set3 = {"2", "0", "1"};
+	const dense_set<std::string> set0 = {"0", "1", "2"};
+	const dense_set<std::string> set1 = {"2", "1", "0"};
+	const dense_set<std::string> set2 = {"1", "2", "0"};
+	const dense_set<std::string> set3 = {"2", "0", "1"};
 
 	TEST_ASSERT(set0 == set1);
 	TEST_ASSERT(set0 == set2);

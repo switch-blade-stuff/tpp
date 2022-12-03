@@ -69,13 +69,15 @@ namespace tpp
 	private:
 		struct traits_t
 		{
+			using link_type = detail::empty_link;
+
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, traits_t, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc>;
+		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::reference reference;
@@ -624,13 +626,15 @@ namespace tpp
 	private:
 		struct traits_t
 		{
+			using link_type = detail::ordered_link;
+
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, traits_t, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, detail::ordered_link>;
+		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::reference reference;

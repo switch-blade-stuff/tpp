@@ -47,9 +47,8 @@ namespace tpp::detail
 		size_type next = npos;
 	};
 
-	template<typename V, typename K, typename Traits, typename KHash, typename KCmp, typename KGet, typename MGet, typename Alloc,
-	         typename Link = empty_link>
-	class dense_table : Link, ebo_container<KHash>, ebo_container<KCmp>
+	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename MGet, typename Alloc, typename Traits>
+	class dense_table : Traits::link_type, ebo_container<KHash>, ebo_container<KCmp>
 	{
 		using traits_t = dense_table_traits<V, K, KHash, KCmp, Alloc>;
 
@@ -63,15 +62,15 @@ namespace tpp::detail
 		typedef typename traits_t::allocator_type allocator_type;
 
 		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<Link> is_ordered;
+		typedef detail::is_ordered<typename Traits::link_type> is_ordered;
 
 		constexpr static float initial_load_factor = traits_t::initial_load_factor;
 		constexpr static typename traits_t::size_type initial_capacity = traits_t::initial_capacity;
 		constexpr static typename traits_t::size_type npos = traits_t::npos;
 
 	private:
-		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, Link>;
-		using bucket_link = Link;
+		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, typename Traits::link_type>;
+		using bucket_link = typename Traits::link_type;
 
 		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;

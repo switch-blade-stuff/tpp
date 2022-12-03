@@ -27,13 +27,13 @@ import std;
 
 /* Select `if consteval` alternative if possible when it is not supported. */
 #if defined(__cpp_if_consteval) && __cpp_if_consteval >= 202106L
-#define TPP_IF_CONSTEVAL(t, f) if consteval { t; } else { f; }
+#define TPP_IF_CONSTEVAL if consteval
 #elif defined(__cpp_lib_is_constant_evaluated)
-#define TPP_IF_CONSTEVAL(t, f) if (std::is_constant_evaluated()) { t; } else { f; }
+#define TPP_IF_CONSTEVAL if (std::is_constant_evaluated())
 #elif defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
-#define TPP_IF_CONSTEVAL(t, f) if (__builtin_is_constant_evaluated()) { t; } else { f; }
+#define TPP_IF_CONSTEVAL if (__builtin_is_constant_evaluated())
 #else
-#define TPP_IF_CONSTEVAL(t, f) f;
+#define TPP_IF_CONSTEVAL if (true)
 #endif
 
 #if __cplusplus >= 202002L
@@ -74,30 +74,26 @@ import std;
 
 #ifndef TPP_NO_SIMD
 
-#if defined(_MSC_VER) && defined(_M_IX86_FP)
-#if _M_IX86_FP >= 1
+#ifdef __SSE__
 #define TPP_HAS_SSE
-#if _M_IX86_FP >= 2
+#if __SSE2__
 #define TPP_HAS_SSE2
-#define TPP_HAS_SSE3
-#endif
-#endif
-#elif defined(__SSE__)
-#define TPP_HAS_SSE
-#if defined(__SSE2__)
-#define TPP_HAS_SSE2
-#endif
-#if defined(__SSE3__)
-#define TPP_HAS_SSE3
 #endif
 #endif
 
-#if defined(TPP_HAS_SSE) && defined(TPP_HAS_SSE2) && defined(TPP_HAS_SSE3)
-#ifdef __AVX__
-#define TPP_HAS_AVX
-#ifdef __AVX2__
-#define TPP_HAS_AVX2
+#ifdef __SSSE3__
+#define TPP_HAS_SSSE3
 #endif
+
+#if defined(_MSC_VER) && defined(_M_IX86_FP)
+
+#if !defined(TPP_HAS_SSE) && (_M_IX86_FP >= 1 || defined(_M_AMD64) || defined(_M_X64))
+#define TPP_HAS_SSE
 #endif
+
+#if !defined(TPP_HAS_SSE2) && defined(TPP_HAS_SSE) && (_M_IX86_FP >= 2 || defined(_M_AMD64) || defined(_M_X64))
+#define TPP_HAS_SSE2
+#endif
+
 #endif
 #endif

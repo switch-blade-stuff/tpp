@@ -23,13 +23,15 @@ namespace tpp
 	{
 		struct traits_t
 		{
+			using link_type = detail::empty_link;
+
 			using pointer = const Key *;
 			using const_pointer = const Key *;
 			using reference = const Key &;
 			using const_reference = const Key &;
 		};
 
-		using table_t = detail::dense_table<Key, Key, traits_t, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc>;
+		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;
@@ -349,13 +351,15 @@ namespace tpp
 	{
 		struct traits_t
 		{
+			using link_type = detail::ordered_link;
+
 			using pointer = const Key *;
 			using const_pointer = const Key *;
 			using reference = const Key &;
 			using const_reference = const Key &;
 		};
 
-		using table_t = detail::dense_table<Key, Key, traits_t, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, detail::ordered_link>;
+		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;
