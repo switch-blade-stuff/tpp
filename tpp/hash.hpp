@@ -348,6 +348,7 @@ namespace tpp
 					const auto c = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
 					return c | (a << 32) | (b << 48);
 				}
+				case 8: return read_u64_aligned(data);
 				default: TPP_UNREACHABLE();
 			}
 		}
