@@ -241,6 +241,26 @@ namespace tpp::detail
 	}
 
 #ifdef TPP_HAS_SSE2
+	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87853 */
+	[[nodiscard]] inline __m128i x86_cmpeq_epi8(__m128i a, __m128i b) noexcept
+	{
+#if defined(__GNUC__) && !defined(__clang__)
+		if constexpr (std::is_unsigned_v<char>)
+			return (__m128i) ((__v16qi) a == (__v16qi) b);
+		else
+#endif
+			return _mm_cmpeq_epi8(a, b);
+	}
+	[[nodiscard]] inline __m128i x86_cmpgt_epi8(__m128i a, __m128i b) noexcept
+	{
+#if defined(__GNUC__) && !defined(__clang__)
+		if constexpr (std::is_unsigned_v<char>)
+			return (__m128i) ((__v16qi) a > (__v16qi) b);
+		else
+#endif
+			return _mm_cmpgt_epi8(a, b);
+	}
+
 	TPP_SWISS_CONSTEXPR index_mask meta_block::match_empty() const noexcept
 	{
 #ifdef TPP_HAS_SSSE3
@@ -271,21 +291,6 @@ namespace tpp::detail
 		else
 #endif
 		{
-			/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87853 */
-			constexpr auto x86_cmpgt_epi8 = [](__m128i a, __m128i b) noexcept -> __m128i
-			{
-#if defined(__GNUC__) && !defined(__clang__)
-				if constexpr (std::is_unsigned_v<char>)
-				{
-					const auto mask = _mm_set1_epi8(static_cast<char>(0x80));
-					const auto diff = _mm_subs_epi8(b, a);
-					return _mm_cmpeq_epi8(_mm_and_si128(diff, mask), mask);
-				}
-				else
-#endif
-					return _mm_cmpgt_epi8(a, b);
-			};
-
 			const auto mask = _mm_set1_epi8(static_cast<char>(meta_byte::SENTINEL));
 			result = static_cast<index_mask::value_type>(_mm_movemask_epi8(x86_cmpgt_epi8(mask, value())));
 		}
@@ -302,7 +307,7 @@ namespace tpp::detail
 #endif
 		{
 			const auto mask_vec = _mm_set1_epi8(static_cast<char>(b));
-			result = static_cast<index_mask::value_type>(_mm_movemask_epi8(_mm_cmpeq_epi8(mask_vec, value())));
+			result = static_cast<index_mask::value_type>(_mm_movemask_epi8(x86_cmpeq_epi8(mask_vec, value())));
 		}
 		return index_mask{result};
 	}
