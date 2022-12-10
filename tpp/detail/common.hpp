@@ -31,6 +31,8 @@ import std;
 #elif defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
 #define TPP_IS_CONSTEVAL __builtin_is_constant_evaluated()
 #define TPP_HAS_CONSTEVAL
+#else
+#define TPP_IS_CONSTEVAL false
 #endif
 
 #if __cplusplus >= 202002L

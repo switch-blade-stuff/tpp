@@ -37,10 +37,12 @@
 
 #endif
 
-#if defined(TPP_HAS_SSE2) && !defined(TPP_HAS_CONSTEVAL)
-#define TPP_SWISS_CONSTEXPR inline
-#else
+#ifdef TPP_HAS_CONSTEVAL
 #define TPP_SWISS_CONSTEXPR constexpr
+#define TPP_SWISS_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) assert((msg, cnd));
+#else
+#define TPP_SWISS_CONSTEXPR inline
+#define TPP_SWISS_ASSERT(cnd, msg) assert((msg, cnd));
 #endif
 
 namespace tpp::detail
@@ -428,7 +430,12 @@ namespace tpp::detail
 
 	public:
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
-		constexpr void max_load_factor(float f) noexcept { m_max_load_factor = f; }
+		TPP_SWISS_CONSTEXPR void max_load_factor(float f) noexcept
+		{
+			/* Load factor cannot exceed 1 for probing to work. */
+			TPP_SWISS_ASSERT(f < 1.0f, "Load factor must be less than 1.0");
+			m_max_load_factor = f;
+		}
 
 		[[nodiscard]] constexpr auto &get_allocator() const noexcept { return get_node_alloc(); }
 		[[nodiscard]] constexpr auto &get_hash() const noexcept { return hash_base::value(); }
@@ -475,7 +482,7 @@ namespace tpp::detail
 			for (auto p = probe{h1 & m_capacity, m_capacity};; ++p)
 			{
 				/* Make sure probe never iterates more than we have buckets. */
-				if (!TPP_IS_CONSTEVAL) assert(("Probe must not exceed bucket count", p.idx < m_capacity));
+				TPP_SWISS_ASSERT(p.idx < m_capacity, "Probe must not exceed bucket count");
 
 				/* Go through each matched element in the block and test for equality. */
 				const auto &block = m_metadata[p.pos];
@@ -501,3 +508,4 @@ namespace tpp::detail
 }
 
 #undef TPP_SWISS_CONSTEXPR
+#undef TPP_SWISS_ASSERT
