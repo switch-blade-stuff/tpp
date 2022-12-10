@@ -33,7 +33,7 @@ namespace tpp
 		typedef std::tuple<KeySeq...> key_type;
 
 	private:
-		using traits_t = detail::dense_table_traits<key_type, key_type, KeyHash, KeyCmp, Alloc>;
+		using traits_t = detail::table_traits<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc>;
 
 	public:
 		typedef typename traits_t::insert_type insert_type;
@@ -63,9 +63,10 @@ namespace tpp
 		using hash_list = std::array<std::size_t, key_count>;
 		using index_list = std::array<size_type, key_count>;
 
-		constexpr static auto initial_load_factor = traits_t::initial_load_factor;
-		constexpr static auto initial_capacity = traits_t::initial_capacity;
-		constexpr static auto npos = traits_t::npos;
+		constexpr static size_type initial_capacity = 8;
+		constexpr static size_type npos = std::numeric_limits<size_type>::max();
+
+		constexpr static float initial_load_factor = .875f;
 
 		[[nodiscard]] constexpr static auto make_index_list(size_type i) noexcept { return make_index_list(i, keys_index{}); }
 		template<std::size_t... Is>
@@ -77,7 +78,7 @@ namespace tpp
 		struct bucket_node : value_type
 		{
 			template<typename... Args>
-			constexpr bucket_node(Args &&...args) noexcept(detail::nothrow_ctor<key_type, Args...>) : key_type(std::forward<Args>(args)...) {}
+			constexpr bucket_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<key_type, Args...>) : key_type(std::forward<Args>(args)...) {}
 
 			[[nodiscard]] constexpr auto *get() noexcept { return static_cast<key_type *>(this); }
 			[[nodiscard]] constexpr auto *get() const noexcept { return static_cast<const key_type *>(this); }
@@ -204,17 +205,21 @@ namespace tpp
 				  m_max_load_factor(other.m_max_load_factor) {}
 
 		/** Move-constructs the multiset. */
-		constexpr dense_multiset(dense_multiset &&other) noexcept(detail::nothrow_ctor<sparse_t, sparse_t &&> && detail::nothrow_ctor<dense_t, dense_t &&> &&
-		                                                          detail::nothrow_ctor<hasher, hasher &&> && detail::nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_multiset(dense_multiset &&other)
+		noexcept(std::is_nothrow_move_constructible_v<sparse_t &&> &&
+		         std::is_nothrow_move_constructible_v<dense_t> &&
+		         std::is_nothrow_move_constructible_v<hasher &&> &&
+		         std::is_nothrow_move_constructible_v<key_equal>)
 				: hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
 				  m_max_load_factor(other.m_max_load_factor) {}
 		/** Move-constructs the multiset using the specified allocator. */
-		constexpr dense_multiset(dense_multiset &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<sparse_t, sparse_t &&, sparse_alloc_t> &&
-		                                                                                       detail::nothrow_ctor<dense_t, dense_t &&, dense_alloc_t> &&
-		                                                                                       detail::nothrow_ctor<hasher, hasher &&> &&
-		                                                                                       detail::nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_multiset(dense_multiset &&other, const allocator_type &alloc)
+		noexcept(std::is_nothrow_constructible_v<sparse_t, sparse_t &&, sparse_alloc_t> &&
+		         std::is_nothrow_constructible_v<dense_t, dense_t &&, dense_alloc_t> &&
+		         std::is_nothrow_move_constructible_v<hasher> &&
+		         std::is_nothrow_move_constructible_v<key_equal>)
 				: hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
@@ -292,10 +297,11 @@ namespace tpp
 			return *this;
 		}
 		/** Move-assigns the multiset. */
-		constexpr dense_multiset &operator=(dense_multiset &&other) noexcept(detail::nothrow_assign<hasher, hasher &&> &&
-		                                                                     detail::nothrow_assign<key_equal, key_equal &&> &&
-		                                                                     detail::nothrow_assign<sparse_t, sparse_t &&> &&
-		                                                                     detail::nothrow_assign<dense_t, dense_t &&>)
+		constexpr dense_multiset &operator=(dense_multiset &&other)
+		noexcept(std::is_nothrow_move_assignable_v<hasher> &&
+		         std::is_nothrow_move_assignable_v<key_equal> &&
+		         std::is_nothrow_move_assignable_v<sparse_t> &&
+		         std::is_nothrow_move_assignable_v<dense_t>)
 		{
 			if (this != &other)
 			{

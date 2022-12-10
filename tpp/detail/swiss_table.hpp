@@ -14,7 +14,11 @@
 
 #endif
 
-#ifdef TPP_HAS_SSE2
+#if defined(TPP_HAS_SSSE3)
+
+#include <tmmintrin.h>
+
+#elif defined(TPP_HAS_SSE2)
 
 #include <emmintrin.h>
 
@@ -44,7 +48,7 @@ namespace tpp::detail
 		OCCUPIED = HASH_MASK,
 	};
 
-	template<typename T, std::size_t Power>
+	template<typename T, std::size_t P>
 	class basic_index_mask
 	{
 	public:
@@ -285,7 +289,7 @@ namespace tpp::detail
 		TPP_IF_CONSTEVAL for (std::size_t i = 0; i < sizeof(block_value); ++i)
 				(*this)[i] = b;
 		else
-			memset(raw_data(), static_cast<std::uint8_t>(b), sizeof(block_value));
+			std::memset(raw_data(), static_cast<int>(b), sizeof(block_value));
 	}
 
 	constexpr index_mask meta_block::match_empty() const noexcept { return match_eq(meta_byte::EMPTY); }
@@ -303,9 +307,31 @@ namespace tpp::detail
 	}
 #endif
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename MGet, typename Alloc, typename Traits>
-	class swiss_table : Traits::link_type, ebo_container<KHash>, ebo_container<KCmp>
+	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc, typename ValueTraits>
+	class swiss_table : ValueTraits::link_type, ebo_container<KHash>, ebo_container<KCmp>
 	{
+		using traits_t = table_traits<V, V, K, KHash, KCmp, Alloc>;
+
+	public:
+		typedef typename traits_t::insert_type insert_type;
+		typedef typename traits_t::value_type value_type;
+		typedef typename traits_t::key_type key_type;
+
+		typedef typename traits_t::hasher hasher;
+		typedef typename traits_t::key_equal key_equal;
+		typedef typename traits_t::allocator_type allocator_type;
+
+		typedef typename traits_t::size_type size_type;
+		typedef typename traits_t::difference_type difference_type;
+
+		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
+		typedef detail::is_ordered<typename ValueTraits::link_type> is_ordered;
+
+		constexpr static float initial_load_factor = traits_t::initial_load_factor;
+		constexpr static typename traits_t::size_type initial_capacity = traits_t::initial_capacity;
+
 	private:
+		using bucket_link = typename ValueTraits::link_type;
+		using bucket_node = typename ValueTraits::template node_type<V, ValueTraits>;
 	};
 }

@@ -16,41 +16,10 @@
 
 namespace tpp::detail
 {
-	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc>
-	struct dense_table_traits : table_traits<V, V, K, Alloc>
+	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc, typename ValueTraits>
+	class dense_table : ValueTraits::link_type, ebo_container<KHash>, ebo_container<KCmp>
 	{
-		typedef KHash hasher;
-		typedef KCmp key_equal;
-	};
-
-	template<typename V, typename K, typename KGet, typename Alloc, typename Link>
-	struct dense_bucket_node : Link, ebo_container<V>
-	{
-		using value_base = ebo_container<V>;
-
-		using size_type = typename table_traits<V, V, K, Alloc>::size_type;
-		using difference_type = typename table_traits<V, V, K, Alloc>::difference_type;
-
-		constexpr static auto npos = table_traits<V, V, K, Alloc>::npos;
-
-		using value_base::value;
-
-		template<typename... Args>
-		constexpr dense_bucket_node(Args &&...args) noexcept(nothrow_ctor<V, Args...>) : value_base(std::forward<Args>(args)...) {}
-
-		[[nodiscard]] constexpr V *get() noexcept { return &value(); }
-		[[nodiscard]] constexpr const V *get() const noexcept { return &value(); }
-
-		[[nodiscard]] constexpr auto &key() const noexcept { return KGet{}(value()); }
-
-		std::size_t hash = 0;
-		size_type next = npos;
-	};
-
-	template<typename V, typename K, typename KHash, typename KCmp, typename KGet, typename MGet, typename Alloc, typename Traits>
-	class dense_table : Traits::link_type, ebo_container<KHash>, ebo_container<KCmp>
-	{
-		using traits_t = dense_table_traits<V, K, KHash, KCmp, Alloc>;
+		using traits_t = table_traits<V, V, K, KHash, KCmp, Alloc>;
 
 	public:
 		typedef typename traits_t::insert_type insert_type;
@@ -61,25 +30,49 @@ namespace tpp::detail
 		typedef typename traits_t::key_equal key_equal;
 		typedef typename traits_t::allocator_type allocator_type;
 
-		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<typename Traits::link_type> is_ordered;
+		typedef typename traits_t::size_type size_type;
+		typedef typename traits_t::difference_type difference_type;
 
-		constexpr static float initial_load_factor = traits_t::initial_load_factor;
-		constexpr static typename traits_t::size_type initial_capacity = traits_t::initial_capacity;
-		constexpr static typename traits_t::size_type npos = traits_t::npos;
+		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
+		typedef detail::is_ordered<typename ValueTraits::link_type> is_ordered;
+
+		constexpr static size_type initial_capacity = 8;
+		constexpr static size_type npos = std::numeric_limits<size_type>::max();
+
+		constexpr static float initial_load_factor = .875f;
 
 	private:
-		using bucket_node = dense_bucket_node<value_type, key_type, KGet, allocator_type, typename Traits::link_type>;
-		using bucket_link = typename Traits::link_type;
+		using bucket_link = typename ValueTraits::link_type;
+		struct bucket_node : ValueTraits::template node_type<V, ValueTraits>
+		{
+			using node_base = typename ValueTraits::template node_type<V, ValueTraits>;
+
+			constexpr bucket_node() noexcept(std::is_nothrow_default_constructible_v<node_base>) = default;
+			constexpr bucket_node(const bucket_node &other) : node_base(other), next(other.next) {}
+			constexpr bucket_node(bucket_node &&other) noexcept : node_base(std::move(other)), next(std::exchange(other.next, npos)) {}
+
+			constexpr bucket_node &operator=(const bucket_node &other)
+			{
+				node_base::operator=(other);
+				next = other.next;
+				return *this;
+			}
+			constexpr bucket_node &operator=(bucket_node &&other) noexcept
+			{
+				node_base::operator=(std::move(other));
+				std::swap(next, other.next);
+				return *this;
+			}
+
+			template<typename... Args>
+			constexpr bucket_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<node_base, Args...>) : node_base(std::forward<Args>(args)...) {}
+
+			size_type next = npos;
+		};
 
 		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;
 
-	public:
-		typedef typename dense_t::size_type size_type;
-		typedef typename dense_t::difference_type difference_type;
-
-	private:
 		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<size_type>;
 		using sparse_t = std::vector<size_type, sparse_alloc_t>;
 
@@ -87,8 +80,8 @@ namespace tpp::detail
 		using cmp_base = ebo_container<key_equal>;
 		using header_base = bucket_link;
 
-		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node>, bucket_node *>;
-		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const bucket_node>, const bucket_node *>;
+		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node, traits_t>, bucket_node *>;
+		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const bucket_node, traits_t>, const bucket_node *>;
 
 		template<typename N>
 		class bucket_iterator
@@ -100,8 +93,8 @@ namespace tpp::detail
 
 		public:
 			typedef V value_type;
-			typedef std::conditional_t<std::is_const_v<N>, typename Traits::const_pointer, typename Traits::pointer> pointer;
-			typedef std::conditional_t<std::is_const_v<N>, typename Traits::const_reference, typename Traits::reference> reference;
+			typedef std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer> pointer;
+			typedef std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_reference, typename ValueTraits::reference> reference;
 
 			typedef typename bucket_node::size_type size_type;
 			typedef typename bucket_node::difference_type difference_type;
@@ -149,8 +142,8 @@ namespace tpp::detail
 		};
 
 	public:
-		typedef table_iterator<value_type, Traits, node_iterator> iterator;
-		typedef table_iterator<const value_type, Traits, const_node_iterator> const_iterator;
+		typedef table_iterator<value_type, ValueTraits, node_iterator> iterator;
+		typedef table_iterator<const value_type, ValueTraits, const_node_iterator> const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 		typedef bucket_iterator<bucket_node> local_iterator;
@@ -165,7 +158,7 @@ namespace tpp::detail
 		template<typename T>
 		constexpr static void replace_value(bucket_node &node, T &&value)
 		{
-			auto &mapped = MGet{}(node.value());
+			auto &mapped = node.mapped();
 			using mapped_t = std::remove_reference_t<decltype(mapped)>;
 
 			/* If move-assign is possible, do that. Otherwise, re-init the value. */
@@ -183,7 +176,7 @@ namespace tpp::detail
 		template<typename... Args>
 		constexpr static void replace_value(bucket_node &node, Args &&...args)
 		{
-			auto &mapped = MGet{}(node.value());
+			auto &mapped = node.mapped();
 			using mapped_t = std::remove_reference_t<decltype(mapped)>;
 
 			if constexpr (!std::is_trivially_destructible_v<mapped_t>)
@@ -211,16 +204,20 @@ namespace tpp::detail
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
 				  max_load_factor(other.max_load_factor) {}
 
-		constexpr dense_table(dense_table &&other) noexcept(nothrow_ctor<sparse_t, sparse_t &&> && nothrow_ctor<dense_t, dense_t &&> &&
-		                                                    nothrow_ctor<hasher, hasher &&> && nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_table(dense_table &&other)
+		noexcept(std::is_nothrow_move_constructible_v<sparse_t> &&
+		         std::is_nothrow_move_constructible_v<dense_t> &&
+		         std::is_nothrow_move_constructible_v<hasher> &&
+		         std::is_nothrow_move_constructible_v<key_equal>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
 				  max_load_factor(other.max_load_factor) {}
-		constexpr dense_table(dense_table &&other, const allocator_type &alloc) noexcept(nothrow_ctor<sparse_t, sparse_t &&, sparse_alloc_t> &&
-		                                                                                 nothrow_ctor<dense_t, dense_t &&, dense_alloc_t> &&
-		                                                                                 nothrow_ctor<hasher, hasher &&> &&
-		                                                                                 nothrow_ctor<key_equal, key_equal &&>)
+		constexpr dense_table(dense_table &&other, const allocator_type &alloc)
+		noexcept(std::is_nothrow_constructible_v<sparse_t, sparse_t &&, sparse_alloc_t> &&
+		         std::is_nothrow_constructible_v<dense_t, dense_t &&, dense_alloc_t> &&
+		         std::is_nothrow_move_constructible_v<hasher> &&
+		         std::is_nothrow_move_constructible_v<key_equal>)
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
@@ -260,8 +257,11 @@ namespace tpp::detail
 			}
 			return *this;
 		}
-		constexpr dense_table &operator=(dense_table &&other) noexcept(nothrow_assign<hasher, hasher &&> && nothrow_assign<key_equal, key_equal &&> &&
-		                                                               nothrow_assign<sparse_t, sparse_t &&> && nothrow_assign<dense_t, dense_t &&>)
+		constexpr dense_table &operator=(dense_table &&other)
+		noexcept(std::is_nothrow_move_assignable_v<hasher> &&
+		         std::is_nothrow_move_assignable_v<key_equal> &&
+		         std::is_nothrow_move_assignable_v<sparse_t> &&
+		         std::is_nothrow_move_assignable_v<dense_t>)
 		{
 			if (this != &other)
 			{
@@ -339,10 +339,16 @@ namespace tpp::detail
 		template<typename T>
 		[[nodiscard]] constexpr const_iterator find(const T &key) const { return to_iter(find_node(hash(key), key).first); }
 
-		constexpr std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, KGet{}(value), value); }
-		constexpr std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, KGet{}(value), std::move(value)); }
-		constexpr iterator insert(const_iterator hint, const insert_type &value) { return insert_impl(to_underlying(hint), KGet{}(value), value).first; }
-		constexpr iterator insert(const_iterator hint, insert_type &&value) { return insert_impl(to_underlying(hint), KGet{}(value), std::move(value)).first; }
+		constexpr std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, ValueTraits::key_get(value), value); }
+		constexpr std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, ValueTraits::key_get(value), std::move(value)); }
+		constexpr iterator insert(const_iterator hint, const insert_type &value)
+		{
+			return insert_impl(to_underlying(hint), ValueTraits::key_get(value), value).first;
+		}
+		constexpr iterator insert(const_iterator hint, insert_type &&value)
+		{
+			return insert_impl(to_underlying(hint), ValueTraits::key_get(value), std::move(value)).first;
+		}
 
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		constexpr std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
@@ -397,16 +403,16 @@ namespace tpp::detail
 		}
 
 		template<typename U, typename... Args>
-		constexpr std::pair<iterator, bool> try_emplace(U &&key, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
+		constexpr std::pair<iterator, bool> try_emplace(U &&key, Args &&...args)
+		TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return insert_impl({}, key, std::piecewise_construct,
 			                   std::forward_as_tuple(std::forward<U>(key)),
 			                   std::forward_as_tuple(std::forward<Args>(args)...));
 		}
 		template<typename U, typename... Args>
-		constexpr iterator try_emplace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
+		constexpr iterator try_emplace(const_iterator hint, U &&key, Args &&...args)
+		TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return insert_impl(to_underlying(hint), key, std::piecewise_construct,
 			                   std::forward_as_tuple(std::forward<U>(key)),

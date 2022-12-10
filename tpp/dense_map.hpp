@@ -69,15 +69,22 @@ namespace tpp
 	private:
 		struct traits_t
 		{
+			template<typename V, typename T>
+			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::empty_link;
 
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
+
+			template<typename T>
+			constexpr static auto &key_get(T &value) noexcept { return value.first; }
+			template<typename T>
+			constexpr static auto &mapped_get(T &value) noexcept { return value.second; }
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::reference reference;
@@ -111,10 +118,10 @@ namespace tpp
 		constexpr dense_map(const dense_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the map. */
-		constexpr dense_map(dense_map &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		constexpr dense_map(dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		constexpr dense_map(dense_map &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		constexpr dense_map(dense_map &&other, const allocator_type &alloc)
+		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
 		constexpr explicit dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
@@ -170,7 +177,7 @@ namespace tpp
 		/** Copy-assigns the map. */
 		constexpr dense_map &operator=(const dense_map &) = default;
 		/** Move-assigns the map. */
-		constexpr dense_map &operator=(dense_map &&) noexcept(detail::nothrow_assign<dense_map, dense_map &&>) = default;
+		constexpr dense_map &operator=(dense_map &&) noexcept(std::is_nothrow_move_assignable_v<dense_map>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
 		constexpr dense_map &operator=(std::initializer_list<value_type> il)
@@ -626,15 +633,22 @@ namespace tpp
 	private:
 		struct traits_t
 		{
+			template<typename V, typename T>
+			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::ordered_link;
 
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
 			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
+
+			template<typename T>
+			constexpr static auto &key_get(T &value) noexcept { return value.first; }
+			template<typename T>
+			constexpr static auto &mapped_get(T &value) noexcept { return value.second; }
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, detail::pair_first, detail::pair_second, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::reference reference;
@@ -668,9 +682,11 @@ namespace tpp
 		constexpr ordered_dense_map(const ordered_dense_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the map. */
-		constexpr ordered_dense_map(ordered_dense_map &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		constexpr ordered_dense_map(ordered_dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		constexpr ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
+		constexpr ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t,
+		                                                                                                                             table_t &&,
+		                                                                                                                             allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
@@ -712,7 +728,7 @@ namespace tpp
 		/** Copy-assigns the map. */
 		constexpr ordered_dense_map &operator=(const ordered_dense_map &) = default;
 		/** Move-assigns the map. */
-		constexpr ordered_dense_map &operator=(ordered_dense_map &&) noexcept(detail::nothrow_assign<ordered_dense_map, ordered_dense_map &&>) = default;
+		constexpr ordered_dense_map &operator=(ordered_dense_map &&) noexcept(std::is_nothrow_move_assignable_v<ordered_dense_map>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
 		constexpr ordered_dense_map &operator=(std::initializer_list<value_type> il)

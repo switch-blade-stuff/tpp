@@ -97,3 +97,20 @@ import std;
 
 #endif
 #endif
+
+#if __cplusplus >= 202002L
+
+#define TPP_IF_LIKELY(x) if (x) [[likely]]
+#define TPP_IF_UNLIKELY(x) if (x) [[unlikely]]
+
+#elif defined(__GNUC__) || defined(__clang__)
+
+#define TPP_IF_LIKELY(x) if (__builtin_expect(static_cast<bool>(x), true))
+#define TPP_IF_UNLIKELY(x) if (__builtin_expect(static_cast<bool>(x), false))
+
+#else
+
+#define TPP_IF_LIKELY(x) if (x)
+#define TPP_IF_UNLIKELY(x) if (x)
+
+#endif

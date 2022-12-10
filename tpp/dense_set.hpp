@@ -23,15 +23,22 @@ namespace tpp
 	{
 		struct traits_t
 		{
+			template<typename V, typename T>
+			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::empty_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
 			using reference = const Key &;
 			using const_reference = const Key &;
+
+			template<typename T>
+			constexpr static auto &key_get(T &value) noexcept { return value; }
+			template<typename T>
+			constexpr static auto &mapped_get(T &value) noexcept { return value; }
 		};
 
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, traits_t>;
+		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;
@@ -69,9 +76,9 @@ namespace tpp
 		constexpr dense_set(const dense_set &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the set. */
-		constexpr dense_set(dense_set &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		constexpr dense_set(dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		constexpr dense_set(dense_set &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
+		constexpr dense_set(dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
@@ -128,7 +135,7 @@ namespace tpp
 		/** Copy-assigns the set. */
 		constexpr dense_set &operator=(const dense_set &) = default;
 		/** Move-assigns the set. */
-		constexpr dense_set &operator=(dense_set &&) noexcept(detail::nothrow_assign<dense_set, dense_set &&>) = default;
+		constexpr dense_set &operator=(dense_set &&) noexcept(std::is_nothrow_move_assignable_v<dense_set>) = default;
 
 		/** Replaces elements of the set with elements of the initializer list. */
 		constexpr dense_set &operator=(std::initializer_list<value_type> il)
@@ -351,15 +358,22 @@ namespace tpp
 	{
 		struct traits_t
 		{
+			template<typename V, typename T>
+			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::ordered_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
 			using reference = const Key &;
 			using const_reference = const Key &;
+
+			template<typename T>
+			constexpr static auto &key_get(T &value) noexcept { return value; }
+			template<typename T>
+			constexpr static auto &mapped_get(T &value) noexcept { return value; }
 		};
 
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, detail::identity, detail::identity, Alloc, traits_t>;
+		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		typedef typename table_t::insert_type insert_type;
@@ -397,10 +411,10 @@ namespace tpp
 		constexpr ordered_dense_set(const ordered_dense_set &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the set. */
-		constexpr ordered_dense_set(ordered_dense_set &&other) noexcept(detail::nothrow_ctor<table_t, table_t &&>) = default;
+		constexpr ordered_dense_set(ordered_dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		constexpr ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc) noexcept(detail::nothrow_ctor<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		constexpr ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc)
+		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
 		constexpr explicit ordered_dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
@@ -456,7 +470,7 @@ namespace tpp
 		/** Copy-assigns the set. */
 		constexpr ordered_dense_set &operator=(const ordered_dense_set &) = default;
 		/** Move-assigns the set. */
-		constexpr ordered_dense_set &operator=(ordered_dense_set &&) noexcept(detail::nothrow_assign<ordered_dense_set, ordered_dense_set &&>) = default;
+		constexpr ordered_dense_set &operator=(ordered_dense_set &&) noexcept(std::is_nothrow_move_assignable_v<ordered_dense_set>) = default;
 
 		/** Replaces elements of the set with elements of the initializer list. */
 		constexpr ordered_dense_set &operator=(std::initializer_list<value_type> il)
