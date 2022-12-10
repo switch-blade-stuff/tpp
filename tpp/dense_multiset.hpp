@@ -30,26 +30,26 @@ namespace tpp
 	class dense_multiset<multikey<KeySeq...>, KeyHash, KeyCmp, Alloc> : detail::ebo_container<KeyHash>, detail::ebo_container<KeyCmp>
 	{
 	public:
-		typedef std::tuple<KeySeq...> key_type;
+		using key_type = std::tuple<KeySeq...>;
 
 	private:
 		using traits_t = detail::table_traits<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc>;
 
 	public:
-		typedef typename traits_t::insert_type insert_type;
-		typedef typename traits_t::value_type value_type;
+		using insert_type = typename traits_t::insert_type;
+		using value_type = typename traits_t::value_type;
 
-		typedef typename traits_t::hasher hasher;
-		typedef typename traits_t::key_equal key_equal;
-		typedef typename traits_t::allocator_type allocator_type;
+		using hasher = typename traits_t::hasher;
+		using key_equal = typename traits_t::key_equal;
+		using allocator_type = typename traits_t::allocator_type;
 
-		typedef typename traits_t::size_type size_type;
-		typedef typename traits_t::difference_type difference_type;
+		using size_type = typename traits_t::size_type;
+		using difference_type = typename traits_t::difference_type;
 
-		typedef value_type &reference;
-		typedef const value_type &const_reference;
-		typedef value_type *pointer;
-		typedef const value_type *const_pointer;
+		using reference = value_type &;
+		using const_reference = const value_type &;
+		using pointer = value_type *;
+		using const_pointer = const value_type *;
 
 		constexpr static auto key_count = sizeof...(KeySeq);
 
@@ -101,13 +101,13 @@ namespace tpp
 			friend class dense_multiset;
 
 		public:
-			typedef typename dense_multiset::value_type value_type;
-			typedef typename dense_multiset::const_pointer pointer;
-			typedef typename dense_multiset::const_reference reference;
+			using value_type = typename dense_multiset::value_type;
+			using pointer = typename dense_multiset::const_pointer;
+			using reference = typename dense_multiset::const_reference;
 
-			typedef typename dense_multiset::size_type size_type;
-			typedef typename dense_multiset::difference_type difference_type;
-			typedef std::random_access_iterator_tag iterator_category;
+			using size_type = typename dense_multiset::size_type;
+			using difference_type = typename dense_multiset::difference_type;
+			using iterator_category = std::random_access_iterator_tag;
 
 		private:
 			constexpr multiset_iterator(bucket_node *node) noexcept : m_node(node) {}
@@ -173,10 +173,10 @@ namespace tpp
 		};
 
 	public:
-		typedef multiset_iterator iterator;
-		typedef multiset_iterator const_iterator;
-		typedef std::reverse_iterator<multiset_iterator> reverse_iterator;
-		typedef std::reverse_iterator<multiset_iterator> const_reverse_iterator;
+		using iterator = multiset_iterator;
+		using const_iterator = multiset_iterator;
+		using reverse_iterator = std::reverse_iterator<multiset_iterator>;
+		using const_reverse_iterator = std::reverse_iterator<multiset_iterator>;
 
 	private:
 		[[nodiscard]] constexpr static multiset_iterator to_iter(bucket_node *node) noexcept { return multiset_iterator{node}; }

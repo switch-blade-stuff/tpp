@@ -14,6 +14,5 @@
 
 #include <tpp/swiss_set.hpp>
 #include <tpp/swiss_map.hpp>
-#include <tpp/swiss_multiset.hpp>
 
 using namespace tpp;

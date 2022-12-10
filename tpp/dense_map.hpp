@@ -16,9 +16,9 @@ namespace tpp
 			friend class dense_map_iterator;
 
 		public:
-			typedef std::pair<K, M> element_type;
-			typedef std::pair<K &, M &> reference;
-			typedef const reference *pointer;
+			using element_type = std::pair<K, M>;
+			using reference = std::pair<K &, M &>;
+			using pointer = const reference *;
 
 		public:
 			constexpr dense_map_ptr() noexcept : dense_map_ptr(nullptr, nullptr) {}
@@ -61,10 +61,10 @@ namespace tpp
 	class dense_map
 	{
 	public:
-		typedef Key key_type;
-		typedef Mapped mapped_type;
-		typedef std::pair<key_type, mapped_type> insert_type;
-		typedef std::pair<const key_type, mapped_type> value_type;
+		using key_type = Key;
+		using mapped_type = Mapped;
+		using insert_type = std::pair<key_type, mapped_type>;
+		using value_type = std::pair<const key_type, mapped_type>;
 
 	private:
 		struct traits_t
@@ -85,24 +85,24 @@ namespace tpp
 		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
-		typedef typename table_t::reference reference;
-		typedef typename table_t::const_reference const_reference;
-		typedef typename table_t::pointer pointer;
-		typedef typename table_t::const_pointer const_pointer;
+		using reference = typename table_t::reference;
+		using const_reference = typename table_t::const_reference;
+		using pointer = typename table_t::pointer;
+		using const_pointer = typename table_t::const_pointer;
 
-		typedef typename table_t::iterator iterator;
-		typedef typename table_t::const_iterator const_iterator;
-		typedef typename table_t::reverse_iterator reverse_iterator;
-		typedef typename table_t::const_reverse_iterator const_reverse_iterator;
-		typedef typename table_t::local_iterator local_iterator;
-		typedef typename table_t::const_local_iterator const_local_iterator;
+		using iterator = typename table_t::iterator;
+		using const_iterator = typename table_t::const_iterator;
+		using reverse_iterator = typename table_t::reverse_iterator;
+		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+		using local_iterator = typename table_t::local_iterator;
+		using const_local_iterator = typename table_t::const_local_iterator;
 
-		typedef typename table_t::size_type size_type;
-		typedef typename table_t::difference_type difference_type;
+		using size_type = typename table_t::size_type;
+		using difference_type = typename table_t::difference_type;
 
-		typedef typename table_t::hasher hasher;
-		typedef typename table_t::key_equal key_equal;
-		typedef typename table_t::allocator_type allocator_type;
+		using hasher = typename table_t::hasher;
+		using key_equal = typename table_t::key_equal;
+		using allocator_type = typename table_t::allocator_type;
 
 	public:
 		/** Initializes the map with default capacity. */
@@ -623,10 +623,10 @@ namespace tpp
 	class ordered_dense_map
 	{
 	public:
-		typedef Key key_type;
-		typedef Mapped mapped_type;
-		typedef std::pair<key_type, mapped_type> insert_type;
-		typedef std::pair<const key_type, mapped_type> value_type;
+		using key_type = Key;
+		using mapped_type = Mapped;
+		using insert_type = std::pair<key_type, mapped_type>;
+		using value_type = std::pair<const key_type, mapped_type>;
 
 	private:
 		struct traits_t
@@ -647,24 +647,24 @@ namespace tpp
 		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
-		typedef typename table_t::reference reference;
-		typedef typename table_t::const_reference const_reference;
-		typedef typename table_t::pointer pointer;
-		typedef typename table_t::const_pointer const_pointer;
+		using reference = typename table_t::reference;
+		using const_reference = typename table_t::const_reference;
+		using pointer = typename table_t::pointer;
+		using const_pointer = typename table_t::const_pointer;
 
-		typedef typename table_t::iterator iterator;
-		typedef typename table_t::const_iterator const_iterator;
-		typedef typename table_t::reverse_iterator reverse_iterator;
-		typedef typename table_t::const_reverse_iterator const_reverse_iterator;
-		typedef typename table_t::local_iterator local_iterator;
-		typedef typename table_t::const_local_iterator const_local_iterator;
+		using iterator = typename table_t::iterator;
+		using const_iterator = typename table_t::const_iterator;
+		using reverse_iterator = typename table_t::reverse_iterator;
+		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+		using local_iterator = typename table_t::local_iterator;
+		using const_local_iterator = typename table_t::const_local_iterator;
 
-		typedef typename table_t::size_type size_type;
-		typedef typename table_t::difference_type difference_type;
+		using size_type = typename table_t::size_type;
+		using difference_type = typename table_t::difference_type;
 
-		typedef typename table_t::hasher hasher;
-		typedef typename table_t::key_equal key_equal;
-		typedef typename table_t::allocator_type allocator_type;
+		using hasher = typename table_t::hasher;
+		using key_equal = typename table_t::key_equal;
+		using allocator_type = typename table_t::allocator_type;
 
 	public:
 		/** Initializes the map with default capacity. */

@@ -4,7 +4,7 @@ So, you need a hashtable? Well, good news, I've got some for you.
 
 This repository is a collection of different hashtable-based containers - several flavors of API-compatible alternatives
 for `std::unordered_map` and `std::unordered_set`, as well as accompanying `ordered_*` versions (insertion-order
-preserving tables) and `multiset`s (1:1 associative tables).
+preserving tables). Additionally, `dense_multiset` (1:1 associative table) is also provided.
 
 Here is a brief list of the features of this library:
 
@@ -14,7 +14,6 @@ Here is a brief list of the features of this library:
         * `tpp::swiss_map`
         * `tpp::ordered_swiss_set`
         * `tpp::ordered_swiss_map`
-        * `tpp::swiss_multiset`
     * Stable (elements are stored on the heap individually, references are stable)
         * `tpp::stable_swiss_set`
         * `tpp::stable_swiss_map`
@@ -26,7 +25,7 @@ Here is a brief list of the features of this library:
     * `tpp::ordered_dense_set`
     * `tpp::ordered_dense_map`
     * `tpp::dense_multiset`
-* Utilities & hash functions
+* Utilities& hash functions
     * `tpp::hash_combine`
     * `tpp::seahash_builder`
     * `tpp::seahash`
@@ -40,7 +39,7 @@ Here is a brief list of the features of this library:
 Since **tables++** is a header-only library, the only thing you need is a C++ compiler with support for C++17.
 Optionally, a `CMakeLists.txt` is also provided if you want to use the library as an `INTERFACE` CMake link target.
 
-## Library & CMake options
+## Library& CMake options
 
 <table>
   <tr><th>#define macro</th><th>CMake option</th><th>Default value</th><th>Description</th></tr>

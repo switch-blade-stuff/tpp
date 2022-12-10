@@ -22,19 +22,19 @@ namespace tpp::detail
 		using traits_t = table_traits<V, V, K, KHash, KCmp, Alloc>;
 
 	public:
-		typedef typename traits_t::insert_type insert_type;
-		typedef typename traits_t::value_type value_type;
-		typedef typename traits_t::key_type key_type;
+		using insert_type = typename traits_t::insert_type;
+		using value_type = typename traits_t::value_type;
+		using key_type = typename traits_t::key_type;
 
-		typedef typename traits_t::hasher hasher;
-		typedef typename traits_t::key_equal key_equal;
-		typedef typename traits_t::allocator_type allocator_type;
+		using hasher = typename traits_t::hasher;
+		using key_equal = typename traits_t::key_equal;
+		using allocator_type = typename traits_t::allocator_type;
 
-		typedef typename traits_t::size_type size_type;
-		typedef typename traits_t::difference_type difference_type;
+		using size_type = typename traits_t::size_type;
+		using difference_type = typename traits_t::difference_type;
 
-		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<typename ValueTraits::link_type> is_ordered;
+		using is_transparent = std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>>;
+		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
 
 		constexpr static size_type initial_capacity = 8;
 		constexpr static size_type npos = std::numeric_limits<size_type>::max();
@@ -92,13 +92,13 @@ namespace tpp::detail
 			// @formatter:on
 
 		public:
-			typedef V value_type;
-			typedef std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer> pointer;
-			typedef std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_reference, typename ValueTraits::reference> reference;
+			using value_type = V;
+			using pointer = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer>;
+			using reference = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_reference, typename ValueTraits::reference>;
 
-			typedef typename bucket_node::size_type size_type;
-			typedef typename bucket_node::difference_type difference_type;
-			typedef std::forward_iterator_tag iterator_category;
+			using size_type = typename bucket_node::size_type;
+			using difference_type = typename bucket_node::difference_type;
+			using iterator_category = std::forward_iterator_tag;
 
 		public:
 			constexpr bucket_iterator() noexcept = default;
@@ -125,7 +125,7 @@ namespace tpp::detail
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_off == other.m_off; }
 
 #if __cplusplus >= 202002L
-			[[nodiscard]] constexpr auto operator<=>(const bucket_iterator &other) const noexcept { return m_off <=> other.m_off; }
+			[[nodiscard]] constexpr auto operator<=>(const bucket_iterator&other) const noexcept { return m_off <=> other.m_off; }
 #else
 			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_off != other.m_off; }
 			[[nodiscard]] constexpr bool operator<=(const bucket_iterator &other) const noexcept { return m_off <= other.m_off; }
@@ -142,17 +142,17 @@ namespace tpp::detail
 		};
 
 	public:
-		typedef table_iterator<value_type, ValueTraits, node_iterator> iterator;
-		typedef table_iterator<const value_type, ValueTraits, const_node_iterator> const_iterator;
-		typedef std::reverse_iterator<iterator> reverse_iterator;
-		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-		typedef bucket_iterator<bucket_node> local_iterator;
-		typedef bucket_iterator<const bucket_node> const_local_iterator;
+		using iterator = table_iterator<value_type, ValueTraits, node_iterator>;
+		using const_iterator = table_iterator<const value_type, ValueTraits, const_node_iterator>;
+		using reverse_iterator = std::reverse_iterator<iterator>;
+		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+		using local_iterator = bucket_iterator<bucket_node>;
+		using const_local_iterator = bucket_iterator<const bucket_node>;
 
-		typedef typename iterator::reference reference;
-		typedef typename const_iterator::reference const_reference;
-		typedef typename iterator::pointer pointer;
-		typedef typename const_iterator::pointer const_pointer;
+		using reference = typename iterator::reference;
+		using const_reference = typename const_iterator::reference;
+		using pointer = typename iterator::pointer;
+		using const_pointer = typename const_iterator::pointer;
 
 	private:
 		template<typename T>

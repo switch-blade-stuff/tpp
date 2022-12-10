@@ -39,28 +39,28 @@ namespace tpp
 		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
-		typedef typename table_t::insert_type insert_type;
-		typedef typename table_t::value_type value_type;
-		typedef typename table_t::key_type key_type;
+		using insert_type = typename table_t::insert_type;
+		using value_type = typename table_t::value_type;
+		using key_type = typename table_t::key_type;
 
-		typedef typename table_t::reference reference;
-		typedef typename table_t::const_reference const_reference;
-		typedef typename table_t::pointer pointer;
-		typedef typename table_t::const_pointer const_pointer;
+		using reference = typename table_t::reference;
+		using const_reference = typename table_t::const_reference;
+		using pointer = typename table_t::pointer;
+		using const_pointer = typename table_t::const_pointer;
 
-		typedef typename table_t::const_iterator iterator;
-		typedef typename table_t::const_iterator const_iterator;
-		typedef typename table_t::const_reverse_iterator reverse_iterator;
-		typedef typename table_t::const_reverse_iterator const_reverse_iterator;
-		typedef typename table_t::const_local_iterator local_iterator;
-		typedef typename table_t::const_local_iterator const_local_iterator;
+		using iterator = typename table_t::const_iterator;
+		using const_iterator = typename table_t::const_iterator;
+		using reverse_iterator = typename table_t::const_reverse_iterator;
+		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+		using local_iterator = typename table_t::const_local_iterator;
+		using const_local_iterator = typename table_t::const_local_iterator;
 
-		typedef typename table_t::size_type size_type;
-		typedef typename table_t::difference_type difference_type;
+		using size_type = typename table_t::size_type;
+		using difference_type = typename table_t::difference_type;
 
-		typedef typename table_t::hasher hasher;
-		typedef typename table_t::key_equal key_equal;
-		typedef typename table_t::allocator_type allocator_type;
+		using hasher = typename table_t::hasher;
+		using key_equal = typename table_t::key_equal;
+		using allocator_type = typename table_t::allocator_type;
 
 	public:
 		/** Initializes the set with default capacity. */
@@ -372,28 +372,28 @@ namespace tpp
 		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
-		typedef typename table_t::insert_type insert_type;
-		typedef typename table_t::value_type value_type;
-		typedef typename table_t::key_type key_type;
+		using insert_type = typename table_t::insert_type;
+		using value_type = typename table_t::value_type;
+		using key_type = typename table_t::key_type;
 
-		typedef typename table_t::reference reference;
-		typedef typename table_t::const_reference const_reference;
-		typedef typename table_t::pointer pointer;
-		typedef typename table_t::const_pointer const_pointer;
+		using reference = typename table_t::reference;
+		using const_reference = typename table_t::const_reference;
+		using pointer = typename table_t::pointer;
+		using const_pointer = typename table_t::const_pointer;
 
-		typedef typename table_t::const_iterator iterator;
-		typedef typename table_t::const_iterator const_iterator;
-		typedef typename table_t::const_reverse_iterator reverse_iterator;
-		typedef typename table_t::const_reverse_iterator const_reverse_iterator;
-		typedef typename table_t::const_local_iterator local_iterator;
-		typedef typename table_t::const_local_iterator const_local_iterator;
+		using iterator = typename table_t::const_iterator;
+		using const_iterator = typename table_t::const_iterator;
+		using reverse_iterator = typename table_t::const_reverse_iterator;
+		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+		using local_iterator = typename table_t::const_local_iterator;
+		using const_local_iterator = typename table_t::const_local_iterator;
 
-		typedef typename table_t::size_type size_type;
-		typedef typename table_t::difference_type difference_type;
+		using size_type = typename table_t::size_type;
+		using difference_type = typename table_t::difference_type;
 
-		typedef typename table_t::hasher hasher;
-		typedef typename table_t::key_equal key_equal;
-		typedef typename table_t::allocator_type allocator_type;
+		using hasher = typename table_t::hasher;
+		using key_equal = typename table_t::key_equal;
+		using allocator_type = typename table_t::allocator_type;
 
 	public:
 		/** Initializes the set with default capacity. */

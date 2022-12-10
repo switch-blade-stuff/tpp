@@ -308,32 +308,43 @@ namespace tpp::detail
 #endif
 
 	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc, typename ValueTraits>
+	struct swiss_table_traits : table_traits<V, V, K, KHash, KCmp, Alloc>
+	{
+		using is_transparent = std::conjunction<detail::is_transparent<KHash>, detail::is_transparent<KCmp>>;
+		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
+
+		using bucket_link = typename ValueTraits::link_type;
+		using bucket_node = table_node<V, ValueTraits>;
+
+		using node_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
+		using meta_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<meta_block>;
+	};
+
+	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc, typename ValueTraits>
 	class swiss_table : ValueTraits::link_type, ebo_container<KHash>, ebo_container<KCmp>
 	{
-		using traits_t = table_traits<V, V, K, KHash, KCmp, Alloc>;
+		using traits_t = swiss_table_traits<V, V, KHash, KCmp, Alloc, ValueTraits>;
 
 	public:
-		typedef typename traits_t::insert_type insert_type;
-		typedef typename traits_t::value_type value_type;
-		typedef typename traits_t::key_type key_type;
+		using insert_type = typename traits_t::insert_type;
+		using value_type = typename traits_t::value_type;
+		using key_type = typename traits_t::key_type;
 
-		typedef typename traits_t::hasher hasher;
-		typedef typename traits_t::key_equal key_equal;
-		typedef typename traits_t::allocator_type allocator_type;
+		using hasher = typename traits_t::hasher;
+		using key_equal = typename traits_t::key_equal;
+		using allocator_type = typename traits_t::allocator_type;
 
-		typedef typename traits_t::size_type size_type;
-		typedef typename traits_t::difference_type difference_type;
+		using size_type = typename traits_t::size_type;
+		using difference_type = typename traits_t::difference_type;
 
-		typedef std::conjunction<detail::is_transparent<hasher>, detail::is_transparent<key_equal>> is_transparent;
-		typedef detail::is_ordered<typename ValueTraits::link_type> is_ordered;
+		using is_transparent = typename traits_t::is_transparent;
+		using is_ordered = typename traits_t::is_ordered;
 
 		constexpr static float initial_load_factor = traits_t::initial_load_factor;
 		constexpr static typename traits_t::size_type initial_capacity = traits_t::initial_capacity;
 
 	private:
-		using bucket_link = typename ValueTraits::link_type;
-		using bucket_node = table_node<V, ValueTraits>;
-
-
+		using bucket_link = typename traits_t::bucket_link;
+		using bucket_node = typename traits_t::bucket_node;
 	};
 }

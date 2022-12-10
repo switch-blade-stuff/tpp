@@ -97,16 +97,16 @@ namespace tpp::detail
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename A>
 	struct table_traits
 	{
-		typedef I insert_type;
-		typedef V value_type;
-		typedef K key_type;
-		typedef A allocator_type;
+		using insert_type = I;
+		using value_type = V;
+		using key_type = K;
+		using allocator_type = A;
 
-		typedef Kh hasher;
-		typedef Kc key_equal;
+		using hasher = Kh;
+		using key_equal = Kc;
 
-		typedef typename std::allocator_traits<A>::size_type size_type;
-		typedef typename std::allocator_traits<A>::difference_type difference_type;
+		using size_type = typename std::allocator_traits<A>::size_type;
+		using difference_type = typename std::allocator_traits<A>::difference_type;
 	};
 
 	/* Placeholder node link. */
@@ -331,13 +331,13 @@ namespace tpp::detail
 	{
 		using link_t = std::conditional_t<std::is_const_v<N>, std::add_const_t<ordered_link>, ordered_link>;
 
-		typedef N value_type;
-		typedef N &reference;
-		typedef N *pointer;
+		using value_type = N;
+		using reference = N &;
+		using pointer = N *;
 
-		typedef typename Traits::size_type size_type;
-		typedef typename Traits::difference_type difference_type;
-		typedef std::bidirectional_iterator_tag iterator_category;
+		using size_type = typename Traits::size_type;
+		using difference_type = typename Traits::difference_type;
+		using iterator_category = std::bidirectional_iterator_tag;
 
 		constexpr ordered_iterator() noexcept = default;
 
@@ -394,7 +394,7 @@ namespace tpp::detail
 
 #if __cplusplus >= 202002L
 	template<std::contiguous_iterator I>
-	struct iterator_concept_base<I> { typedef std::contiguous_iterator_tag iterator_concept; };
+	struct iterator_concept_base<I> { using } = std::contiguous_iterator_tag iterator_concept;;
 #endif
 
 	template<typename, typename, typename>
@@ -449,13 +449,13 @@ namespace tpp::detail
 		using traits_t = std::iterator_traits<I>;
 
 	public:
-		typedef V value_type;
-		typedef std::conditional_t<std::is_const_v<V>, typename Traits::const_pointer, typename Traits::pointer> pointer;
-		typedef std::conditional_t<std::is_const_v<V>, typename Traits::const_reference, typename Traits::reference> reference;
+		using value_type = V;
+		using pointer = std::conditional_t<std::is_const_v<V>, typename Traits::const_pointer, typename Traits::pointer>;
+		using reference = std::conditional_t<std::is_const_v<V>, typename Traits::const_reference, typename Traits::reference>;
 
-		typedef typename iter_size<traits_t>::type size_type;
-		typedef typename iter_diff<traits_t>::type difference_type;
-		typedef typename traits_t::iterator_category iterator_category;
+		using size_type = typename iter_size<traits_t>::type;
+		using difference_type = typename iter_diff<traits_t>::type;
+		using iterator_category = typename traits_t::iterator_category;
 
 	public:
 		constexpr table_iterator() noexcept = default;
