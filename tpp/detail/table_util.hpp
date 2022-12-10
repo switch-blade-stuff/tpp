@@ -110,7 +110,19 @@ namespace tpp::detail
 	};
 
 	/* Placeholder node link. */
-	struct empty_link {};
+	struct empty_link
+	{
+		constexpr void link(std::ptrdiff_t) noexcept {}
+		constexpr void link(empty_link *) noexcept {}
+
+		constexpr void relink_from(empty_link &) noexcept {}
+		constexpr void unlink() noexcept {}
+
+		[[nodiscard]] constexpr empty_link *off(std::ptrdiff_t) noexcept { return this; }
+		[[nodiscard]] constexpr const empty_link *off(std::ptrdiff_t) const noexcept { return this; }
+
+		constexpr void swap(empty_link &) noexcept {}
+	};
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
@@ -178,6 +190,12 @@ namespace tpp::detail
 		[[nodiscard]] constexpr ordered_link *off(std::ptrdiff_t n) noexcept { return static_cast<ordered_link *>(byte_off(this, n)); }
 		[[nodiscard]] constexpr const ordered_link *off(std::ptrdiff_t n) const noexcept { return static_cast<const ordered_link *>(byte_off(this, n)); }
 
+		constexpr void swap(ordered_link &other) noexcept
+		{
+			std::swap(next, other.next);
+			std::swap(prev, other.prev);
+		}
+
 		/* Offsets from `this` to next & previous links in bytes. */
 		std::ptrdiff_t next = 0; /* next_ptr - this */
 		std::ptrdiff_t prev = 0; /* prev_ptr - this */
@@ -199,19 +217,19 @@ namespace tpp::detail
 	class dense_node : public Traits::link_type, public ebo_container<V>
 	{
 		using link_base = typename Traits::link_type;
-		using ebo_base = ebo_container<V>;
+		using value_base = ebo_container<V>;
 
 	public:
 		constexpr dense_node() noexcept = default;
-		constexpr dense_node(const dense_node &other) : link_base(other), ebo_base(other), hash(other.hash) {}
-		constexpr dense_node(dense_node &&other) noexcept : link_base(std::move(other)), ebo_base(std::move(other)), hash(other.hash) {}
+		constexpr dense_node(const dense_node &other) : link_base(other), value_base(other), hash(other.hash) {}
+		constexpr dense_node(dense_node &&other) noexcept : link_base(std::move(other)), value_base(std::move(other)), hash(other.hash) {}
 
 		constexpr dense_node &operator=(const dense_node &other)
 		{
 			if (this != &other)
 			{
 				link_base::operator=(other);
-				ebo_base::operator=(other);
+				value_base::operator=(other);
 				hash = other.hash;
 			}
 			return *this;
@@ -219,15 +237,15 @@ namespace tpp::detail
 		constexpr dense_node &operator=(dense_node &&other) noexcept
 		{
 			link_base::operator=(std::move(other));
-			ebo_base::operator=(std::move(other));
+			value_base::operator=(std::move(other));
 			hash = other.hash;
 			return *this;
 		}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
-		constexpr dense_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<V, Args...>) : ebo_base(std::forward<Args>(args)...) {}
+		constexpr dense_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<V, Args...>) : value_base(std::forward<Args>(args)...) {}
 
-		using ebo_base::value;
+		using value_base::value;
 
 		[[nodiscard]] constexpr auto *get() noexcept { return &value(); }
 		[[nodiscard]] constexpr const auto *get() const noexcept { return &value(); }
@@ -236,12 +254,12 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
 		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
 
-		constexpr void swap(dense_node &other) noexcept(std::is_nothrow_swappable_v<ebo_base>)
+		constexpr void swap(dense_node &other) noexcept(std::is_nothrow_swappable_v<value_base>)
 		{
 			using std::swap;
 
-			swap(static_cast<link_base &>(*this), static_cast<link_base &>(other));
-			swap(static_cast<ebo_base &>(*this), static_cast<ebo_base &>(other));
+			link_base::swap(other);
+			value_base::swap(other);
 			swap(hash, other.hash);
 		}
 
@@ -300,7 +318,7 @@ namespace tpp::detail
 
 		constexpr void swap(stable_node &other) noexcept
 		{
-			std::swap(static_cast<link_base &>(*this), static_cast<link_base &>(other));
+			link_base::swap(other);
 			std::swap(m_ptr, other.m_ptr);
 			std::swap(hash, other.hash);
 		}

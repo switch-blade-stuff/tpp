@@ -197,12 +197,12 @@ namespace tpp::detail
 				: header_base(other), hash_base(other), cmp_base(other),
 				  m_sparse(other.m_sparse),
 				  m_dense(other.m_dense),
-				  max_load_factor(other.max_load_factor) {}
+				  m_max_load_factor(other.m_max_load_factor) {}
 		constexpr dense_table(const dense_table &other, const allocator_type &alloc)
 				: header_base(other), hash_base(other), cmp_base(other),
 				  m_sparse(other.m_sparse, sparse_alloc_t{alloc}),
 				  m_dense(other.m_dense, dense_alloc_t{alloc}),
-				  max_load_factor(other.max_load_factor) {}
+				  m_max_load_factor(other.m_max_load_factor) {}
 
 		constexpr dense_table(dense_table &&other)
 		noexcept(std::is_nothrow_move_constructible_v<sparse_t> &&
@@ -212,7 +212,7 @@ namespace tpp::detail
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse)),
 				  m_dense(std::move(other.m_dense)),
-				  max_load_factor(other.max_load_factor) {}
+				  m_max_load_factor(other.m_max_load_factor) {}
 		constexpr dense_table(dense_table &&other, const allocator_type &alloc)
 		noexcept(std::is_nothrow_constructible_v<sparse_t, sparse_t &&, sparse_alloc_t> &&
 		         std::is_nothrow_constructible_v<dense_t, dense_t &&, dense_alloc_t> &&
@@ -221,7 +221,7 @@ namespace tpp::detail
 				: header_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)),
 				  m_sparse(std::move(other.m_sparse), sparse_alloc_t{alloc}),
 				  m_dense(std::move(other.m_dense), dense_alloc_t{alloc}),
-				  max_load_factor(other.max_load_factor) {}
+				  m_max_load_factor(other.m_max_load_factor) {}
 
 		constexpr dense_table(const allocator_type &alloc)
 				: m_sparse(sparse_alloc_t{alloc}),
@@ -253,7 +253,7 @@ namespace tpp::detail
 
 				m_sparse = other.m_sparse;
 				m_dense = other.m_dense;
-				max_load_factor = other.max_load_factor;
+				m_max_load_factor = other.m_max_load_factor;
 			}
 			return *this;
 		}
@@ -271,7 +271,7 @@ namespace tpp::detail
 
 				m_sparse = std::move(other.m_sparse);
 				m_dense = std::move(other.m_dense);
-				max_load_factor = other.max_load_factor;
+				m_max_load_factor = other.m_max_load_factor;
 			}
 			return *this;
 		}
@@ -328,7 +328,7 @@ namespace tpp::detail
 			[[maybe_unused]] const auto back_pos = back_node() - m_dense.data();
 
 			m_dense.reserve(n);
-			rehash(static_cast<size_type>(static_cast<float>(n) / max_load_factor));
+			rehash(static_cast<size_type>(static_cast<float>(n) / m_max_load_factor));
 		}
 
 		template<typename T>
@@ -438,27 +438,34 @@ namespace tpp::detail
 			using std::max;
 
 			/* Adjust the capacity to be at least large enough to fit the current size. */
-			new_cap = max(max(static_cast<size_type>(static_cast<float>(size()) / max_load_factor), new_cap), initial_capacity);
+			new_cap = max(max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), new_cap), initial_capacity);
 			if (new_cap != m_sparse.capacity()) rehash_impl(new_cap);
 		}
+
+		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
+		constexpr void max_load_factor(float f) noexcept { m_max_load_factor = f; }
 
 		[[nodiscard]] constexpr auto get_allocator() const { return m_dense.get_allocator(); }
 		[[nodiscard]] constexpr auto &get_hash() const noexcept { return hash_base::value(); }
 		[[nodiscard]] constexpr auto &get_cmp() const noexcept { return cmp_base::value(); }
 
-		constexpr void swap(dense_table &other) noexcept(std::is_nothrow_swappable_v<hasher> && std::is_nothrow_swappable_v<key_equal> &&
-		                                                 std::is_nothrow_swappable_v<sparse_t> && std::is_nothrow_swappable_v<dense_t>)
+		constexpr void swap(dense_table &other)
+		noexcept(std::is_nothrow_swappable_v<hasher> &&
+		         std::is_nothrow_swappable_v<key_equal> &&
+		         std::is_nothrow_swappable_v<sparse_t> &&
+		         std::is_nothrow_swappable_v<dense_t>)
 		{
-			hasher::swap(other);
-			key_equal::swap(other);
+			header_base::swap(other);
+			hash_base::swap(other);
+			cmp_base::swap(other);
 
 			std::swap(m_sparse, other.m_sparse);
 			std::swap(m_dense, other.m_dense);
-			std::swap(max_load_factor, other.max_load_factor);
+			std::swap(m_max_load_factor, other.m_max_load_factor);
 		}
 
 	private:
-		[[nodiscard]] constexpr auto to_capacity(size_type n) const noexcept { return static_cast<size_type>(static_cast<float>(n) * max_load_factor); }
+		[[nodiscard]] constexpr auto to_capacity(size_type n) const noexcept { return static_cast<size_type>(static_cast<float>(n) * m_max_load_factor); }
 
 		template<typename T>
 		[[nodiscard]] constexpr std::size_t hash(const T &k) const { return get_hash()(k); }
@@ -496,7 +503,7 @@ namespace tpp::detail
 		/* Same reason for `const_cast` as with node getters above. */
 		[[nodiscard]] constexpr auto *get_chain(std::size_t h) const noexcept { return const_cast<size_type *>(m_sparse.data()) + (h % bucket_count()); }
 		template<typename T>
-		[[nodiscard]] constexpr auto find_node(std::size_t h, const T &key) const noexcept -> std::pair<bucket_node *, size_type *>
+		[[nodiscard]] constexpr auto find_node(std::size_t h, const T &key) const -> std::pair<bucket_node *, size_type *>
 		{
 			auto *idx = get_chain(h);
 			while (*idx != npos)
@@ -512,7 +519,7 @@ namespace tpp::detail
 		constexpr iterator commit_node([[maybe_unused]] const_node_iterator hint, size_type pos, size_type *chain_idx, std::size_t h, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
-			if constexpr (is_ordered::value) node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
+			node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
 			*chain_idx = pos;
 
 			/* Initialize the hash & rehash the table. Doing it now so
@@ -622,7 +629,7 @@ namespace tpp::detail
 
 		constexpr void maybe_rehash()
 		{
-			if (load_factor() > max_load_factor)
+			if (load_factor() > m_max_load_factor)
 				rehash(bucket_count() * 2);
 		}
 		constexpr void rehash_impl(size_type new_cap)
@@ -644,7 +651,6 @@ namespace tpp::detail
 		sparse_t m_sparse = sparse_t(initial_capacity, npos);
 		dense_t m_dense;
 
-	public:
-		float max_load_factor = initial_load_factor;
+		float m_max_load_factor = initial_load_factor;
 	};
 }

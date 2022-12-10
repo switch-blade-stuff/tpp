@@ -551,9 +551,9 @@ namespace tpp
 		 * @note The new amount of buckets is clamped to be at least `size() / max_load_factor()`. */
 		constexpr void rehash(size_type n) { m_table.rehash(n); }
 		/** Returns the current maximum load factor. */
-		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor; }
+		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor(); }
 		/** Sets the current maximum load factor. */
-		constexpr void max_load_factor(float f) const noexcept { m_table.max_load_factor = f; }
+		constexpr void max_load_factor(float f) noexcept { m_table.max_load_factor(f); }
 
 		[[nodiscard]] constexpr allocator_type get_allocator() const { return allocator_type{m_table.get_allocator()}; }
 		[[nodiscard]] constexpr hasher hash_function() const { return m_table.get_hash(); }
@@ -1108,9 +1108,9 @@ namespace tpp
 		 * @note The new amount of buckets is clamped to be at least `size() / max_load_factor()`. */
 		constexpr void rehash(size_type n) { m_table.rehash(n); }
 		/** Returns the current maximum load factor. */
-		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor; }
+		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor(); }
 		/** Sets the current maximum load factor. */
-		constexpr void max_load_factor(float f) const noexcept { m_table.max_load_factor = f; }
+		constexpr void max_load_factor(float f) noexcept { m_table.max_load_factor(f); }
 
 		[[nodiscard]] constexpr allocator_type get_allocator() const { return allocator_type{m_table.get_allocator()}; }
 		[[nodiscard]] constexpr hasher hash_function() const { return m_table.get_hash(); }

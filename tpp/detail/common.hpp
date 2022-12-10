@@ -25,15 +25,12 @@ import std;
 
 #endif
 
-/* Select `if consteval` alternative if possible when it is not supported. */
-#if defined(__cpp_if_consteval) && __cpp_if_consteval >= 202106L
-#define TPP_IF_CONSTEVAL if consteval
-#elif defined(__cpp_lib_is_constant_evaluated)
-#define TPP_IF_CONSTEVAL if (std::is_constant_evaluated())
+#if defined(__cpp_lib_is_constant_evaluated)
+#define TPP_IS_CONSTEVAL std::is_constant_evaluated()
+#define TPP_HAS_CONSTEVAL
 #elif defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
-#define TPP_IF_CONSTEVAL if (__builtin_is_constant_evaluated())
-#else
-#define TPP_IF_CONSTEVAL if (true)
+#define TPP_IS_CONSTEVAL __builtin_is_constant_evaluated()
+#define TPP_HAS_CONSTEVAL
 #endif
 
 #if __cplusplus >= 202002L
