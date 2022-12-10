@@ -332,6 +332,8 @@ namespace tpp::detail
 
 	private:
 		using bucket_link = typename ValueTraits::link_type;
-		using bucket_node = typename ValueTraits::template node_type<V, ValueTraits>;
+		using bucket_node = table_node<V, ValueTraits>;
+
+
 	};
 }

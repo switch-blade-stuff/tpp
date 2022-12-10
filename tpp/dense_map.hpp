@@ -69,8 +69,6 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			template<typename V, typename T>
-			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::empty_link;
 
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
@@ -633,8 +631,6 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			template<typename V, typename T>
-			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::ordered_link;
 
 			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;

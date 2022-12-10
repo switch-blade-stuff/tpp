@@ -43,9 +43,9 @@ namespace tpp::detail
 
 	private:
 		using bucket_link = typename ValueTraits::link_type;
-		struct bucket_node : ValueTraits::template node_type<V, ValueTraits>
+		struct bucket_node : table_node<V, ValueTraits>
 		{
-			using node_base = typename ValueTraits::template node_type<V, ValueTraits>;
+			using node_base = table_node<V, ValueTraits>;
 
 			constexpr bucket_node() noexcept(std::is_nothrow_default_constructible_v<node_base>) = default;
 			constexpr bucket_node(const bucket_node &other) : node_base(other), next(other.next) {}

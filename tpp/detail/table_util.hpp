@@ -318,6 +318,14 @@ namespace tpp::detail
 	template<typename T>
 	struct is_extractable<T, std::void_t<typename T::is_extractable>> : std::true_type {};
 
+	/* Helper used to select node table type. */
+	template<typename T, typename = void>
+	struct is_stable : std::false_type {};
+	template<typename T>
+	struct is_stable<T, std::void_t<typename T::is_stable>> : std::true_type {};
+	template<typename V, typename Traits>
+	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits>, dense_node<V, Traits>>;
+
 	template<typename N, typename Traits>
 	struct ordered_iterator
 	{

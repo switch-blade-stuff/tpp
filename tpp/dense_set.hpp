@@ -23,8 +23,6 @@ namespace tpp
 	{
 		struct traits_t
 		{
-			template<typename V, typename T>
-			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::empty_link;
 
 			using pointer = const Key *;
@@ -358,8 +356,6 @@ namespace tpp
 	{
 		struct traits_t
 		{
-			template<typename V, typename T>
-			using node_type = detail::dense_node<V, T>;
 			using link_type = detail::ordered_link;
 
 			using pointer = const Key *;

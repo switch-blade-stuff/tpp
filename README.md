@@ -9,22 +9,23 @@ preserving tables) and `multiset`s (1:1 associative tables).
 Here is a brief list of the features of this library:
 
 * SwissHash -based containers
-    * `tpp::swiss_set`
-    * `tpp::swiss_map`
-    * `tpp::swiss_multiset`
-    * `tpp::ordered_swiss_set`
-    * `tpp::ordered_swiss_map`
-    * `tpp::stable_swiss_set`
-    * `tpp::stable_swiss_map`
-    * `tpp::stable_swiss_multiset`
-    * `tpp::ordered_stable_swiss_set`
-    * `tpp::ordered_stable_swiss_map`
+    * Packed (elements are stored in a buffer, references are invalidated on resize)
+        * `tpp::swiss_set`
+        * `tpp::swiss_map`
+        * `tpp::ordered_swiss_set`
+        * `tpp::ordered_swiss_map`
+        * `tpp::swiss_multiset`
+    * Stable (elements are stored on the heap individually, references are stable)
+        * `tpp::stable_swiss_set`
+        * `tpp::stable_swiss_map`
+        * `tpp::ordered_stable_swiss_set`
+        * `tpp::ordered_stable_swiss_map`
 * Dense set -based containers
     * `tpp::dense_set`
     * `tpp::dense_map`
-    * `tpp::dense_multiset`
     * `tpp::ordered_dense_set`
     * `tpp::ordered_dense_map`
+    * `tpp::dense_multiset`
 * Utilities & hash functions
     * `tpp::hash_combine`
     * `tpp::seahash_builder`
@@ -157,7 +158,7 @@ by the compiler, the library will prefer using `import` as opposed to `#include`
 
 In the future, a module interface may be provided for the library as an alternative to the current header API.
 
-## Notes
+## API compatibility
 
 While both SwissHash and dense set -based containers are largely API-compatible with `std::unordered_map`
 and `std::unordered_set`, they are not guaranteed to be drop-in replacements for STL types, and neither provide the same
