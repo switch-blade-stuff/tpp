@@ -90,10 +90,10 @@ namespace tpp
 			index_list next = make_index_list(npos);
 		};
 
-		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
+		using dense_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<multikey<bucket_node>>;
 		using dense_t = std::vector<bucket_node, dense_alloc_t>;
 
-		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<index_list>;
+		using sparse_alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<multikey<bucket_node>>;
 		using sparse_t = std::vector<index_list, sparse_alloc_t>;
 
 		class multiset_iterator

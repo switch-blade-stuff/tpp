@@ -535,7 +535,7 @@ namespace tpp::detail
 
 #if __cplusplus >= 202002L
 	template<std::contiguous_iterator I>
-	struct iterator_concept_base<I> { using } = std::contiguous_iterator_tag iterator_concept;;
+	struct iterator_concept_base<I> { using iterator_concept = std::contiguous_iterator_tag; };
 #endif
 
 	template<typename, typename, typename>

@@ -1,39 +1,41 @@
 cmake_minimum_required(VERSION 3.19)
-project(tpp-tests)
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
+macro(make_test_target)
+    project(tpp-tests-cxx${ARGV0})
 
-add_executable(tpp-tests
-        ${CMAKE_CURRENT_LIST_DIR}/main.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
-target_link_libraries(tpp-tests PRIVATE tpp)
-target_compile_features(tpp-tests PRIVATE cxx_std_17)
+    add_executable(${PROJECT_NAME}
+            ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+            ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
+            ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp
+            ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
+            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
 
-if(MSVC)
-    target_compile_options(tpp-tests PRIVATE /W4 /WX)
-else()
-    target_compile_options(tpp-tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
+    target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
+    target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
 
-enable_testing()
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+    else ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif ()
 
-macro(make_test)
-    add_test(NAME ${ARGV0} COMMAND $<TARGET_FILE:tpp-tests> ${ARGV0})
+    # Dense table tests
+    add_test(NAME dense_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_map)
+    add_test(NAME ordered_dense_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_dense_map)
+    add_test(NAME dense_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_set)
+    add_test(NAME ordered_dense_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_dense_set)
+    add_test(NAME dense_multiset-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_multiset)
+
+    # Hash function tests
+    add_test(NAME seahash-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> seahash)
+    add_test(NAME crc32-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> crc32)
+    add_test(NAME fnv1a-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> fnv1a)
+    add_test(NAME sdbm-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> sdbm)
+    add_test(NAME md5-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> md5)
 endmacro()
 
-# Dense table tests
-make_test(dense_map)
-make_test(ordered_dense_map)
-make_test(dense_set)
-make_test(ordered_dense_set)
-make_test(dense_multiset)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
+enable_testing()
 
-# Hash function tests
-make_test(seahash)
-make_test(crc32)
-make_test(fnv1a)
-make_test(sdbm)
-make_test(md5)
+make_test_target(17)
+make_test_target(20)

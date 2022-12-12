@@ -451,12 +451,12 @@ namespace tpp::detail
 			for (; first != last; ++first) insert(*first);
 		}
 
-		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&, U &&> && key_size == 1>>
+		template<typename T, typename U>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl({}, key, std::forward<U>(value));
 		}
-		template<typename T, typename U, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&, U &&> && key_size == 1>>
+		template<typename T, typename U>
 		TPP_CXX20_CONSTEXPR iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
@@ -473,26 +473,28 @@ namespace tpp::detail
 			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
-		template<typename U, typename... Args, typename = std::enable_if_t<std::is_constructible_v<value_type, U &&, Args &&...> && key_size == 1>>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		template<typename U, typename... Args>
+		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES(
+				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return insert_or_assign_impl({}, key, std::forward<Args>(args)...);
 		}
-		template<typename U, typename... Args, typename = std::enable_if_t<std::is_constructible_v<value_type, U &&, Args &&...> && key_size == 1>>
-		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		template<typename U, typename... Args>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
+				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return insert_or_assign_impl(to_underlying(hint), key, std::forward<Args>(args)...);
+			return insert_or_assign_impl(hint, key, std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args)
-		TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
+		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
+				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return insert_impl({}, keys, std::piecewise_construct, keys, std::forward_as_tuple(std::forward<Args>(args)...));
 		}
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args)
-		TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
+		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
+				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return insert_impl(to_underlying(hint), keys, std::piecewise_construct, keys, std::forward_as_tuple(std::forward<Args>(args)...)).first;
 		}
@@ -747,13 +749,19 @@ namespace tpp::detail
 		}
 
 		/* NOTE: insert_or_assign is available only if there is a single key. Otherwise, we cannot assign conflicting entries. */
-		template<typename T, typename... Args, typename = std::enable_if_t<std::is_constructible_v<value_type, T &&, Args &&...> && key_size == 1>>
+		template<typename T, typename... Args>
 		TPP_CXX20_CONSTEXPR auto insert_or_assign_impl(const_node_iterator hint, T &&key, Args &&...args) -> std::pair<iterator, bool>
 		{
+			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
+
 			/* If a candidate was found, replace the entry. Otherwise, emplace a new entry. */
 			const auto h = hash(key);
 			if (const auto [candidate, chain_idx] = find_node<0>(key, h); *chain_idx == npos)
-				return {emplace_node<0>(hint, {chain_idx}, {h}, std::forward<T>(key), std::forward<Args>(args)...), true};
+				return {emplace_node<0>(hint, {chain_idx}, {h},
+				                        std::piecewise_construct,
+				                        std::forward_as_tuple(key),
+				                        std::forward_as_tuple(std::forward<Args>(args)...)),
+				        true};
 			else
 			{
 				replace_value(*candidate, std::forward<Args>(args)...);

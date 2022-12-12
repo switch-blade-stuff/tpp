@@ -92,8 +92,8 @@ endif ()
 set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
 add_library(tpp INTERFACE
         # Common utilities
-        ${TPP_SOURCE_DIR}/detail/common.hpp
-        ${TPP_SOURCE_DIR}/detail/table_util.hpp
+        ${TPP_SOURCE_DIR}/detail/define.hpp
+        ${TPP_SOURCE_DIR}/detail/utility.hpp
 
         # Hash utilities
         ${TPP_SOURCE_DIR}/hash.hpp
@@ -109,7 +109,6 @@ add_library(tpp INTERFACE
         ${TPP_SOURCE_DIR}/detail/swiss_table.hpp
         ${TPP_SOURCE_DIR}/swiss_set.hpp
         ${TPP_SOURCE_DIR}/swiss_map.hpp
-        ${TPP_SOURCE_DIR}/swiss_multiset.hpp
         )
 
 # Unit tests

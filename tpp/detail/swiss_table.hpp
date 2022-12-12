@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include "table_util.hpp"
-
-#include <cassert>
+#include "utility.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -37,14 +35,6 @@
 
 #endif
 
-#ifdef TPP_HAS_CONSTEVAL
-#define TPP_SWISS_CONSTEXPR constexpr
-#define TPP_SWISS_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) assert((msg, cnd));
-#else
-#define TPP_SWISS_CONSTEXPR inline
-#define TPP_SWISS_ASSERT(cnd, msg) assert((msg, cnd));
-#endif
-
 namespace tpp::detail
 {
 	enum class meta_byte : std::uint8_t
@@ -72,8 +62,8 @@ namespace tpp::detail
 		[[nodiscard]] constexpr basic_index_mask next() const noexcept { return basic_index_mask{m_value & (m_value - 1)}; }
 
 		[[nodiscard]] constexpr bool empty() const noexcept { return m_value == 0; }
-		[[nodiscard]] TPP_SWISS_CONSTEXPR std::size_t lsb_index() const noexcept;
-		[[nodiscard]] TPP_SWISS_CONSTEXPR std::size_t msb_index() const noexcept;
+		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t lsb_index() const noexcept;
+		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t msb_index() const noexcept;
 
 		[[nodiscard]] constexpr bool operator==(const basic_index_mask &other) const noexcept { return m_value == other.m_value; }
 #if __cplusplus < 202002L
@@ -177,7 +167,7 @@ namespace tpp::detail
 #endif
 
 	template<typename T>
-	[[nodiscard]] TPP_SWISS_CONSTEXPR std::size_t ctz(T value) noexcept
+	[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t ctz(T value) noexcept
 	{
 #ifdef TPP_HAS_CONSTEVAL
 		if (TPP_IS_CONSTEVAL) return generic_ctz(value);
@@ -186,7 +176,7 @@ namespace tpp::detail
 			return builtin_ctz(value);
 	}
 	template<typename T>
-	[[nodiscard]] TPP_SWISS_CONSTEXPR std::size_t clz(T value) noexcept
+	[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t clz(T value) noexcept
 	{
 #ifdef TPP_HAS_CONSTEVAL
 		if (TPP_IS_CONSTEVAL) return generic_clz(value);
@@ -196,9 +186,9 @@ namespace tpp::detail
 	}
 
 	template<typename T, std::size_t P>
-	TPP_SWISS_CONSTEXPR std::size_t basic_index_mask<T, P>::lsb_index() const noexcept { return ctz(m_value) >> P; }
+	TPP_CXX20_CONSTEXPR std::size_t basic_index_mask<T, P>::lsb_index() const noexcept { return ctz(m_value) >> P; }
 	template<typename T, std::size_t P>
-	TPP_SWISS_CONSTEXPR std::size_t basic_index_mask<T, P>::msb_index() const noexcept { return clz(m_value) >> P; }
+	TPP_CXX20_CONSTEXPR std::size_t basic_index_mask<T, P>::msb_index() const noexcept { return clz(m_value) >> P; }
 
 #ifdef TPP_HAS_SSE2
 	using index_mask = basic_index_mask<std::uint16_t, 0>;
@@ -217,9 +207,9 @@ namespace tpp::detail
 
 		constexpr void fill(meta_byte b) noexcept;
 
-		[[nodiscard]] TPP_SWISS_CONSTEXPR index_mask match_empty() const noexcept;
-		[[nodiscard]] TPP_SWISS_CONSTEXPR index_mask match_available() const noexcept;
-		[[nodiscard]] TPP_SWISS_CONSTEXPR index_mask match_eq(meta_byte b) const noexcept;
+		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_empty() const noexcept;
+		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_available() const noexcept;
+		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_eq(meta_byte b) const noexcept;
 
 	private:
 		[[nodiscard]] constexpr void *raw_data() noexcept { return array_base::data(); }
@@ -261,7 +251,7 @@ namespace tpp::detail
 			return _mm_cmpgt_epi8(a, b);
 	}
 
-	TPP_SWISS_CONSTEXPR index_mask meta_block::match_empty() const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_empty() const noexcept
 	{
 #ifdef TPP_HAS_SSSE3
 #ifdef TPP_HAS_CONSTEVAL
@@ -277,7 +267,7 @@ namespace tpp::detail
 		return match_eq(meta_byte::EMPTY);
 #endif
 	}
-	TPP_SWISS_CONSTEXPR index_mask meta_block::match_available() const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_available() const noexcept
 	{
 		index_mask::value_type result = 0;
 #ifdef TPP_HAS_CONSTEVAL
@@ -296,7 +286,7 @@ namespace tpp::detail
 		}
 		return index_mask{result};
 	}
-	TPP_SWISS_CONSTEXPR index_mask meta_block::match_eq(meta_byte b) const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_eq(meta_byte b) const noexcept
 	{
 		index_mask::value_type result = 0;
 #ifdef TPP_HAS_CONSTEVAL
@@ -327,14 +317,14 @@ namespace tpp::detail
 	}
 #endif
 
-	template<typename V, typename K, typename KHash, typename KCmp, typename Alloc, typename ValueTraits>
-	struct swiss_table_traits : table_traits<V, V, K, KHash, KCmp, Alloc>
+	template<typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
+	struct swiss_table_traits : table_traits<V, V, K, Kh, Kc, Alloc>
 	{
-		using is_transparent = std::conjunction<detail::is_transparent<KHash>, detail::is_transparent<KCmp>>;
+		using is_transparent = std::conjunction<detail::is_transparent<Kh>, detail::is_transparent<Kc>>;
 		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
 
 		using bucket_link = typename ValueTraits::link_type;
-		using bucket_node = table_node<V, ValueTraits>;
+		using bucket_node = table_node<V, Alloc, ValueTraits>;
 
 		using meta_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<meta_block>;
 		using node_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
@@ -399,46 +389,12 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr static std::pair<std::size_t, std::uint8_t> decompose_hash(std::size_t h) noexcept { return {h >> 7, h & 0x7f}; }
 
-		template<typename T, typename A>
-		constexpr static void buffer_swap(size_type cap_a, T *&buff_a, A &alloc_a, size_type cap_b, T *&buff_b, A &alloc_b)
-		{
-			using std::swap;
-
-			/* Propagate the allocators & buffer pointers, or do element-wise swap. */
-			if constexpr (std::allocator_traits<A>::propagate_on_container_swap::value)
-			{
-				swap(alloc_a, alloc_b);
-				swap(buff_a, buff_b);
-			}
-			else if (cap_a == cap_b)
-			{
-				/* If both buffers have the same capacity, swap elements immediately. */
-				for (size_type i = 0; i < cap_a; ++i)
-					swap(buff_a[i], buff_b[i]);
-			}
-			else
-			{
-				/* If buffer sizes are different, allocate temporary buffers and swap through that. */
-				T *old_a = std::exchange(buff_a, std::allocator_traits<A>::allocate(alloc_a, cap_b));
-				T *old_b = std::exchange(buff_b, std::allocator_traits<A>::allocate(alloc_b, cap_a));
-
-				for (size_type i = 0; i < cap_a; ++i)
-					swap(old_a[i], buff_b[i]);
-				for (size_type i = 0; i < cap_b; ++i)
-					swap(old_b[i], buff_a[i]);
-
-				/* Clean up old buffers. */
-				std::allocator_traits<A>::deallocate(alloc_a, buff_a, cap_a);
-				std::allocator_traits<A>::deallocate(alloc_b, buff_b, cap_b);
-			}
-		}
-
 	public:
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
-		TPP_SWISS_CONSTEXPR void max_load_factor(float f) noexcept
+		constexpr void max_load_factor(float f) noexcept
 		{
 			/* Load factor cannot exceed 1 for probing to work. */
-			TPP_SWISS_ASSERT(f < 1.0f, "Load factor must be less than 1.0");
+			TPP_ASSERT(f < 1.0f, "Load factor must be less than 1.0");
 			m_max_load_factor = f;
 		}
 
@@ -461,8 +417,9 @@ namespace tpp::detail
 				hash_base::swap(other);
 				cmp_base::swap(other);
 
-				buffer_swap(m_capacity, m_metadata, get_meta_alloc(), other.m_capacity, other.m_metadata, other.get_meta_alloc());
-				buffer_swap(m_capacity, m_buckets, get_node_alloc(), other.m_capacity, other.m_buckets, other.get_node_alloc());
+				/* TODO: Use a custom buffer swap to ensure only occupied nodes are swapped. */
+				swap_buffers(get_meta_alloc(), m_metadata, m_capacity, other.get_meta_alloc(), other.m_metadata, other.m_capacity);
+				swap_buffers(get_node_alloc(), m_buckets, m_capacity, other.get_node_alloc(), other.m_buckets, other.m_capacity);
 
 				std::swap(m_max_load_factor, other.m_max_load_factor);
 				std::swap(m_size, other.m_size);
@@ -481,13 +438,13 @@ namespace tpp::detail
 		template<typename T, typename U>
 		[[nodiscard]] constexpr bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
 
-		TPP_SWISS_CONSTEXPR size_type find_node(std::size_t h, const key_type &key) const
+		TPP_CXX20_CONSTEXPR size_type find_node(std::size_t h, const key_type &key) const
 		{
 			const auto [h1, h2] = decompose_hash(h);
 			for (auto p = probe{h1 & m_capacity, m_capacity};; ++p)
 			{
 				/* Make sure probe never iterates more than we have buckets. */
-				TPP_SWISS_ASSERT(p.idx < m_capacity, "Probe must not exceed bucket count");
+				TPP_ASSERT(p.idx < m_capacity, "Probe must not exceed bucket count");
 
 				/* Go through each matched element in the block and test for equality. */
 				const auto &block = m_metadata[p.pos];
@@ -495,7 +452,7 @@ namespace tpp::detail
 				{
 					const auto offset = p.pos + match.lsb_index();
 					const auto &node = m_buckets[offset];
-					TPP_IF_LIKELY(node.hash == h && cmp(node.key(), key)) return offset;
+					TPP_IF_LIKELY(node.hash() == h && cmp(node.key(), key)) return offset;
 				}
 				/* Fail if the block is empty. */
 				if (block.match_empty()) return m_capacity;
@@ -511,6 +468,3 @@ namespace tpp::detail
 		bucket_node *m_buckets = nullptr;
 	};
 }
-
-#undef TPP_SWISS_CONSTEXPR
-#undef TPP_SWISS_ASSERT
