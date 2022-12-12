@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "detail/common.hpp"
+#include "detail/define.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -588,7 +588,7 @@ namespace tpp
     {                                                                           \
         [[nodiscard]] constexpr std::size_t operator()(T value) const noexcept  \
         {                                                                       \
-            return static_cast<std::size_t>(value);                             \
+            return Algo(&value, sizeof(T));                                 \
         }                                                                       \
     };
 
@@ -632,8 +632,6 @@ TPP_TRIVIAL_HASH_IMPL(unsigned long long)
 
 #undef TPP_TRIVIAL_HASH_IMPL
 
-/* Floating-point numbers are byte-hashed. */
-
 #define TPP_FLOAT_HASH_IMPL(T)                                                  \
     template<std::size_t (*Algo)(const void *, std::size_t)>                    \
     struct tpp::hash<T, Algo>                                                   \
@@ -655,7 +653,7 @@ TPP_FLOAT_HASH_IMPL(long double);
 
 #undef TPP_FLOAT_HASH_IMPL
 
-/* Pointers are value-casted to std::size_t (already unique). */
+/* Pointers are value-casted to std::size_t (already unique with good entropy). */
 template<typename T, std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<T *, Algo>
 {

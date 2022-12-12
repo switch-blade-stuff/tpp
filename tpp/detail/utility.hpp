@@ -21,8 +21,67 @@ import std.memory;
 
 #endif
 
+#if defined(TPP_DEBUG) || !defined(NDEBUG)
+
+#include <cstdio>
+
+#if defined(__has_builtin) && !defined(__ibmxl__)
+#if __has_builtin(__builtin_debugtrap)
+#define TPP_DEBUG_TRAP() __builtin_debugtrap()
+#elif __has_builtin(__debugbreak)
+#define TPP_DEBUG_TRAP() __debugbreak()
+#endif
+#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#define TPP_DEBUG_TRAP() __debugbreak()
+#elif defined(__ARMCC_VERSION)
+#define TPP_DEBUG_TRAP() __breakpoint(42)
+#elif defined(__ibmxl__) || defined(__xlC__)
+#include <builtins.h>
+#define TPP_DEBUG_TRAP() __trap(42)
+#elif defined(__DMC__) && defined(_M_IX86)
+#define TPP_DEBUG_TRAP() (__asm int 3h)
+#elif defined(__i386__) || defined(__x86_64__)
+#define TPP_DEBUG_TRAP() (__asm__ __volatile__("int3"))
+#elif defined(__STDC_HOSTED__) && (__STDC_HOSTED__ == 0) && defined(__GNUC__)
+#define TPP_DEBUG_TRAP() __builtin_trap()
+#endif
+
+#ifndef TPP_DEBUG_TRAP
+#ifndef TPP_USE_IMPORT
+
+#include <csignal>
+
+#endif
+#if defined(SIGTRAP)
+#define TPP_DEBUG_TRAP() raise(SIGTRAP)
+#else
+#define TPP_DEBUG_TRAP() raise(SIGABRT)
+#endif
+#endif
+
+#if defined(_MSC_VER) || defined(__CYGWIN__)
+#define TPP_PRETTY_FUNC __FUNCSIG__
+#elif defined(__clang__) || defined(__GNUC__)
+#define TPP_PRETTY_FUNC __PRETTY_FUNCTION__
+#endif
+
+#endif
+
 namespace tpp::detail
 {
+#if defined(TPP_DEBUG) || !defined(NDEBUG)
+	static inline void assert_msg(bool cnd, const char *cstr, const char *file, std::size_t line, const char *func, const char *msg) noexcept
+	{
+		if (!cnd)
+		{
+			fprintf(stderr, "Assertion (%s) failed at '%s:%lu' in '%s'", cstr, file, line, func);
+			if (msg) fprintf(stderr, "%s", msg);
+			TPP_DEBUG_TRAP();
+			std::terminate();
+		}
+	}
+#endif
+
 	/* Helper type used to store potentially empty objects. */
 	template<typename, typename = void>
 	struct ebo_container;
@@ -52,7 +111,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr T &value() noexcept { return static_cast<T &>(*this); }
 		[[nodiscard]] constexpr const T &value() const noexcept { return static_cast<const T &>(*this); }
 
-		constexpr void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
+		TPP_CXX20_CONSTEXPR void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
 		{
 			using std::swap;
 			swap(value(), other.value());
@@ -81,7 +140,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr T &value() noexcept { return m_value; }
 		[[nodiscard]] constexpr const T &value() const noexcept { return m_value; }
 
-		constexpr void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
+		TPP_CXX20_CONSTEXPR void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
 		{
 			using std::swap;
 			swap(value(), other.value());
@@ -92,7 +151,7 @@ namespace tpp::detail
 	};
 
 	template<typename T>
-	constexpr void swap(ebo_container<T> &a, ebo_container<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
+	TPP_CXX20_CONSTEXPR void swap(ebo_container<T> &a, ebo_container<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename A>
 	struct table_traits
@@ -126,14 +185,6 @@ namespace tpp::detail
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
-		template<typename T, typename U>
-		[[nodiscard]] constexpr static auto const_exchange(T &a, U &&b) noexcept
-		{
-			const auto old = a;
-			a = std::forward<U>(b);
-			return old;
-		}
-
 		[[nodiscard]] constexpr static std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
 		{
 			const auto a_bytes = static_cast<const std::uint8_t *>(a);
@@ -149,40 +200,40 @@ namespace tpp::detail
 			return static_cast<std::uint8_t *>(p) + n;
 		}
 
-		constexpr ordered_link() noexcept = default;
-		constexpr ordered_link(ordered_link &&other) noexcept { relink_from(other); }
-		constexpr ordered_link &operator=(ordered_link &&other) noexcept
+		TPP_CXX20_CONSTEXPR ordered_link() noexcept = default;
+		TPP_CXX20_CONSTEXPR ordered_link(ordered_link &&other) noexcept { relink_from(other); }
+		TPP_CXX20_CONSTEXPR ordered_link &operator=(ordered_link &&other) noexcept
 		{
 			relink_from(other);
 			return *this;
 		}
 
-		constexpr void link(std::ptrdiff_t prev_off) noexcept { link(off(prev_off)); }
-		constexpr void link(ordered_link *prev_ptr) noexcept
+		TPP_CXX20_CONSTEXPR void link(std::ptrdiff_t prev_off) noexcept { link(off(prev_off)); }
+		TPP_CXX20_CONSTEXPR void link(ordered_link *prev_ptr) noexcept
 		{
 			const auto next_ptr = prev_ptr->off(prev_ptr->next);
 			next_ptr->prev = -(next = byte_diff(next_ptr, this));
 			prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
 		}
 
-		constexpr void relink_from(ordered_link &other) noexcept
+		TPP_CXX20_CONSTEXPR void relink_from(ordered_link &other) noexcept
 		{
 			next = prev = 0;
 			if (other.next != 0)
 			{
-				auto *next_ptr = other.off(const_exchange(other.next, 0));
+				auto *next_ptr = other.off(std::exchange(other.next, 0));
 				next_ptr->prev = -(next = byte_diff(next_ptr, this));
 			}
 			if (other.prev != 0)
 			{
-				auto *prev_ptr = other.off(const_exchange(other.prev, 0));
+				auto *prev_ptr = other.off(std::exchange(other.prev, 0));
 				prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
 			}
 		}
-		constexpr void unlink() noexcept
+		TPP_CXX20_CONSTEXPR void unlink() noexcept
 		{
-			auto *next_ptr = off(const_exchange(next, 0));
-			auto *prev_ptr = off(const_exchange(prev, 0));
+			auto *next_ptr = off(std::exchange(next, 0));
+			auto *prev_ptr = off(std::exchange(prev, 0));
 			next_ptr->prev = byte_diff(prev_ptr, next_ptr);
 			prev_ptr->next = byte_diff(next_ptr, prev_ptr);
 		}
@@ -190,7 +241,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr ordered_link *off(std::ptrdiff_t n) noexcept { return static_cast<ordered_link *>(byte_off(this, n)); }
 		[[nodiscard]] constexpr const ordered_link *off(std::ptrdiff_t n) const noexcept { return static_cast<const ordered_link *>(byte_off(this, n)); }
 
-		constexpr void swap(ordered_link &other) noexcept
+		TPP_CXX20_CONSTEXPR void swap(ordered_link &other) noexcept
 		{
 			std::swap(next, other.next);
 			std::swap(prev, other.prev);
@@ -213,121 +264,193 @@ namespace tpp::detail
 	template<typename T>
 	struct is_transparent<T, std::void_t<typename T::is_transparent>> : std::true_type {};
 
-	template<typename V, typename Traits>
-	class dense_node : public Traits::link_type, public ebo_container<V>
+	template<typename A, typename T>
+	TPP_CXX20_CONSTEXPR void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)
+	{
+		std::allocator_traits<A>::construct(alloc_dst, dst, std::move(*src));
+		std::allocator_traits<A>::destroy(alloc_src, src);
+	}
+	template<typename A, typename T, typename F>
+	TPP_CXX20_CONSTEXPR void relocate(A &alloc_src, T *src_first, T *src_last, A &alloc_dst, T *dst_first, F rel = relocate<A, T>)
+	{
+		while (src_first != src_last) rel(alloc_src, src_first++, alloc_dst, dst_first++);
+	}
+
+	template<typename A, typename T, typename SizeT = typename std::allocator_traits<A>::size_type>
+	TPP_CXX20_CONSTEXPR bool realloc_buffer(A &alloc, T *&buff, SizeT &buff_size, SizeT new_size)
+	{
+		if (buff_size < new_size)
+		{
+			if (buff) std::allocator_traits<A>::deallocate(alloc, buff, buff_size);
+			buff = std::allocator_traits<A>::allocate(alloc, buff_size = new_size);
+			return true;
+		}
+		return false;
+	}
+	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
+	TPP_CXX20_CONSTEXPR bool resize_buffer(A &alloc, T *&buff, SizeT &buff_size, SizeT new_size, F rel = relocate<A, T>)
+	{
+		if (buff_size < new_size)
+		{
+			new_size = std::max(buff_size * 2, new_size);
+			auto *new_buff = std::allocator_traits<A>::allocate(alloc, new_size);
+			relocate(alloc, buff, buff + buff_size, alloc, new_buff, rel);
+
+			if (buff) std::allocator_traits<A>::deallocate(alloc, buff, buff_size);
+			buff_size = new_size;
+			buff = new_buff;
+			return true;
+		}
+		return false;
+	}
+
+	template<typename V, typename A, typename Traits>
+	class dense_node : public Traits::link_type
 	{
 		using link_base = typename Traits::link_type;
-		using value_base = ebo_container<V>;
+		using hash_type = std::array<std::size_t, Traits::key_size>;
+
+		using storage_t = std::array<std::uint8_t, sizeof(hash_type) + (std::is_empty_v<V> ? 0 : sizeof(V))>;
+
+		template<typename T>
+		[[nodiscard]] constexpr static auto *void_cast(void *ptr) noexcept { return static_cast<T *>(ptr); }
+		template<typename T>
+		[[nodiscard]] constexpr static auto *void_cast(const void *ptr) noexcept { return static_cast<const T *>(ptr); }
 
 	public:
-		constexpr dense_node() noexcept = default;
-		constexpr dense_node(const dense_node &other) : link_base(other), value_base(other), hash(other.hash) {}
-		constexpr dense_node(dense_node &&other) noexcept : link_base(std::move(other)), value_base(std::move(other)), hash(other.hash) {}
+		using allocator_type = A;
 
-		constexpr dense_node &operator=(const dense_node &other)
-		{
-			if (this != &other)
-			{
-				link_base::operator=(other);
-				value_base::operator=(other);
-				hash = other.hash;
-			}
-			return *this;
-		}
-		constexpr dense_node &operator=(dense_node &&other) noexcept
+		dense_node(const dense_node &) = delete;
+		dense_node &operator=(const dense_node &) = delete;
+
+		constexpr dense_node() noexcept = default;
+
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args) { std::allocator_traits<A>::construct(alloc, &value(), std::forward<Args>(args)...); }
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, dense_node &&other)
 		{
 			link_base::operator=(std::move(other));
-			value_base::operator=(std::move(other));
-			hash = other.hash;
-			return *this;
+			construct(alloc, std::move(other.value()));
+			hash() = other.hash();
 		}
+		TPP_CXX20_CONSTEXPR void move_from(dense_node &other)
+		{
+			link_base::operator=(std::move(other));
+			value() = std::move(other.value());
+			hash() = other.hash();
+		}
+		TPP_CXX20_CONSTEXPR void destroy(A &alloc) { std::allocator_traits<A>::destroy(alloc, &value()); }
 
-		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
-		constexpr dense_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<V, Args...>) : value_base(std::forward<Args>(args)...) {}
+		[[nodiscard]] constexpr auto &hash() noexcept { return data_off<hash_type>(0); }
+		[[nodiscard]] constexpr auto &hash() const noexcept { return data_off<hash_type>(0); }
 
-		using value_base::value;
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &hash() noexcept { return hash()[I]; }
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &hash() const noexcept { return hash()[I]; }
 
-		[[nodiscard]] constexpr auto *get() noexcept { return &value(); }
-		[[nodiscard]] constexpr const auto *get() const noexcept { return &value(); }
+		[[nodiscard]] constexpr auto &value() noexcept { return data_off<V>(sizeof(hash_type)); }
+		[[nodiscard]] constexpr auto &value() const noexcept { return data_off<V>(sizeof(hash_type)); }
 
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::key_get(value()); }
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template key_get<I>(value()); }
 		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
 		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
 
-		constexpr void swap(dense_node &other) noexcept(std::is_nothrow_swappable_v<value_base>)
+		TPP_CXX20_CONSTEXPR friend void swap(dense_node &a, dense_node &b) noexcept(std::is_nothrow_swappable_v<V>)
 		{
 			using std::swap;
-
-			link_base::swap(other);
-			value_base::swap(other);
-			swap(hash, other.hash);
+			a.link_base::swap(b);
+			swap(a.value(), b.value());
 		}
 
-		std::size_t hash = 0;
+	private:
+		template<typename T>
+		[[nodiscard]] constexpr T &data_off(std::size_t off) noexcept { return *void_cast<T>(m_storage.data() + off); }
+		template<typename T>
+		[[nodiscard]] constexpr const T &data_off(std::size_t off) const noexcept { return *void_cast<T>(m_storage.data() + off); }
+
+		storage_t m_storage = {};
 	};
-	template<typename V, typename Traits>
+	template<typename V, typename A, typename Traits>
 	class stable_node : public Traits::link_type
 	{
 		using link_base = typename Traits::link_type;
+		using hash_type = std::array<std::size_t, Traits::key_size>;
 
 	public:
+		using allocator_type = A;
 		using is_extractable = std::true_type;
 
-		constexpr stable_node() noexcept = default;
-		constexpr stable_node(const stable_node &other) : link_base(other), m_ptr(new V(other.value())), hash(other.hash) {}
-		constexpr stable_node(stable_node &&other) noexcept : link_base(std::move(other)), m_ptr(other.extract()), hash(other.hash) {}
+		stable_node(const stable_node &) = delete;
+		stable_node &operator=(const stable_node &) = delete;
 
-		constexpr stable_node &operator=(const stable_node &other)
+		constexpr stable_node() noexcept = default;
+
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args)
 		{
-			if (this != &other)
-			{
-				link_base::operator=(other);
-				if (std::is_copy_assignable_v<V> && m_ptr)
-					value() = other.value();
-				else
-				{
-					delete m_ptr;
-					m_ptr = new V(other.value());
-				}
-				hash = other.hash;
-			}
-			return *this;
+			m_ptr = std::allocator_traits<A>::allocate(alloc, 1);
+			std::allocator_traits<A>::construct(alloc, m_ptr, std::forward<Args>(args)...);
 		}
-		constexpr stable_node &operator=(stable_node &&other) noexcept
+		TPP_CXX20_CONSTEXPR void construct(A &, stable_node &&other)
 		{
 			link_base::operator=(std::move(other));
 			std::swap(m_ptr, other.m_ptr);
-			hash = other.hash;
-			return *this;
+			m_hash = other.m_hash;
+		}
+		TPP_CXX20_CONSTEXPR void move_from(stable_node &other)
+		{
+			link_base::operator=(std::move(other));
+			std::swap(m_ptr, other.m_ptr);
+			m_hash = other.m_hash;
+		}
+		TPP_CXX20_CONSTEXPR void destroy(A &alloc)
+		{
+			if (m_ptr)
+			{
+				std::allocator_traits<A>::destroy(alloc, m_ptr);
+				std::allocator_traits<A>::deallocate(alloc, m_ptr, 1);
+				m_ptr = nullptr;
+			}
 		}
 
-		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
-		constexpr stable_node(Args &&...args) noexcept(std::is_nothrow_constructible_v<V, Args...>) : m_ptr(new V(std::forward<Args>(args)...)) {}
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &hash() noexcept { return m_hash[I]; }
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &hash() const noexcept { return m_hash[I]; }
 
-		~stable_node() { delete m_ptr; }
+		[[nodiscard]] constexpr auto &value() noexcept { return *m_ptr; }
+		[[nodiscard]] constexpr const auto &value() const noexcept { return *m_ptr; }
 
-		[[nodiscard]] constexpr auto *get() noexcept { return m_ptr; }
-		[[nodiscard]] constexpr const auto *get() const noexcept { return m_ptr; }
-
-		[[nodiscard]] constexpr auto &value() noexcept { return *get(); }
-		[[nodiscard]] constexpr const auto &value() const noexcept { return *get(); }
-
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::key_get(value()); }
+		template<std::size_t I>
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template key_get<I>(value()); }
 		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
 		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
 
-		constexpr void swap(stable_node &other) noexcept
+		constexpr friend void swap(stable_node &a, stable_node &b) noexcept
 		{
-			link_base::swap(other);
-			std::swap(m_ptr, other.m_ptr);
-			std::swap(hash, other.hash);
+			a.link_base::swap(b);
+			std::swap(a.m_ptr, b.m_ptr);
+			std::swap(a.m_hash, b.m_hash);
 		}
 
 	private:
 		V *m_ptr = nullptr;
+		hash_type m_hash = 0;
+	};
 
-	public:
-		std::size_t hash = 0;
+	/* Need a special relocate functor for dense_node & stable_node since they require an injected value allocator. */
+	struct relocate_node
+	{
+		template<typename A, typename N, typename Alloc = typename N::allocator_type>
+		TPP_CXX20_CONSTEXPR void operator()(A &alloc_src, N *src, A &alloc_dst, N *dst) const
+		{
+			auto value_alloc_src = Alloc{alloc_src};
+			auto value_alloc_dst = Alloc{alloc_dst};
+			dst->construct(value_alloc_dst, std::move(*src));
+			src->destroy(value_alloc_src);
+		}
 	};
 
 	/* Helper used to check if a node is extractable. */
@@ -341,8 +464,8 @@ namespace tpp::detail
 	struct is_stable : std::false_type {};
 	template<typename T>
 	struct is_stable<T, std::void_t<typename T::is_stable>> : std::true_type {};
-	template<typename V, typename Traits>
-	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits>, dense_node<V, Traits>>;
+	template<typename V, typename Traits, typename Alloc>
+	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits, Alloc>, dense_node<V, Traits, Alloc>>;
 
 	template<typename N, typename Traits>
 	struct ordered_iterator
@@ -505,7 +628,7 @@ namespace tpp::detail
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{m_iter->get()}; }
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{&m_iter->value()}; }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
@@ -564,4 +687,45 @@ namespace tpp::detail
 
 	template<std::size_t, typename T>
 	[[nodiscard]] constexpr static decltype(auto) forward_i(T &&value) noexcept { return std::forward<T>(value); }
+
+	template<std::size_t... Is, typename T>
+	[[nodiscard]] constexpr static std::array<T, sizeof...(Is)> make_array(std::index_sequence<Is...>, const T &value) { return {forward_i<Is>(value)...}; }
+	template<std::size_t Size, typename T>
+	[[nodiscard]] constexpr static std::array<T, Size> make_array(const T &value) noexcept { return make_array(std::make_index_sequence<Size>{}, value); }
+
+	template<std::size_t, typename...>
+	struct remove_index;
+	template<std::size_t I, std::size_t... Is>
+	struct remove_index<I, std::index_sequence<Is...>, std::index_sequence<>>
+	{
+		using type = std::index_sequence<Is...>;
+	};
+	template<std::size_t I, std::size_t... Is, std::size_t... Us>
+	struct remove_index<I, std::index_sequence<Is...>, std::index_sequence<I, Us...>>
+	{
+		using type = typename remove_index<I, std::index_sequence<Is...>, std::index_sequence<Us...>>::type;
+	};
+	template<std::size_t I, std::size_t... Is, std::size_t U, std::size_t... Us>
+	struct remove_index<I, std::index_sequence<Is...>, std::index_sequence<U, Us...>>
+	{
+		using type = typename remove_index<I, std::index_sequence<Is..., U>, std::index_sequence<Us...>>::type;
+	};
+	template<std::size_t I, std::size_t... Is>
+	struct remove_index<I, std::index_sequence<Is...>>
+	{
+		using type = typename remove_index<I, std::index_sequence<>, std::index_sequence<Is...>>::type;
+	};
+
+	template<std::size_t I, typename Is>
+	using remove_index_t = typename remove_index<I, Is>::type;
 }
+
+#if defined(TPP_DEBUG) || !defined(NDEBUG)
+#ifdef TPP_HAS_CONSTEVAL
+#define TPP_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) tpp::detail::assert_msg(cnd, #cnd, (__FILE__), (__LINE__), TPP_PRETTY_FUNC, msg);
+#else
+#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, #cnd, (__FILE__), (__LINE__), TPP_PRETTY_FUNC, msg);
+#endif
+#else
+#define TPP_ASSERT(cnd, msg) TPP_ASSUME(cnd)
+#endif

@@ -113,3 +113,10 @@ import std;
 #define TPP_IF_UNLIKELY(x) if (x)
 
 #endif
+
+/* Use constexpr qualifier in C++20. */
+#if __cplusplus >= 202002L
+#define TPP_CXX20_CONSTEXPR constexpr
+#else
+#define TPP_CXX20_CONSTEXPR inline
+#endif
