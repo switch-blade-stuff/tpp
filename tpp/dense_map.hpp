@@ -138,13 +138,15 @@ namespace tpp
 				: dense_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		TPP_CXX20_CONSTEXPR dense_map(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_map(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		TPP_CXX20_CONSTEXPR dense_map(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_map(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -165,8 +167,9 @@ namespace tpp
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		TPP_CXX20_CONSTEXPR dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -727,8 +730,8 @@ namespace tpp
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
 		TPP_CXX20_CONSTEXPR ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{},
-		                                      const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                      const allocator_type &alloc = allocator_type{})
 				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
 		TPP_CXX20_CONSTEXPR ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -739,8 +742,9 @@ namespace tpp
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		TPP_CXX20_CONSTEXPR ordered_dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                                      const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR ordered_dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity,
+		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                      const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>

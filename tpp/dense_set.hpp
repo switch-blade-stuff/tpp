@@ -81,10 +81,8 @@ namespace tpp
 		/** Move-constructs the set. */
 		TPP_CXX20_CONSTEXPR dense_set(dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		TPP_CXX20_CONSTEXPR dense_set(dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t,
-		                                                                                                                       table_t &&,
-		                                                                                                                       allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		TPP_CXX20_CONSTEXPR dense_set(dense_set &&other, const allocator_type &alloc)
+		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
 		TPP_CXX20_CONSTEXPR explicit dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
@@ -98,13 +96,15 @@ namespace tpp
 				: dense_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		TPP_CXX20_CONSTEXPR dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		TPP_CXX20_CONSTEXPR dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -125,8 +125,9 @@ namespace tpp
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		TPP_CXX20_CONSTEXPR dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                              const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity,
+		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                              const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -140,7 +141,7 @@ namespace tpp
 		/** Copy-assigns the set. */
 		TPP_CXX20_CONSTEXPR dense_set &operator=(const dense_set &) = default;
 		/** Move-assigns the set. */
-		TPP_CXX20_CONSTEXPR dense_set &operator=(dense_set &&) noexcept(std::is_nothrow_move_assignable_v<dense_set>) = default;
+		TPP_CXX20_CONSTEXPR dense_set &operator=(dense_set &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the set with elements of the initializer list. */
 		TPP_CXX20_CONSTEXPR dense_set &operator=(std::initializer_list<value_type> il)
@@ -446,13 +447,14 @@ namespace tpp
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
 		TPP_CXX20_CONSTEXPR ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{},
-		                                      const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                      const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		TPP_CXX20_CONSTEXPR ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                                      const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
+		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                      const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -473,8 +475,9 @@ namespace tpp
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		TPP_CXX20_CONSTEXPR ordered_dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                                      const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		TPP_CXX20_CONSTEXPR ordered_dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity,
+		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                                      const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -488,7 +491,7 @@ namespace tpp
 		/** Copy-assigns the set. */
 		TPP_CXX20_CONSTEXPR ordered_dense_set &operator=(const ordered_dense_set &) = default;
 		/** Move-assigns the set. */
-		TPP_CXX20_CONSTEXPR ordered_dense_set &operator=(ordered_dense_set &&) noexcept(std::is_nothrow_move_assignable_v<ordered_dense_set>) = default;
+		TPP_CXX20_CONSTEXPR ordered_dense_set &operator=(ordered_dense_set &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the set with elements of the initializer list. */
 		TPP_CXX20_CONSTEXPR ordered_dense_set &operator=(std::initializer_list<value_type> il)

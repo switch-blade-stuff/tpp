@@ -82,6 +82,14 @@ namespace tpp::detail
 	}
 #endif
 
+	template<std::size_t, typename T>
+	[[nodiscard]] constexpr static decltype(auto) forward_n(T &&value) noexcept { return std::forward<T>(value); }
+
+	template<std::size_t... Is, typename T>
+	[[nodiscard]] constexpr static std::array<T, sizeof...(Is)> make_array(std::index_sequence<Is...>, const T &value) { return {forward_n<Is>(value)...}; }
+	template<std::size_t Size, typename T>
+	[[nodiscard]] constexpr static std::array<T, Size> make_array(const T &value) noexcept { return make_array(std::make_index_sequence<Size>{}, value); }
+
 	/* Helper type used to store potentially empty objects. */
 	template<typename, typename = void>
 	struct ebo_container;
@@ -650,49 +658,6 @@ namespace tpp::detail
 	template<typename V, typename T, typename I>
 	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I> iter) noexcept { return iter.m_iter; }
 
-	template<typename T, typename U, typename... Us>
-	struct is_pack_element : is_pack_element<T, Us...> {};
-	template<typename T, typename... Us>
-	struct is_pack_element<T, T, Us...> : std::true_type {};
-	template<typename T>
-	struct is_pack_element<T, T> : std::true_type {};
-	template<typename T, typename U>
-	struct is_pack_element<T, U> : std::false_type {};
-
-	/** @brief Helper structure used to specify keys of a multiset. */
-	template<typename... Ks>
-	struct multikey { static_assert(sizeof...(Ks) != 0, "Multikey must have at least one key type"); };
-
-	template<typename>
-	struct multiset_alloc;
-	template<typename>
-	struct multiset_hash;
-	template<typename>
-	struct multiset_eq;
-
-	template<typename... Ks>
-	struct multiset_alloc<multikey<Ks...>> : std::allocator<std::tuple<Ks...>> {};
-	template<typename... Ks>
-	struct multiset_hash<multikey<Ks...>>
-	{
-		template<typename T, typename = std::enable_if_t<is_pack_element<T, Ks...>::value>>
-		[[nodiscard]] constexpr auto operator()(const T &key) const { return default_hash<T>{}(key); }
-	};
-	template<typename... Ks>
-	struct multiset_eq<multikey<Ks...>>
-	{
-		template<typename T, typename = std::enable_if_t<is_pack_element<T, Ks...>::value>>
-		[[nodiscard]] constexpr auto operator()(const T &a, const T &b) const { return std::equal_to<>{}(a, b); }
-	};
-
-	template<std::size_t, typename T>
-	[[nodiscard]] constexpr static decltype(auto) forward_i(T &&value) noexcept { return std::forward<T>(value); }
-
-	template<std::size_t... Is, typename T>
-	[[nodiscard]] constexpr static std::array<T, sizeof...(Is)> make_array(std::index_sequence<Is...>, const T &value) { return {forward_i<Is>(value)...}; }
-	template<std::size_t Size, typename T>
-	[[nodiscard]] constexpr static std::array<T, Size> make_array(const T &value) noexcept { return make_array(std::make_index_sequence<Size>{}, value); }
-
 	template<std::size_t, typename...>
 	struct remove_index;
 	template<std::size_t I, std::size_t... Is>
@@ -722,9 +687,9 @@ namespace tpp::detail
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
 #ifdef TPP_HAS_CONSTEVAL
-#define TPP_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) tpp::detail::assert_msg(cnd, #cnd, (__FILE__), (__LINE__), TPP_PRETTY_FUNC, msg);
+#define TPP_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg));
 #else
-#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, #cnd, (__FILE__), (__LINE__), TPP_PRETTY_FUNC, msg);
+#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg));
 #endif
 #else
 #define TPP_ASSERT(cnd, msg) TPP_ASSUME(cnd)
