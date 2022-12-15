@@ -45,6 +45,7 @@ macro(test_target_cxx)
     # Dense table tests
     add_test(NAME dense_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_map)
     add_test(NAME ordered_dense_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_dense_map)
+    add_test(NAME dense_multimap-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_multimap)
     add_test(NAME dense_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_set)
     add_test(NAME ordered_dense_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_dense_set)
     add_test(NAME dense_multiset-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_multiset)

@@ -164,6 +164,6 @@ In the future, a module interface may be provided for the library as an alternat
 
 ## API compatibility
 
-While both SwissHash and dense set -based containers are largely API-compatible with `std::unordered_map`
-and `std::unordered_set`, they are not guaranteed to be drop-in replacements for STL types, and neither provide the same
-pointer stability guarantees.
+While the provided map & set containers are largely API-compatible with `std::unordered_map` and `std::unordered_set`,
+they are not guaranteed to be drop-in replacements for STL types, and neither provide the same pointer stability
+guarantees.

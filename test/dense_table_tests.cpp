@@ -39,6 +39,10 @@ void test_ordered_dense_set() noexcept
 	test_ordered_set<tpp::ordered_dense_set>();
 }
 
+void test_dense_multimap() noexcept
+{
+	test_multimap<tpp::dense_multimap>();
+}
 void test_dense_multiset() noexcept
 {
 	tpp::dense_multiset<tpp::multikey<int, std::string>> mset;

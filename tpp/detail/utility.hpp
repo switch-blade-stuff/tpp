@@ -80,7 +80,7 @@ import std.memory;
 namespace tpp::detail
 {
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
-	static inline void assert_msg(bool cnd, const char *cstr, const char *file, std::size_t line, const char *func, const char *msg) noexcept
+	[[maybe_unused]] static inline void assert_msg(bool cnd, const char *cstr, const char *file, std::size_t line, const char *func, const char *msg) noexcept
 	{
 		if (!cnd)
 		{
@@ -187,19 +187,7 @@ namespace tpp::detail
 	};
 
 	/* Placeholder node link. */
-	struct empty_link
-	{
-		constexpr void link(std::ptrdiff_t) noexcept {}
-		constexpr void link(empty_link *) noexcept {}
-
-		constexpr void relink_from(empty_link &) noexcept {}
-		constexpr void unlink() noexcept {}
-
-		[[nodiscard]] constexpr empty_link *off(std::ptrdiff_t) noexcept { return this; }
-		[[nodiscard]] constexpr const empty_link *off(std::ptrdiff_t) const noexcept { return this; }
-
-		constexpr void swap(empty_link &) noexcept {}
-	};
+	struct empty_link { constexpr void swap(empty_link &) noexcept {}};
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
@@ -219,6 +207,8 @@ namespace tpp::detail
 		}
 
 		TPP_CXX20_CONSTEXPR ordered_link() noexcept = default;
+		TPP_CXX20_CONSTEXPR ordered_link(const ordered_link &) noexcept = default;
+		TPP_CXX20_CONSTEXPR ordered_link &operator=(const ordered_link &) noexcept = default;
 		TPP_CXX20_CONSTEXPR ordered_link(ordered_link &&other) noexcept { relink_from(other); }
 		TPP_CXX20_CONSTEXPR ordered_link &operator=(ordered_link &&other) noexcept
 		{
@@ -227,9 +217,9 @@ namespace tpp::detail
 		}
 
 		TPP_CXX20_CONSTEXPR void link(std::ptrdiff_t prev_off) noexcept { link(off(prev_off)); }
-		TPP_CXX20_CONSTEXPR void link(ordered_link *prev_ptr) noexcept
+		TPP_CXX20_CONSTEXPR void link(ordered_link *prev_ptr) noexcept { link(prev_ptr->off(prev_ptr->next), prev_ptr); }
+		TPP_CXX20_CONSTEXPR void link(ordered_link *next_ptr, ordered_link *prev_ptr) noexcept
 		{
-			const auto next_ptr = prev_ptr->off(prev_ptr->next);
 			next_ptr->prev = -(next = byte_diff(next_ptr, this));
 			prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
 		}
@@ -347,8 +337,14 @@ namespace tpp::detail
 	public:
 		using allocator_type = A;
 
-		template<typename... Args>
+		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args) { std::allocator_traits<A>::construct(alloc, &value(), std::forward<Args>(args)...); }
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, const packed_node &other)
+		{
+			link_base::operator=(other);
+			construct(alloc, other.value());
+			hash() = other.hash();
+		}
 		TPP_CXX20_CONSTEXPR void construct(A &alloc, packed_node &&other)
 		{
 			link_base::operator=(std::move(other));
@@ -404,11 +400,17 @@ namespace tpp::detail
 		using allocator_type = A;
 		using is_extractable = std::true_type;
 
-		template<typename... Args>
+		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args)
 		{
 			m_ptr = std::allocator_traits<A>::allocate(alloc, 1);
 			std::allocator_traits<A>::construct(alloc, m_ptr, std::forward<Args>(args)...);
+		}
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, const stable_node &other)
+		{
+			link_base::operator=(other);
+			construct(alloc, other.value());
+			m_hash = other.m_hash;
 		}
 		TPP_CXX20_CONSTEXPR void construct(A &, stable_node &&other)
 		{

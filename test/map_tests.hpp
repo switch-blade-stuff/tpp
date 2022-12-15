@@ -6,6 +6,8 @@
 
 #include "assert.hpp"
 
+#include <tpp/detail/multikey.hpp>
+
 template<template<typename...> typename T, typename map_t = T<std::string, int>>
 static void test_map() noexcept
 {
@@ -49,10 +51,26 @@ static void test_map() noexcept
 	TEST_ASSERT(map0.find("0")->second == 0);
 
 	auto map1 = map_t{std::move(map0)};
+
 	TEST_ASSERT(map0.size() == 0);
-	TEST_ASSERT(map1.size() == 2);
+	TEST_ASSERT(!map0.contains("0"));
+	TEST_ASSERT(!map0.contains("1"));
 	TEST_ASSERT(map0.begin() == map0.end());
+
+	TEST_ASSERT(map1.size() == 2);
+	TEST_ASSERT(map1.contains("0"));
+	TEST_ASSERT(map1.contains("1"));
 	TEST_ASSERT(map1.begin() != map1.end());
+
+	auto map2 = map1;
+
+	TEST_ASSERT(map2.size() == 2);
+	TEST_ASSERT(map2.contains("0"));
+	TEST_ASSERT(map2.contains("1"));
+	TEST_ASSERT(map2.begin() != map2.end());
+
+	TEST_ASSERT(map2 != map0);
+	TEST_ASSERT(map2 == map1);
 
 	map1.clear();
 	TEST_ASSERT(map1.size() == 0);
@@ -123,8 +141,12 @@ static void test_ordered_map() noexcept
 	TEST_ASSERT(map0.find("1") != map0.find("0"));
 
 	auto map1 = map_t{std::move(map0)};
+
 	TEST_ASSERT(map0.size() == 0);
+	TEST_ASSERT(!map0.contains("0"));
+	TEST_ASSERT(!map0.contains("1"));
 	TEST_ASSERT(map0.begin() == map0.end());
+
 	TEST_ASSERT(map1.size() == 2);
 	TEST_ASSERT(map1.begin() != map1.end());
 	TEST_ASSERT(map1.contains("0"));
@@ -133,4 +155,80 @@ static void test_ordered_map() noexcept
 	TEST_ASSERT(map1.find("1") == std::prev(map1.end()));
 	TEST_ASSERT(*map1.find("0") == map1.front());
 	TEST_ASSERT(*map1.find("1") == map1.back());
+
+	auto map2 = map1;
+
+	TEST_ASSERT(map2.size() == 2);
+	TEST_ASSERT(map2.contains("0"));
+	TEST_ASSERT(map2.contains("1"));
+	TEST_ASSERT(map2.find("0") == map2.begin());
+	TEST_ASSERT(map2.find("1") == std::prev(map2.end()));
+	TEST_ASSERT(*map2.find("0") == map2.front());
+	TEST_ASSERT(*map2.find("1") == map2.back());
+
+	TEST_ASSERT(map2 != map0);
+	TEST_ASSERT(map2 == map1);
+}
+
+template<template<typename...> typename T, typename map_t = T<tpp::multikey<std::string, int>, float>>
+static void test_multimap() noexcept
+{
+	auto map0 = map_t{};
+
+	TEST_ASSERT(map0.size() == 0);
+
+	TEST_ASSERT(map0.try_emplace(std::forward_as_tuple("0", 0), 0.0f).second);
+	TEST_ASSERT(map0.size() == 1);
+	TEST_ASSERT(map0.template contains<0>("0"));
+	TEST_ASSERT(map0.template contains<1>(0));
+	TEST_ASSERT(map0.template find<0>("0")->second == 0.0f);
+	TEST_ASSERT(std::get<1>(map0.template find<0>("0")->first) == 0);
+	TEST_ASSERT(map0.template find<1>(0)->second == 0.0f);
+	TEST_ASSERT(std::get<0>(map0.template find<1>(0)->first) == "0");
+	TEST_ASSERT(map0.template find<0>("0") == map0.template find<1>(0));
+
+	TEST_ASSERT(map0.try_emplace(std::forward_as_tuple("1", 1), 1.0f).second);
+	TEST_ASSERT(map0.size() == 2);
+	TEST_ASSERT(map0.template contains<0>("1"));
+	TEST_ASSERT(map0.template contains<1>(1));
+	TEST_ASSERT(map0.template find<0>("1")->second == 1.0f);
+	TEST_ASSERT(std::get<1>(map0.template find<0>("1")->first) == 1);
+	TEST_ASSERT(map0.template find<1>(1)->second == 1.0f);
+	TEST_ASSERT(std::get<0>(map0.template find<1>(1)->first) == "1");
+	TEST_ASSERT(map0.template find<0>("1") == map0.template find<1>(1));
+
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("0", 0), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("0", 1), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("0", 2), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("1", 0), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("1", 1), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("1", 2), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("2", 0), 0.0f).second);
+	TEST_ASSERT(!map0.try_emplace(std::forward_as_tuple("2", 1), 0.0f).second);
+
+	auto map1 = map_t{std::move(map0)};
+
+	TEST_ASSERT(map0.template find<0>("0") == map0.end());
+	TEST_ASSERT(map0.template find<1>(0) == map0.end());
+	TEST_ASSERT(map0.template find<0>("1") == map0.end());
+	TEST_ASSERT(map0.template find<1>(1) == map0.end());
+
+	TEST_ASSERT(map1.template find<0>("0") != map1.end());
+	TEST_ASSERT(map1.template find<0>("1") != map1.end());
+	TEST_ASSERT(map1.template find<1>(0) != map1.end());
+	TEST_ASSERT(map1.template find<1>(1) != map1.end());
+	TEST_ASSERT(map1.template find<0>("0") == map1.template find<1>(0));
+	TEST_ASSERT(map1.template find<0>("1") == map1.template find<1>(1));
+
+	auto map2 = map1;
+
+	TEST_ASSERT(map2.template find<0>("0") != map2.end());
+	TEST_ASSERT(map2.template find<0>("1") != map2.end());
+	TEST_ASSERT(map2.template find<1>(0) != map2.end());
+	TEST_ASSERT(map2.template find<1>(1) != map2.end());
+	TEST_ASSERT(map2.template find<0>("0") == map2.template find<1>(0));
+	TEST_ASSERT(map2.template find<0>("1") == map2.template find<1>(1));
+
+	TEST_ASSERT(map2 != map0);
+	TEST_ASSERT(map2 == map1);
 }

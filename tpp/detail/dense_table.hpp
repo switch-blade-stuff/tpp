@@ -34,15 +34,20 @@ namespace tpp::detail
 
 		struct bucket_node : table_node<V, Alloc, ValueTraits>
 		{
-			template<typename... Args>
+			template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, Args &&...args)
 			{
 				table_node<V, Alloc, ValueTraits>::construct(alloc, std::forward<Args>(args)...);
 				next = make_array<key_size>(npos);
 			}
+			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, const bucket_node &other)
+			{
+				table_node<V, Alloc, ValueTraits>::construct(alloc, other);
+				next = other.next;
+			}
 			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, bucket_node &&other)
 			{
-				table_node<V, Alloc, ValueTraits>::construct(alloc, std::forward<table_node<V, Alloc, ValueTraits>>(other));
+				table_node<V, Alloc, ValueTraits>::construct(alloc, std::move(other));
 				next = other.next;
 			}
 			TPP_CXX20_CONSTEXPR void move_from(bucket_node &other)
@@ -578,7 +583,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto *begin_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->off(header_link()->next));
+				return static_cast<bucket_node *>(header_link()->off(header_base::next));
 			else
 				return m_dense;
 		}
@@ -586,7 +591,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto *back_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->off(header_link()->prev));
+				return static_cast<bucket_node *>(header_link()->off(header_base::prev));
 			else
 				return m_dense + (size() - 1);
 		}
@@ -879,7 +884,7 @@ namespace tpp::detail
 
 			/* (re)allocate the bucket & element buffers if needed. */
 			realloc_buffer(get_sparse_alloc(), m_sparse, m_sparse_size, other.m_sparse_size);
-			realloc_buffer(get_dense_alloc(), m_dense, m_dense_capacity, other.m_size);
+			realloc_buffer(get_dense_alloc(), m_dense, m_dense_capacity, other.m_dense_size);
 
 			/* Copy & insert elements from the other table. */
 			auto alloc = allocator_type{get_dense_alloc()};
@@ -889,6 +894,17 @@ namespace tpp::detail
 				auto &to = m_dense[m_dense_size];
 				to.construct(alloc, from);
 				(insert_node<Is>(to, m_dense_size), ...);
+			}
+
+			/* If the node link is ordered, update header offsets to point to the copied data. */
+			if constexpr (is_ordered::value)
+			{
+				if (m_dense_size != 0)
+				{
+					const auto front_off = other.front_node() - other.m_dense;
+					const auto back_off = other.back_node() - other.m_dense;
+					header_base::link(m_dense + front_off, m_dense + back_off);
+				}
 			}
 		}
 		template<std::size_t... Is>
