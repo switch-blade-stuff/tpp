@@ -15,11 +15,14 @@ macro(test_target_cxx)
 
     # On MSVC, use c++latest instead of c++23 for experimental module support
     if (MSVC AND TPP_USE_MODULES AND ${ARGV0} EQUAL 20)
-        target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
+        set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 23)
         target_compile_options(${PROJECT_NAME} PRIVATE /experimental:module)
     else ()
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
     endif ()
+
+    get_property(CXX TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD)
+    message("${PROJECT_NAME} C++: ${CXX}")
 
     # Enable max error reporting
     if (MSVC)

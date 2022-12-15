@@ -534,7 +534,7 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
 
-#if __cplusplus >= 202002L
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 		[[nodiscard]] constexpr auto operator<=>(const ordered_iterator &other) const noexcept { return link <=> other.link; }
 #else
 		[[nodiscard]] constexpr bool operator!=(const ordered_iterator &other) const noexcept { return link != other.link; }
@@ -550,7 +550,7 @@ namespace tpp::detail
 	template<typename>
 	struct iterator_concept_base {};
 
-#if __cplusplus >= 202002L
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 	template<std::contiguous_iterator I>
 	struct iterator_concept_base<I> { using iterator_concept = std::contiguous_iterator_tag; };
 #endif
@@ -650,7 +650,7 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
 
-#if __cplusplus >= 202002L
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 		[[nodiscard]] constexpr auto operator<=>(const table_iterator &other) const noexcept { return m_iter <=> other.m_iter; }
 #else
 		[[nodiscard]] constexpr bool operator!=(const table_iterator &other) const noexcept { return m_iter != other.m_iter; }

@@ -552,7 +552,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if __cplusplus < 202002L
+#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator!=(const dense_map &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
@@ -1135,7 +1135,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if __cplusplus < 202002L
+#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator!=(const ordered_dense_map &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());

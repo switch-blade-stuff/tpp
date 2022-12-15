@@ -6,7 +6,7 @@
 
 #ifndef TPP_NO_HASH
 
-#if !defined(TPP_USE_IMPORT) && __cplusplus >= 202002L
+#if !defined(TPP_USE_IMPORT) && (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 
 #include <version>
 
@@ -347,7 +347,7 @@ struct tpp::hash<std::thread::id, Algo>
 
 /* C++20 */
 
-#if __cplusplus >= 202002L && defined(TPP_STL_HASH_ALL) || defined(TPP_COROUTINE_HASH)
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L) && defined(TPP_STL_HASH_ALL) || defined(TPP_COROUTINE_HASH)
 
 #ifndef TPP_USE_IMPORT
 
@@ -373,7 +373,7 @@ struct tpp::hash<std::coroutine_handle<P>, Algo>
 
 /* C++23 */
 
-#if __cplusplus > 202002L && defined(TPP_STL_HASH_ALL) || defined(TPP_STACKTRACE_HASH)
+#if (__cplusplus > 202002L || _MSVC_LANG > 202002L) && defined(TPP_STL_HASH_ALL) || defined(TPP_STACKTRACE_HASH)
 
 #ifndef TPP_USE_IMPORT
 

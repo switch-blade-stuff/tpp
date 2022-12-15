@@ -71,7 +71,7 @@ namespace tpp::detail
 		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t msb_index() const noexcept;
 
 		[[nodiscard]] constexpr bool operator==(const basic_index_mask &other) const noexcept { return m_value == other.m_value; }
-#if __cplusplus < 202002L
+#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
 		[[nodiscard]] constexpr bool operator!=(const basic_index_mask &other) const noexcept { return m_value != other.m_value; }
 #endif
 

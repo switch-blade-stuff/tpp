@@ -16,7 +16,7 @@
 #ifdef TPP_USE_IMPORT
 
 /* If we are not on MSVC or C++ version at least C++23 use `import std`. Otherwise, use `import std.core`. */
-#if defined(_MSC_VER) && __cplusplus <= 202002L
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 
 import std.core;
 
@@ -45,7 +45,7 @@ import std;
 #define TPP_IS_CONSTEVAL false
 #endif
 
-#if __cplusplus >= 202002L
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 #define TPP_REQUIRES(cnd) requires cnd
 #else
 #define TPP_REQUIRES(cnd)
@@ -63,9 +63,7 @@ import std;
 #define TPP_ASSUME(x)
 #endif
 
-#if defined(_MSC_VER)
-#define TPP_UNREACHABLE() __assume(false)
-#elif defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__)
 #define TPP_UNREACHABLE() __builtin_unreachable()
 #elif defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
 #define TPP_UNREACHABLE() std::unreachable()
@@ -107,7 +105,7 @@ import std;
 #endif
 #endif
 
-#if __cplusplus >= 202002L
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 
 #define TPP_IF_LIKELY(x) if (x) [[likely]]
 #define TPP_IF_UNLIKELY(x) if (x) [[unlikely]]
@@ -124,8 +122,8 @@ import std;
 
 #endif
 
-/* Use constexpr qualifier in C++20. */
-#if __cplusplus >= 202002L
+/* Use constexpr qualifier in C++20 or later. */
+#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 #define TPP_CXX20_CONSTEXPR constexpr
 #else
 #define TPP_CXX20_CONSTEXPR inline

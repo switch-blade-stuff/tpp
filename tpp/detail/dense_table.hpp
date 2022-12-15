@@ -180,7 +180,7 @@ namespace tpp::detail
 			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_pos == other.m_pos; }
-#if __cplusplus < 202002L
+#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
 			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_pos != other.m_pos; }
 #endif
 
