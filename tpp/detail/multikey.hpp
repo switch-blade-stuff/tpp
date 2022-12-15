@@ -20,7 +20,7 @@ namespace tpp
 
 	namespace detail
 	{
-		template<typename, typename>
+		template<typename, typename = void>
 		struct multikey_alloc;
 		template<typename>
 		struct multikey_hash;
@@ -40,8 +40,8 @@ namespace tpp
 		struct multikey_alloc<multikey<Ks...>, Mapped> { using type = std::allocator<std::pair<std::tuple<Ks...>, Mapped>>; };
 		template<typename... Ks>
 		struct multikey_alloc<multikey<Ks...>, void> { using type = std::allocator<std::tuple<Ks...>>; };
-		template<typename Mk, typename Mapped>
-		using multikey_alloc_t = typename multikey_alloc<Mk, Mapped>::type;
+		template<typename... Ts>
+		using multikey_alloc_t = typename multikey_alloc<Ts...>::type;
 
 		template<typename... Ks>
 		struct multikey_hash<multikey<Ks...>>

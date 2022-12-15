@@ -9,7 +9,7 @@
 
 namespace tpp
 {
-	template<typename Mk, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk, void>>
+	template<typename Mk, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk>>
 	class dense_multiset;
 
 	/** @brief Hash multiset based on dense hash table.

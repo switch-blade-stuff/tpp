@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-macro(make_test_target)
+macro(test_target_cxx)
     project(tpp-tests-cxx${ARGV0})
 
     add_executable(${PROJECT_NAME}
@@ -8,10 +8,12 @@ macro(make_test_target)
             ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
             ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp
             ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
+            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp
+            )
 
     target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
 
+    # On MSVC, use c++latest instead of c++23 for experimental module support
     if (MSVC AND TPP_USE_MODULES AND ${ARGV0} EQUAL 20)
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
         target_compile_options(${PROJECT_NAME} PRIVATE /experimental:module)
@@ -19,15 +21,22 @@ macro(make_test_target)
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
     endif ()
 
+    # Enable max error reporting
     if (MSVC)
-        set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
-        target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX /fsanitize=address /Zi)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)
     else ()
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror -fstack-protector-all)
-#        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#            target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer)
-#            target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address)
-#        endif ()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif ()
+
+    # Enable ASan in debug builds
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
+            target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address /Zi)
+        elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fstack-protector-strong)
+            target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address)
+        endif ()
     endif ()
 
     # Dense table tests
@@ -48,5 +57,5 @@ endmacro()
 include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
 enable_testing()
 
-make_test_target(17)
-make_test_target(20)
+test_target_cxx(17) # Test with C++17
+test_target_cxx(20) # Test with C++20

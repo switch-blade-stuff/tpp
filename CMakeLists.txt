@@ -3,13 +3,11 @@ project(tpp)
 
 # Library options
 option(TPP_USE_MODULES "Toggles support for C++20 modules" ON)
-
 if (${TPP_USE_MODULES})
     add_compile_definitions(TPP_USE_MODULES)
 endif ()
 
 option(TPP_NO_SIMD "Toggles availability of SIMD optimizations for swiss tables" OFF)
-
 if (${TPP_NO_SIMD})
     add_compile_definitions(TPP_NO_SIMD)
 endif ()
@@ -113,7 +111,6 @@ add_library(${PROJECT_NAME} INTERFACE
 
 # Unit tests
 option(TPP_TESTS "Enable unit tests" OFF)
-
 if (${TPP_TESTS})
     include(${CMAKE_CURRENT_LIST_DIR}/test/CMakeLists.txt)
 endif ()
