@@ -14,6 +14,8 @@
 
 #endif
 
+#ifndef TPP_USE_IMPORT
+
 #if defined(TPP_HAS_SSSE3)
 
 #include <tmmintrin.h>
@@ -31,6 +33,8 @@
 #pragma intrinsic(_BitScanForward, _BitScanReverse)
 #ifdef _WIN64
 #pragma intrinsic(_BitScanForward64, _BitScanReverse64)
+#endif
+
 #endif
 
 #endif
@@ -129,12 +133,12 @@ namespace tpp::detail
 			return static_cast<std::size_t>(result);
 		}
 #ifdef _WIN64
-		else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
-		{
-			unsigned long result = 0;
-			_BitScanForward64(&result, static_cast<unsigned __int64>(value));
-			return static_cast<std::size_t>(result);
-		}
+			else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
+			{
+				unsigned long result = 0;
+				_BitScanForward64(&result, static_cast<unsigned __int64>(value));
+				return static_cast<std::size_t>(result);
+			}
 #endif
 		else
 			return generic_ctz(value);
@@ -149,12 +153,12 @@ namespace tpp::detail
 			return static_cast<std::size_t>(result);
 		}
 #ifdef _WIN64
-		else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
-		{
-			unsigned long result = 0;
-			_BitScanReverse64(&result, static_cast<unsigned __int64>(value));
-			return static_cast<std::size_t>(result);
-		}
+			else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
+			{
+				unsigned long result = 0;
+				_BitScanReverse64(&result, static_cast<unsigned __int64>(value));
+				return static_cast<std::size_t>(result);
+			}
 #endif
 		else
 			return generic_clz(value);
@@ -239,7 +243,7 @@ namespace tpp::detail
 			return (__m128i) ((__v16qi) a == (__v16qi) b);
 		else
 #endif
-			return _mm_cmpeq_epi8(a, b);
+		return _mm_cmpeq_epi8(a, b);
 	}
 	[[nodiscard]] inline __m128i x86_cmpgt_epi8(__m128i a, __m128i b) noexcept
 	{
@@ -248,7 +252,7 @@ namespace tpp::detail
 			return (__m128i) ((__v16qi) a > (__v16qi) b);
 		else
 #endif
-			return _mm_cmpgt_epi8(a, b);
+		return _mm_cmpgt_epi8(a, b);
 	}
 
 	TPP_CXX20_CONSTEXPR index_mask meta_block::match_empty() const noexcept
@@ -387,7 +391,7 @@ namespace tpp::detail
 			size_type cap = 0;
 		};
 
-		[[nodiscard]] constexpr static std::pair<std::size_t, std::uint8_t> decompose_hash(std::size_t h) noexcept { return {h >> 7, h & 0x7f}; }
+		[[nodiscard]] constexpr static std::pair <std::size_t, std::uint8_t> decompose_hash(std::size_t h) noexcept { return {h >> 7, h & 0x7f}; }
 
 	public:
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
@@ -403,10 +407,10 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &get_cmp() const noexcept { return cmp_base::value(); }
 
 		constexpr void swap(swiss_table &other)
-		noexcept(std::is_nothrow_swappable_v<hasher> &&
-		         std::is_nothrow_swappable_v<key_equal> &&
-		         std::is_nothrow_swappable_v<meta_alloc_base> &&
-		         std::is_nothrow_swappable_v<node_alloc_base>)
+		noexcept(std::is_nothrow_swappable_v < hasher > &&
+		         std::is_nothrow_swappable_v < key_equal > &&
+		         std::is_nothrow_swappable_v < meta_alloc_base > &&
+		         std::is_nothrow_swappable_v < node_alloc_base > )
 		{
 			if ((std::allocator_traits<meta_allocator>::propagate_on_container_swap::value || get_meta_alloc() == other.get_meta_alloc()) &&
 			    (std::allocator_traits<node_allocator>::propagate_on_container_swap::value || get_node_alloc() == other.get_node_alloc()))

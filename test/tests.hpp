@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include "assert.hpp"
+
+#ifndef TPP_USE_MODULES
+
 #include <string_view>
 
-#include "assert.hpp"
+#endif
 
 void test_seahash() noexcept;
 void test_crc32() noexcept;

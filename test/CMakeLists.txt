@@ -11,10 +11,16 @@ macro(make_test_target)
             ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
-    target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
+
+    if (MSVC AND TPP_USE_MODULES AND ${ARGV0} EQUAL 20)
+        target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
+        target_compile_options(${PROJECT_NAME} PRIVATE /experimental:module)
+    else ()
+        target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
+    endif ()
 
     if (MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)
     else ()
         target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif ()

@@ -90,7 +90,7 @@ else ()
 endif ()
 
 set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
-add_library(tpp INTERFACE
+add_library(${PROJECT_NAME} INTERFACE
         # Common utilities
         ${TPP_SOURCE_DIR}/detail/define.hpp
         ${TPP_SOURCE_DIR}/detail/utility.hpp

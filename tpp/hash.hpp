@@ -9,9 +9,7 @@
 #ifndef TPP_USE_IMPORT
 
 #include <functional>
-#include <cstring>
-#include <cstdint>
-#include <climits>
+#include <limits>
 
 #endif
 
@@ -86,7 +84,7 @@ namespace tpp
 	[[nodiscard]] constexpr std::uint32_t crc32(const void *data, std::size_t n) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);
-		std::uint32_t result = UINT32_MAX;
+		auto result = std::numeric_limits<std::uint32_t>::max();
 		for (std::size_t i = 0; i < n; i++)
 		{
 			const auto word = static_cast<std::uint32_t>(bytes[i]);
@@ -139,11 +137,11 @@ namespace tpp
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer.
 	 * @param[out] result Buffer of 16 bytes to write the hash result to. */
-	constexpr void md5(const void *data, std::size_t n, std::uint8_t (&result)[16]) noexcept
+	TPP_CXX20_CONSTEXPR void md5(const void *data, std::size_t n, std::uint8_t (&result)[16]) noexcept
 	{
 		constexpr auto rotl = [](std::uint32_t x, std::uint32_t s) noexcept
 		{
-			constexpr auto N = UINT32_MAX;
+			constexpr auto N = std::numeric_limits<std::uint32_t>::max();
 			const auto r = s % N;
 			return (x << r) | (x >> (N - r));
 		};
@@ -256,13 +254,8 @@ namespace tpp
 
 	namespace detail
 	{
-#if SIZE_MAX < INT64_MAX // Select fnv1a constants for 32-bit hashes
-		constexpr std::size_t fnv1a_prime = 0x01000193;
-		constexpr std::size_t fnv1a_offset = 0x811c9dc5;
-#else
-		constexpr std::size_t fnv1a_prime = 0x00000100000001b3;
-		constexpr std::size_t fnv1a_offset = 0xcbf29ce484222325;
-#endif
+		constexpr std::size_t fnv1a_prime = sizeof(std::size_t) >= sizeof(std::uint64_t) ? 0x00000100000001b3 : 0x01000193;
+		constexpr std::size_t fnv1a_offset = sizeof(std::size_t) >= sizeof(std::uint64_t) ? 0xcbf29ce484222325 : 0x811c9dc5;
 	}
 
 	/** @brief SDBM byte hash function.
@@ -380,9 +373,10 @@ namespace tpp
 		 * @return Reference to this hash builder.
 		 * @note This overload is available only if `T` is a scalar type. */
 		template<typename T>
-		constexpr std::enable_if_t<std::is_scalar_v<std::decay_t<T>>, seahash_builder &> write(const T &value) noexcept
+		constexpr std::enable_if_t <std::is_scalar_v<std::decay_t < T>>, seahash_builder &>
+		write(const T &value) noexcept
 		{
-			push(&value, sizeof(std::decay_t<T>));
+			push(&value, sizeof(std::decay_t < T > ));
 			return *this;
 		}
 		/** Writes a buffer of bytes to the resulting hash.
@@ -391,7 +385,7 @@ namespace tpp
 		 * @return Reference to this hash builder. */
 		constexpr seahash_builder &write(const void *data, std::size_t n) noexcept
 		{
-			push(data, static_cast<std::uint64_t>(n));
+			push(data, n);
 			return *this;
 		}
 
@@ -404,9 +398,9 @@ namespace tpp
 		}
 
 	private:
-		constexpr TPP_FORCEINLINE void push(const void *data, std::uint64_t n) noexcept
+		constexpr TPP_FORCEINLINE void push(const void *data, std::size_t n) noexcept
 		{
-			const auto overflow = std::uint64_t{8} - tail_n;
+			const auto overflow = std::size_t{8} - tail_n;
 			const auto copy_n = overflow < n ? overflow : n;
 			auto *bytes = static_cast<const std::uint8_t *>(data);
 

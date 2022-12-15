@@ -12,10 +12,14 @@
 #ifdef TPP_USE_IMPORT
 
 /* If we are not on MSVC or C++ version at least C++23 use `import std`. Otherwise, use `import std.core`. */
-#ifdef _MSC_VER || __cplusplus <= 202002L
+#if defined(_MSC_VER) && __cplusplus <= 202002L
+
 import std.core;
+
 #else
+
 import std;
+
 #endif
 
 #else

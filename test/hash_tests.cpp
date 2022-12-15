@@ -4,14 +4,18 @@
 
 #include "tests.hpp"
 
-#include <random>
-#include <array>
-
 #ifndef TPP_STL_HASH_ALL
 #define TPP_STL_HASH_ALL
 #endif
 
 #include <tpp/stl_hash.hpp>
+
+#ifndef TPP_USE_MODULES
+
+#include <random>
+#include <array>
+
+#endif
 
 using namespace std::literals;
 
@@ -19,7 +23,7 @@ template<std::size_t (*A)(const void *, std::size_t)>
 static auto test_hash()
 {
 	{
-		using value_t = std::variant<bool, char, int, long, long long, float, double, long double, void *,
+		using value_t = std::variant<bool, char, int, unsigned long, unsigned long long, float, double, long double, void *,
 		                             std::string, std::string_view, std::wstring, std::wstring_view,
 		                             std::filesystem::path, std::thread::id>;
 
@@ -27,8 +31,8 @@ static auto test_hash()
 				value_t{false},
 				value_t{'\0'},
 				value_t{0},
-				value_t{0l},
-				value_t{0ll},
+				value_t{0ul},
+				value_t{0ull},
 				value_t{0.0f},
 				value_t{0.0},
 				value_t{0.0L},
@@ -44,8 +48,8 @@ static auto test_hash()
 				value_t{true},
 				value_t{'A'},
 				value_t{0xaabb},
-				value_t{0xaabb'ccddl},
-				value_t{0xaabb'ccddll},
+				value_t{0xaabb'ccddul},
+				value_t{0xaabb'ccddull},
 				value_t{13.34f},
 				value_t{13.34},
 				value_t{13.34L},

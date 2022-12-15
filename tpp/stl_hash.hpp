@@ -6,7 +6,6 @@
 
 #ifndef TPP_NO_HASH
 
-/* If we are on MSVC and modules are supported, use `std.core` instead of `<version>`. */
 #if !defined(TPP_USE_IMPORT) && __cplusplus >= 202002L
 
 #include <version>
@@ -287,7 +286,7 @@ struct tpp::hash<std::type_index, Algo>
 #ifdef TPP_USE_IMPORT
 
 #ifdef _MSC_VER
-import std.memory;
+import std.filesystem;
 #endif
 
 #else

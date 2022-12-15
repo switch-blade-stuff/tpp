@@ -901,8 +901,7 @@ namespace tpp::detail
 
 		TPP_CXX20_CONSTEXPR void move_from(dense_table &other)
 		{
-			if ((std::allocator_traits<sparse_allocator>::is_always_equal::value || get_sparse_alloc() == other.get_sparse_alloc()) &&
-			    (std::allocator_traits<dense_allocator>::is_always_equal::value || get_dense_alloc() == other.get_dense_alloc()))
+			if (allocator_eq(get_sparse_alloc(), other.get_sparse_alloc()) && allocator_eq(get_dense_alloc(), other.get_dense_alloc()))
 				swap_data(other);
 			else
 				move_data(other);

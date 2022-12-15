@@ -47,7 +47,7 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>TPP_USE_MODULES</td>
     <td>-DTPP_USE_MODULES</td>
     <td>ON</td>
-    <td>Toggles support for C++20 modules</td>
+    <td>Toggles support for C++20 modules.</td>
   </tr>
   <tr>
     <td>TPP_NO_SIMD</td>

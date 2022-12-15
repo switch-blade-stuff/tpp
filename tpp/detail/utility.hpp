@@ -9,21 +9,29 @@
 #ifndef TPP_USE_IMPORT
 
 #include <initializer_list>
+#include <algorithm>
 #include <iterator>
 #include <cstdint>
 #include <limits>
+#include <array>
 
 #else
 
 #ifdef _MSC_VER
+
 import std.memory;
+
 #endif
 
 #endif
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
 
+#ifndef TPP_USE_IMPORT
+
 #include <cstdio>
+
+#endif
 
 #if defined(__has_builtin) && !defined(__ibmxl__)
 #if __has_builtin(__builtin_debugtrap)
@@ -49,7 +57,11 @@ import std.memory;
 #ifndef TPP_DEBUG_TRAP
 #ifndef TPP_USE_IMPORT
 
+#ifndef TPP_USE_IMPORT
+
 #include <csignal>
+
+#endif
 
 #endif
 #if defined(SIGTRAP)
@@ -74,8 +86,8 @@ namespace tpp::detail
 	{
 		if (!cnd)
 		{
-			fprintf(stderr, "Assertion (%s) failed at '%s:%lu' in '%s'", cstr, file, line, func);
-			if (msg) fprintf(stderr, "%s", msg);
+			printf("Assertion (%s) failed at '%s:%zu' in '%s'", cstr, file, line, func);
+			if (msg) printf("%s", msg);
 			TPP_DEBUG_TRAP();
 			std::terminate();
 		}
@@ -271,6 +283,15 @@ namespace tpp::detail
 	struct is_transparent : std::false_type {};
 	template<typename T>
 	struct is_transparent<T, std::void_t<typename T::is_transparent>> : std::true_type {};
+
+	template<typename Alloc>
+	[[nodiscard]] constexpr static bool allocator_eq(const Alloc &a, const Alloc &b)
+	{
+		if constexpr (!std::allocator_traits<Alloc>::is_always_equal::value)
+			return a == b;
+		else
+			return true;
+	}
 
 	template<typename A, typename T>
 	TPP_CXX20_CONSTEXPR void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)
