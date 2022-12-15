@@ -341,10 +341,10 @@ namespace tpp
 		 * @param key `I`th key of the element to search for.
 		 * @return Iterator to the specified element, or `end()`. */
 		template<std::size_t I>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR iterator find(const key_type &key) { return m_table.template find<I>(key); }
+		[[nodiscard]] TPP_CXX20_CONSTEXPR iterator find(const std::tuple_element_t<I, key_type> &key) { return m_table.template find<I>(key); }
 		/** @copydoc find */
 		template<std::size_t I>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR const_iterator find(const key_type &key) const { return m_table.template find<I>(key); }
+		[[nodiscard]] TPP_CXX20_CONSTEXPR const_iterator find(const std::tuple_element_t<I, key_type> &key) const { return m_table.template find<I>(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
@@ -352,6 +352,77 @@ namespace tpp
 		/** @copydoc find */
 		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] TPP_CXX20_CONSTEXPR const_iterator find(const K &key) const { return m_table.template find<I>(key); }
+
+		/** Checks if the specified element is present within the multimap as if by `find(key) != end()`.
+		 * @tparam I Index of the key.
+		 * @param key `I`th key of the element to search for.
+		 * @return `true` if the element is present within the multimap, `false` otherwise. */
+		template<std::size_t I>
+		[[nodiscard]] TPP_CXX20_CONSTEXPR bool contains(const std::tuple_element_t<I, key_type> &key) const { return m_table.template contains<I>(key); }
+		/** @copydoc contains
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		[[nodiscard]] TPP_CXX20_CONSTEXPR bool contains(const K &key) const { return m_table.template contains<I>(key); }
+
+		/** Returns reference to the specified element.
+		 * @tparam I Index of the key.
+		 * @param key `I`th key of the element to search for.
+		 * @return Reference to the specified element.
+		 * @throw std::out_of_range If no such element exists within the multimap. */
+		template<std::size_t I>
+		[[nodiscard]] reference at(const std::tuple_element_t<I, key_type> &key) { return *guard_at(find<I>(key)); }
+		/** @copydoc at */
+		template<std::size_t I>
+		[[nodiscard]] const_reference at(const std::tuple_element_t<I, key_type> &key) const { return *guard_at(find<I>(key)); }
+		/** @copydoc at
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		[[nodiscard]] reference at(const K &key) { return *guard_at(find<I>(key)); }
+		/** @copydoc at */
+		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		[[nodiscard]] const_reference at(const K &key) const { return *guard_at(find<I>(key)); }
+
+		/** Returns forward iterator to the first element of the specified bucket. */
+		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
+		/** @copydoc begin */
+		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		/** @copydoc begin */
+		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		/** Returns a sentinel iterator for the specified bucket. */
+		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
+		/** @copydoc end */
+		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		/** @copydoc end */
+		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+
+		/** Returns the bucket index of the specified element. */
+		template<std::size_t I>
+		[[nodiscard]] TPP_CXX20_CONSTEXPR size_type bucket(const std::tuple_element_t<I, key_type> &key) const { return m_table.bucket(key); }
+		/** @copydoc bucket
+		 * @note This overload is available only if the hash & compare functors are transparent. */
+		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		[[nodiscard]] TPP_CXX20_CONSTEXPR size_type bucket(const K &key) const { return m_table.bucket(key); }
+
+		/** Returns the current amount of buckets of the multimap. */
+		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_table.bucket_count(); }
+		/** Returns the maximum amount of buckets of the multimap. */
+		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_table.max_bucket_count(); }
+		/** Returns the amount of elements within the specified bucket. */
+		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return m_table.bucket_size(n); }
+
+		/** Reserves space for at least `n` elements. */
+		TPP_CXX20_CONSTEXPR void reserve(size_type n) { m_table.reserve(n); }
+		/** Reserves space for at least `n` buckets and rehashes the multimap if necessary.
+		 * @note The new amount of buckets is clamped to be at least `size() / max_load_factor()`. */
+		TPP_CXX20_CONSTEXPR void rehash(size_type n) { m_table.rehash(n); }
+		/** Returns the current maximum load factor. */
+		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor(); }
+		/** Sets the current maximum load factor. */
+		constexpr void max_load_factor(float f) noexcept { m_table.max_load_factor(f); }
+
+		[[nodiscard]] TPP_CXX20_CONSTEXPR allocator_type get_allocator() const { return allocator_type{m_table.get_allocator()}; }
+		[[nodiscard]] TPP_CXX20_CONSTEXPR hasher hash_function() const { return m_table.get_hash(); }
+		[[nodiscard]] TPP_CXX20_CONSTEXPR key_equal key_eq() const { return m_table.get_cmp(); }
 
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator==(const dense_multimap &other) const
 		{
@@ -367,6 +438,38 @@ namespace tpp
 		TPP_CXX20_CONSTEXPR void swap(dense_multimap &other) noexcept(std::is_nothrow_swappable_v<table_t>) { m_table.swap(other.m_table); }
 
 	private:
+		template<typename I>
+		[[nodiscard]] inline auto guard_at(I iter) const
+		{
+			if (iter == end())
+				throw std::out_of_range("`dense_multimap::at` - invalid key");
+			else
+				return iter;
+		}
+
 		table_t m_table;
 	};
+
+	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
+	 * @return Amount of elements erased. */
+	template<typename Mk, typename M, typename H, typename C, typename A, typename P>
+	TPP_CXX20_CONSTEXPR typename dense_multimap<Mk, M, H, C, A>::size_type erase_if(dense_multimap<Mk, M, H, C, A> &map, P pred)
+	{
+		typename dense_multimap<Mk, M, H, C, A>::size_type result = 0;
+		for (auto i = map.cbegin(), last = map.cend(); i != last;)
+		{
+			if (pred(*i))
+			{
+				i = map.erase(i);
+				++result;
+			}
+			else
+				++i;
+		}
+		return result;
+	}
+
+	template<typename Mk, typename M, typename H, typename C, typename A>
+	TPP_CXX20_CONSTEXPR void swap(dense_multimap<Mk, M, H, C, A> &a, dense_multimap<Mk, M, H, C, A> &b)
+	noexcept(std::is_nothrow_swappable_v<dense_multimap<Mk, H, C, A>>) { a.swap(b); }
 }

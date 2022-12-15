@@ -579,7 +579,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
 	TPP_CXX20_CONSTEXPR typename dense_map<K, M, H, C, A>::size_type erase_if(dense_map<K, M, H, C, A> &map, P pred)
 	{
-		typename dense_map<K, H, C, A>::size_type result = 0;
+		typename dense_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
 		{
 			if (pred(*i))
@@ -1162,7 +1162,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
 	TPP_CXX20_CONSTEXPR typename ordered_dense_map<K, M, H, C, A>::size_type erase_if(ordered_dense_map<K, M, H, C, A> &map, P pred)
 	{
-		typename dense_map<K, H, C, A>::size_type result = 0;
+		typename dense_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
 		{
 			if (pred(*i))
@@ -1178,8 +1178,5 @@ namespace tpp
 
 	template<typename K, typename M, typename H, typename C, typename A>
 	TPP_CXX20_CONSTEXPR void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>)
-	{
-		a.swap(b);
-	}
+	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
 }
