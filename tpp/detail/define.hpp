@@ -73,9 +73,9 @@ import std;
 #define TPP_UNREACHABLE() TPP_ASSUME(false)
 #endif
 
-#if !defined(TPP_DEBUG) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline
-#elif !defined(TPP_DEBUG) && (defined(__GNUC__) || defined(__clang__))
+#elif defined(__GNUC__) || defined(__clang__)
 #define TPP_FORCEINLINE __attribute__((always_inline)) inline
 #else
 #define TPP_FORCEINLINE inline
