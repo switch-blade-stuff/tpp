@@ -67,19 +67,11 @@ static auto test_hash()
 		const tpp::hash<value_t, A> hash = {};
 		for (std::size_t i = 0; i < 15; ++i)
 		{
-			const auto h0 = hash(a[i]);
-			const auto h1 = hash(b[i]);
-			const auto h2 = hash(c[i]);
-			const auto h3 = hash(d[i]);
+			const std::size_t h[] = {hash(a[i]), hash(b[i]), hash(c[i]), hash(d[i])};
 
-			printf("i: %zu\n", i);
-			const bool b0 = h0 == h2;
-			const bool b1 = h1 == h3;
-			const bool b2 = (h0 == h1) == (h2 == h3);
-
-			TEST_ASSERT(b0);
-			TEST_ASSERT(b1);
-			TEST_ASSERT(b2);
+			TEST_ASSERT(h[0] == h[2]);
+			TEST_ASSERT(h[1] == h[3]);
+			TEST_ASSERT((h[0] == h[1]) == (h[2] == h[3]));
 		}
 	}
 	{
