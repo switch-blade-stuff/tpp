@@ -22,7 +22,11 @@ macro(make_test_target)
     if (MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)
     else ()
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror -fstack-protector-all)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            #target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer)
+            #target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=memory -fsanitize-memory-track-origins)
+        endif ()
     endif ()
 
     # Dense table tests

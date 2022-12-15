@@ -11,8 +11,6 @@
 #include <initializer_list>
 #include <algorithm>
 #include <iterator>
-#include <cstdint>
-#include <limits>
 #include <array>
 
 #else
@@ -334,7 +332,7 @@ namespace tpp::detail
 	}
 
 	template<typename V, typename A, typename Traits>
-	class dense_node : public Traits::link_type
+	class packed_node : public Traits::link_type
 	{
 		using link_base = typename Traits::link_type;
 		using hash_type = std::array<std::size_t, Traits::key_size>;
@@ -349,20 +347,15 @@ namespace tpp::detail
 	public:
 		using allocator_type = A;
 
-		dense_node(const dense_node &) = delete;
-		dense_node &operator=(const dense_node &) = delete;
-
-		constexpr dense_node() noexcept = default;
-
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args) { std::allocator_traits<A>::construct(alloc, &value(), std::forward<Args>(args)...); }
-		TPP_CXX20_CONSTEXPR void construct(A &alloc, dense_node &&other)
+		TPP_CXX20_CONSTEXPR void construct(A &alloc, packed_node &&other)
 		{
 			link_base::operator=(std::move(other));
 			construct(alloc, std::move(other.value()));
 			hash() = other.hash();
 		}
-		TPP_CXX20_CONSTEXPR void move_from(dense_node &other)
+		TPP_CXX20_CONSTEXPR void move_from(packed_node &other)
 		{
 			link_base::operator=(std::move(other));
 			value() = std::move(other.value());
@@ -386,7 +379,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
 		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
 
-		TPP_CXX20_CONSTEXPR friend void swap(dense_node &a, dense_node &b) noexcept(std::is_nothrow_swappable_v<V>)
+		TPP_CXX20_CONSTEXPR friend void swap(packed_node &a, packed_node &b) noexcept(std::is_nothrow_swappable_v<V>)
 		{
 			using std::swap;
 			a.link_base::swap(b);
@@ -410,11 +403,6 @@ namespace tpp::detail
 	public:
 		using allocator_type = A;
 		using is_extractable = std::true_type;
-
-		stable_node(const stable_node &) = delete;
-		stable_node &operator=(const stable_node &) = delete;
-
-		constexpr stable_node() noexcept = default;
 
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR void construct(A &alloc, Args &&...args)
@@ -469,7 +457,7 @@ namespace tpp::detail
 		hash_type m_hash = 0;
 	};
 
-	/* Need a special relocate functor for dense_node & stable_node since they require an injected value allocator. */
+	/* Need a special relocate functor for packed_node & stable_node since they require an injected value allocator. */
 	struct relocate_node
 	{
 		template<typename A, typename N, typename Alloc = typename N::allocator_type>
@@ -494,7 +482,7 @@ namespace tpp::detail
 	template<typename T>
 	struct is_stable<T, std::void_t<typename T::is_stable>> : std::true_type {};
 	template<typename V, typename Traits, typename Alloc>
-	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits, Alloc>, dense_node<V, Traits, Alloc>>;
+	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits, Alloc>, packed_node<V, Traits, Alloc>>;
 
 	template<typename N, typename Traits>
 	struct ordered_iterator
@@ -704,6 +692,34 @@ namespace tpp::detail
 
 	template<std::size_t I, typename Is>
 	using remove_index_t = typename remove_index<I, Is>::type;
+
+	template<typename K, typename M>
+	class packed_map_ptr
+	{
+		friend class dense_map_iterator;
+
+	public:
+		using element_type = std::pair<K, M>;
+		using reference = std::pair<K &, M &>;
+		using pointer = const reference *;
+
+	public:
+		constexpr packed_map_ptr() noexcept : packed_map_ptr(nullptr, nullptr) {}
+		template<typename U, typename = std::enable_if_t<!std::is_same_v<U, M> && std::is_convertible_v<U &, M &>>>
+		constexpr explicit packed_map_ptr(const packed_map_ptr<K, U> other) noexcept : packed_map_ptr(other.m_ref.first, other.m_ref.second) {}
+
+		constexpr packed_map_ptr(K *first, M *second) noexcept : m_ref(*first, *second) {}
+		template<typename U, typename V, typename = std::enable_if_t<std::is_convertible_v<U *, K *> && std::is_convertible_v<V *, M *>>>
+		constexpr explicit packed_map_ptr(std::pair<U, V> *ptr) noexcept : packed_map_ptr(&ptr->first, &ptr->second) {}
+		template<typename U, typename V, typename = std::enable_if_t<std::is_convertible_v<const U *, K *> && std::is_convertible_v<const V *, M *>>>
+		constexpr explicit packed_map_ptr(const std::pair<U, V> *ptr) noexcept : packed_map_ptr(&ptr->first, &ptr->second) {}
+
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return &m_ref; }
+		[[nodiscard]] constexpr reference operator*() const noexcept { return m_ref; }
+
+	private:
+		reference m_ref;
+	};
 }
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)

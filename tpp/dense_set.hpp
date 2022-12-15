@@ -354,10 +354,7 @@ namespace tpp
 
 	template<typename K, typename H, typename C, typename A>
 	TPP_CXX20_CONSTEXPR void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>)
-	{
-		a.swap(b);
-	}
+	noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
 
 	/** @brief Ordered hash set based on dense hash table.
 	 *
@@ -705,8 +702,5 @@ namespace tpp
 
 	template<typename K, typename H, typename C, typename A>
 	TPP_CXX20_CONSTEXPR void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>)
-	{
-		a.swap(b);
-	}
+	noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
 }

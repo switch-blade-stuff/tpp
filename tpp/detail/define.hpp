@@ -4,6 +4,10 @@
 
 #pragma once
 
+#if !defined(NDEBUG) && !defined(TPP_DEBUG)
+#define TPP_DEBUG
+#endif
+
 /* Define TPP_USE_IMPORT only if modules are enabled and supported by the compiler. */
 #if defined(TPP_USE_MODULES) && defined(__cpp_modules)
 #define TPP_USE_IMPORT
@@ -26,6 +30,8 @@ import std;
 
 #include <type_traits>
 #include <utility>
+#include <cstdint>
+#include <cstddef>
 
 #endif
 
@@ -67,9 +73,9 @@ import std;
 #define TPP_UNREACHABLE() TPP_ASSUME(false)
 #endif
 
-#if defined(_MSC_VER)
+#if !defined(TPP_DEBUG) && defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__)
+#elif !defined(TPP_DEBUG) && (defined(__GNUC__) || defined(__clang__))
 #define TPP_FORCEINLINE __attribute__((always_inline)) inline
 #else
 #define TPP_FORCEINLINE inline

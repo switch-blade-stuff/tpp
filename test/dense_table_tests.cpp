@@ -15,6 +15,7 @@
 #include <tpp/dense_set.hpp>
 #include <tpp/dense_map.hpp>
 #include <tpp/dense_multiset.hpp>
+#include <tpp/dense_multimap.hpp>
 
 using namespace tpp;
 

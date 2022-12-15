@@ -8,37 +8,6 @@
 
 namespace tpp
 {
-	namespace detail
-	{
-		template<typename K, typename M>
-		class dense_map_ptr
-		{
-			friend class dense_map_iterator;
-
-		public:
-			using element_type = std::pair<K, M>;
-			using reference = std::pair<K &, M &>;
-			using pointer = const reference *;
-
-		public:
-			constexpr dense_map_ptr() noexcept : dense_map_ptr(nullptr, nullptr) {}
-			template<typename U, typename = std::enable_if_t<!std::is_same_v<U, M> && std::is_convertible_v<U &, M &>>>
-			constexpr explicit dense_map_ptr(const dense_map_ptr<K, U> other) noexcept : dense_map_ptr(other.m_ref.first, other.m_ref.second) {}
-
-			constexpr dense_map_ptr(K *first, M *second) noexcept : m_ref(*first, *second) {}
-			template<typename U, typename V, typename = std::enable_if_t<std::is_convertible_v<U *, K *> && std::is_convertible_v<V *, M *>>>
-			constexpr explicit dense_map_ptr(std::pair<U, V> *ptr) noexcept : dense_map_ptr(&ptr->first, &ptr->second) {}
-			template<typename U, typename V, typename = std::enable_if_t<std::is_convertible_v<const U *, K *> && std::is_convertible_v<const V *, M *>>>
-			constexpr explicit dense_map_ptr(const std::pair<U, V> *ptr) noexcept : dense_map_ptr(&ptr->first, &ptr->second) {}
-
-			[[nodiscard]] constexpr pointer operator->() const noexcept { return &m_ref; }
-			[[nodiscard]] constexpr reference operator*() const noexcept { return m_ref; }
-
-		private:
-			reference m_ref;
-		};
-	}
-
 	/** @brief Hash map based on dense hash table.
 	 *
 	 * Internally, dense map stores it's elements in a contiguous unordered vector.
@@ -48,8 +17,8 @@ namespace tpp
 	 * This is required as the internal storage of dense map elements can be reordered, and as such elements are
 	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
 	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
-	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly converted to a reference to `std::pair<const T0, T1>`
-	 * without using `reinterpret_cast`, this conversion is preformed element-wise, and a pair of references is returned instead.
+	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
+	 * `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
 	 *
 	 * @tparam Key Key type stored by the map.
 	 * @tparam Mapped Mapped type associated with map keys.
@@ -71,8 +40,8 @@ namespace tpp
 		{
 			using link_type = detail::empty_link;
 
-			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
-			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
+			using pointer = detail::packed_map_ptr<const key_type, mapped_type>;
+			using const_pointer = detail::packed_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
@@ -87,7 +56,7 @@ namespace tpp
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using reference = typename table_t::reference;
@@ -183,7 +152,7 @@ namespace tpp
 		/** Copy-assigns the map. */
 		TPP_CXX20_CONSTEXPR dense_map &operator=(const dense_map &) = default;
 		/** Move-assigns the map. */
-		TPP_CXX20_CONSTEXPR dense_map &operator=(dense_map &&) noexcept(std::is_nothrow_move_assignable_v<dense_map>) = default;
+		TPP_CXX20_CONSTEXPR dense_map &operator=(dense_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
 		TPP_CXX20_CONSTEXPR dense_map &operator=(std::initializer_list<value_type> il)
@@ -422,7 +391,7 @@ namespace tpp
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward_as_tuple(std::move(key)), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -435,7 +404,7 @@ namespace tpp
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward_as_tuple(std::forward<K>(key)), std::forward<Args>(args)...);
 		}
 
 		/** @copybrief try_emplace
@@ -446,26 +415,26 @@ namespace tpp
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, const key_type &key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, const K &key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Removes the specified element from the map.
@@ -637,8 +606,8 @@ namespace tpp
 	 * This is required as the internal storage of dense map elements can be reordered, and as such elements are
 	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
 	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
-	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly converted to a reference to `std::pair<const T0, T1>`
-	 * without using `reinterpret_cast`, this conversion is preformed element-wise, and a pair of references is returned instead.
+	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
+	 * `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
 	 *
 	 * @tparam Key Key type stored by the map.
 	 * @tparam Mapped Mapped type associated with map keys.
@@ -660,8 +629,8 @@ namespace tpp
 		{
 			using link_type = detail::ordered_link;
 
-			using pointer = detail::dense_map_ptr<const key_type, mapped_type>;
-			using const_pointer = detail::dense_map_ptr<const key_type, const mapped_type>;
+			using pointer = detail::packed_map_ptr<const key_type, mapped_type>;
+			using const_pointer = detail::packed_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
@@ -676,7 +645,7 @@ namespace tpp
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using reference = typename table_t::reference;
@@ -758,7 +727,7 @@ namespace tpp
 		/** Copy-assigns the map. */
 		TPP_CXX20_CONSTEXPR ordered_dense_map &operator=(const ordered_dense_map &) = default;
 		/** Move-assigns the map. */
-		TPP_CXX20_CONSTEXPR ordered_dense_map &operator=(ordered_dense_map &&) noexcept(std::is_nothrow_move_assignable_v<ordered_dense_map>) = default;
+		TPP_CXX20_CONSTEXPR ordered_dense_map &operator=(ordered_dense_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
 		TPP_CXX20_CONSTEXPR ordered_dense_map &operator=(std::initializer_list<value_type> il)
@@ -1005,7 +974,7 @@ namespace tpp
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward_as_tuple(std::move(key)), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -1018,7 +987,7 @@ namespace tpp
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward_as_tuple(std::forward<K>(key)), std::forward<Args>(args)...);
 		}
 
 		/** @copybrief try_emplace
@@ -1029,26 +998,26 @@ namespace tpp
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, const key_type &key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, const K &key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Removes the specified element from the map.

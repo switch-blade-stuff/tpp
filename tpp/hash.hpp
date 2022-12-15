@@ -101,12 +101,12 @@ namespace tpp
 		constexpr inline std::uint32_t md5_c = 0x98badcfe;
 		constexpr inline std::uint32_t md5_d = 0x10325476;
 
-		constexpr inline int md5_s[] = {
+		constexpr inline std::array<int, 64> md5_s = {
 				7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9,
 				14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
 				4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
 		};
-		constexpr inline std::uint32_t md5_k[] = {
+		constexpr inline std::array<std::uint32_t, 64> md5_k = {
 				0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
 				0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
 				0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
@@ -116,7 +116,7 @@ namespace tpp
 				0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
 				0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 		};
-		constexpr inline std::uint8_t md5_pad[] = {
+		constexpr inline std::array<std::uint8_t, 64> md5_pad = {
 				0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -141,7 +141,7 @@ namespace tpp
 	{
 		constexpr auto rotl = [](std::uint32_t x, std::uint32_t s) noexcept
 		{
-			constexpr auto N = std::numeric_limits<std::uint32_t>::max();
+			constexpr auto N = std::numeric_limits<std::uint32_t>::digits;
 			const auto r = s % N;
 			return (x << r) | (x >> (N - r));
 		};
@@ -196,7 +196,7 @@ namespace tpp
 			buffer[2] += c;
 			buffer[3] += d;
 		};
-		const auto update = [&](const std::uint8_t data[], std::uint64_t n) noexcept
+		const auto update = [&](const std::uint8_t *data, std::uint64_t n) noexcept
 		{
 			std::uint32_t work_buff[16];
 			auto offset = size % 64;
@@ -227,7 +227,7 @@ namespace tpp
 			const auto offset = size % 64;
 			const auto padding_size = offset < 56 ? 56 - offset : (56 + 64) - offset;
 
-			update(detail::md5_pad, padding_size);
+			update(detail::md5_pad.data(), padding_size);
 			size -= padding_size;
 
 			for (std::size_t j = 0; j < 14; ++j)
@@ -373,10 +373,9 @@ namespace tpp
 		 * @return Reference to this hash builder.
 		 * @note This overload is available only if `T` is a scalar type. */
 		template<typename T>
-		constexpr std::enable_if_t <std::is_scalar_v<std::decay_t < T>>, seahash_builder &>
-		write(const T &value) noexcept
+		constexpr std::enable_if_t<std::is_scalar_v<std::decay_t<T>>, seahash_builder &> write(const T &value) noexcept
 		{
-			push(&value, sizeof(std::decay_t < T > ));
+			push(&value, sizeof(std::decay_t<T>));
 			return *this;
 		}
 		/** Writes a buffer of bytes to the resulting hash.
@@ -542,7 +541,7 @@ namespace tpp
 		}
 
 		/* Initial state seeds from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/stream.rs.html#19`. */
-		std::uint64_t state[4] = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
+		std::array<std::uint64_t, 4> state = {0x16f11fe89b0d677c, 0xb480a793d8e6c86c, 0x6fe2e5aaf078ebc9, 0x14f994a4c5259381};
 		std::uint64_t tail = 0;
 		std::size_t tail_n = 0;
 		std::size_t written = 0;
@@ -553,13 +552,15 @@ namespace tpp
 	 * @param[in] n Size of the \p data buffer. */
 	[[nodiscard]] constexpr std::size_t seahash(const void *data, std::size_t n) noexcept
 	{
-		return static_cast<std::size_t>(seahash_builder{}.write(data, n).finish());
+		auto builder = seahash_builder{};
+		return static_cast<std::size_t>(builder.write(data, n).finish());
 	}
 	/** @copydoc seahash
 	 * @param[in] seed Seed used for the hash algorithm. */
 	[[nodiscard]] constexpr std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
 	{
-		return static_cast<std::size_t>(seahash_builder{seed}.write(data, n).finish());
+		auto builder = seahash_builder{seed};
+		return static_cast<std::size_t>(builder.write(data, n).finish());
 	}
 
 	/** @brief Generic hash functor used to hash a value of type `T` using the specified byte hash algorithm. */
@@ -582,7 +583,7 @@ namespace tpp
     {                                                                           \
         [[nodiscard]] constexpr std::size_t operator()(T value) const noexcept  \
         {                                                                       \
-            return Algo(&value, sizeof(T));                                 \
+            return Algo(&value, sizeof(T));                                     \
         }                                                                       \
     };
 

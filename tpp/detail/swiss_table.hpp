@@ -8,6 +8,7 @@
 
 #ifndef TPP_USE_IMPORT
 
+#include <cstring>
 #include <vector>
 #include <limits>
 #include <tuple>

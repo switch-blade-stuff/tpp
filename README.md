@@ -4,28 +4,33 @@ So, you need a hashtable? Well, good news, I've got some for you.
 
 This repository is a collection of different hashtable-based containers - several flavors of API-compatible alternatives
 for `std::unordered_map` and `std::unordered_set`, as well as accompanying `ordered_*` versions (insertion-order
-preserving tables). Additionally, `dense_multiset` (1:1 associative table) is also provided.
+preserving tables) and `multiset`s and `multimap`s (associative tables with multiple keys per entry).
 
 Here is a brief list of the features of this library:
 
-* SwissHash -based containers
+* Open addressing (SwissHash) containers
     * Packed (elements are stored in a buffer, references are invalidated on resize)
-        * `tpp::swiss_set`
-        * `tpp::swiss_map`
-        * `tpp::ordered_swiss_set`
-        * `tpp::ordered_swiss_map`
+        * `tpp::sparse_set`
+        * `tpp::sparse_map`
+        * `tpp::ordered_sparse_set`
+        * `tpp::ordered_sparse_map`
+        * `tpp::sparse_multiset`
+        * `tpp::sparse_multimap`
     * Stable (elements are stored on the heap individually, references are stable)
-        * `tpp::stable_swiss_set`
-        * `tpp::stable_swiss_map`
-        * `tpp::ordered_stable_swiss_set`
-        * `tpp::ordered_stable_swiss_map`
-* Dense set -based containers
+        * `tpp::stable_set`
+        * `tpp::stable_map`
+        * `tpp::ordered_stable_set`
+        * `tpp::ordered_stable_map`
+        * `tpp::stable_multiset`
+        * `tpp::stable_multimap`
+* Closed addressing (sparse & dense array) containers
     * `tpp::dense_set`
     * `tpp::dense_map`
     * `tpp::ordered_dense_set`
     * `tpp::ordered_dense_map`
     * `tpp::dense_multiset`
-* Utilities& hash functions
+    * `tpp::dense_multimap`
+* Utilities & hash functions
     * `tpp::hash_combine`
     * `tpp::seahash_builder`
     * `tpp::seahash`

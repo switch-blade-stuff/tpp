@@ -9,7 +9,7 @@
 
 namespace tpp
 {
-	template<typename Mk, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk>>
+	template<typename Mk, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk, void>>
 	class dense_multiset;
 
 	/** @brief Hash multiset based on dense hash table.
@@ -19,8 +19,8 @@ namespace tpp
 	 * dense multiset may invalidate references to it's elements due to the internal element vector being reordered.
 	 *
 	 * @tparam Keys Key types of the multiset.
-	 * @tparam KeyHash Hash functor used by the multiset. The functor must be invocable for both key types.
-	 * @tparam KeyCmp Compare functor used by the multiset. The functor must be invocable for both key types.
+	 * @tparam KeyHash Hash functor used by the multiset. The functor must be invocable for both all types.
+	 * @tparam KeyCmp Compare functor used by the multiset. The functor must be invocable for both all types.
 	 * @tparam Alloc Allocator used by the multiset. */
 	template<typename... Keys, typename KeyHash, typename KeyCmp, typename Alloc>
 	class dense_multiset<multikey<Keys...>, KeyHash, KeyCmp, Alloc>
@@ -250,7 +250,7 @@ namespace tpp
 
 		/** Removes the specified element from the multiset.
 		 * @tparam I Index of the key.
-		 * @param key Key of the element to remove.
+		 * @param key `I`th key of the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
 		template<std::size_t I>
 		TPP_CXX20_CONSTEXPR iterator erase(const std::tuple_element_t<I, key_type> &key) { return m_table.template erase<I>(key); }
@@ -270,7 +270,7 @@ namespace tpp
 
 		/** Searches for the specified element within the multiset.
 		 * @tparam I Index of the key.
-		 * @param key Key of the element to search for.
+		 * @param key `I`th key of the element to search for.
 		 * @return Iterator to the specified element, or `end()`. */
 		template<std::size_t I>
 		[[nodiscard]] TPP_CXX20_CONSTEXPR iterator find(const std::tuple_element_t<I, key_type> &key) const { return m_table.template find<I>(key); }
@@ -280,7 +280,7 @@ namespace tpp
 		[[nodiscard]] TPP_CXX20_CONSTEXPR iterator find(const K &key) const { return m_table.template find<I>(key); }
 		/** Checks if the specified element is present within the multiset as if by `find(key) != end()`.
 		 * @tparam I Index of the key.
-		 * @param key Key of the element to search for.
+		 * @param key `I`th key of the element to search for.
 		 * @return `true` if the element is present within the multiset, `false` otherwise. */
 		template<std::size_t I>
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool contains(const std::tuple_element_t<I, key_type> &key) const { return m_table.template contains<I>(key); }
@@ -343,4 +343,27 @@ namespace tpp
 	private:
 		table_t m_table;
 	};
+
+	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
+	 * @return Amount of elements erased. */
+	template<typename Mk, typename H, typename C, typename A, typename P>
+	TPP_CXX20_CONSTEXPR typename dense_multiset<Mk, H, C, A>::size_type erase_if(dense_multiset<Mk, H, C, A> &set, P pred)
+	{
+		typename dense_multiset<Mk, H, C, A>::size_type result = 0;
+		for (auto i = set.cbegin(), last = set.cend(); i != last;)
+		{
+			if (pred(*i))
+			{
+				i = set.erase(i);
+				++result;
+			}
+			else
+				++i;
+		}
+		return result;
+	}
+
+	template<typename Mk, typename H, typename C, typename A>
+	TPP_CXX20_CONSTEXPR void swap(dense_multiset<Mk, H, C, A> &a, dense_multiset<Mk, H, C, A> &b)
+	noexcept(std::is_nothrow_swappable_v<dense_multiset<Mk, H, C, A>>) { a.swap(b); }
 }
