@@ -6,6 +6,8 @@
 
 #include "assert.hpp"
 
+#include <tpp/detail/multikey.hpp>
+
 template<template<typename...> typename T, typename set_t = T<std::string>>
 static void test_set() noexcept
 {
@@ -24,13 +26,29 @@ static void test_set() noexcept
 	TEST_ASSERT(set0 == set3);
 
 	set1 = set_t{std::move(set0)};
+
 	TEST_ASSERT(set0.size() == 0);
-	TEST_ASSERT(set1.size() == 3);
-	TEST_ASSERT(set0.begin() == set0.end());
-	TEST_ASSERT(set1.begin() != set1.end());
 	TEST_ASSERT(!set0.contains("0"));
 	TEST_ASSERT(!set0.contains("1"));
 	TEST_ASSERT(!set0.contains("2"));
+	TEST_ASSERT(set0.begin() == set0.end());
+
+	TEST_ASSERT(set1.size() == 3);
+	TEST_ASSERT(set1.contains("0"));
+	TEST_ASSERT(set1.contains("1"));
+	TEST_ASSERT(set1.contains("2"));
+	TEST_ASSERT(set1.begin() != set1.end());
+
+	set2 = set1;
+
+	TEST_ASSERT(set2.size() == 3);
+	TEST_ASSERT(set2.contains("0"));
+	TEST_ASSERT(set2.contains("1"));
+	TEST_ASSERT(set2.contains("2"));
+	TEST_ASSERT(set2.begin() != set2.end());
+
+	TEST_ASSERT(set2 != set0);
+	TEST_ASSERT(set2 == set1);
 
 	set1.clear();
 	TEST_ASSERT(set1.size() == 0);
@@ -98,17 +116,130 @@ static void test_ordered_set() noexcept
 	TEST_ASSERT(set0.find("1") != set0.find("0"));
 
 	auto set1 = set_t{std::move(set0)};
+
 	TEST_ASSERT(set0.size() == 0);
 	TEST_ASSERT(set0.begin() == set0.end());
 	TEST_ASSERT(!set0.contains("0"));
 	TEST_ASSERT(!set0.contains("1"));
 
 	TEST_ASSERT(set1.size() == 2);
-	TEST_ASSERT(set1.begin() != set1.end());
 	TEST_ASSERT(set1.contains("0"));
 	TEST_ASSERT(set1.contains("1"));
+	TEST_ASSERT(set1.begin() != set1.end());
 	TEST_ASSERT(set1.find("0") == set1.begin());
 	TEST_ASSERT(set1.find("1") == std::prev(set1.end()));
 	TEST_ASSERT(*set1.find("0") == set1.front());
 	TEST_ASSERT(*set1.find("1") == set1.back());
+
+	auto set2 = set1;
+
+	TEST_ASSERT(set2.size() == 2);
+	TEST_ASSERT(set2.contains("0"));
+	TEST_ASSERT(set2.contains("1"));
+	TEST_ASSERT(set2.begin() != set2.end());
+	TEST_ASSERT(set2.find("0") == set2.begin());
+	TEST_ASSERT(set2.find("1") == std::prev(set2.end()));
+	TEST_ASSERT(*set2.find("0") == set2.front());
+	TEST_ASSERT(*set2.find("1") == set2.back());
+
+	TEST_ASSERT(set2 != set0);
+	TEST_ASSERT(set2 == set1);
+}
+
+template<template<typename...> typename T, typename set_t = T<tpp::multikey<std::string, int>>>
+static void test_multiset() noexcept
+{
+	auto set0 = set_t{};
+
+	TEST_ASSERT(set0.emplace("a", 0).second);
+	TEST_ASSERT(set0.emplace("b", 1).second);
+	TEST_ASSERT(!set0.emplace("b", 0).second);
+	TEST_ASSERT(!set0.emplace("c", 0).second);
+	TEST_ASSERT(!set0.emplace("a", 1).second);
+	TEST_ASSERT(!set0.emplace("c", 1).second);
+
+	TEST_ASSERT(set0.template contains<0>("a"));
+	TEST_ASSERT(set0.template contains<0>("b"));
+	TEST_ASSERT(!set0.template contains<0>("c"));
+	TEST_ASSERT(set0.template contains<1>(0));
+	TEST_ASSERT(set0.template contains<1>(1));
+	TEST_ASSERT(!set0.template contains<1>(2));
+
+	TEST_ASSERT(set0.template find<0>("a") == set0.template find<1>(0));
+	TEST_ASSERT(set0.template find<0>("b") == set0.template find<1>(1));
+
+	set0.template erase<0>("a");
+	TEST_ASSERT(!set0.template contains<0>("a"));
+	TEST_ASSERT(!set0.template contains<1>(0));
+
+	set0.template erase<1>(1);
+	TEST_ASSERT(!set0.template contains<0>("b"));
+	TEST_ASSERT(!set0.template contains<1>(1));
+
+	set0 = {{"0", 0}, {"1", 1}};
+
+	TEST_ASSERT(set0.template contains<0>("0"));
+	TEST_ASSERT(set0.template contains<0>("1"));
+	TEST_ASSERT(!set0.template contains<0>("2"));
+	TEST_ASSERT(set0.template contains<1>(0));
+	TEST_ASSERT(set0.template contains<1>(1));
+	TEST_ASSERT(!set0.template contains<1>(2));
+
+	TEST_ASSERT(set0.template find<0>("0") == set0.template find<1>(0));
+	TEST_ASSERT(set0.template find<0>("1") == set0.template find<1>(1));
+
+	auto set1 = set_t{std::move(set0)};
+
+	TEST_ASSERT(set0.size() == 0);
+	TEST_ASSERT(set0.begin() == set0.end());
+	TEST_ASSERT(!set0.template contains<0>("0"));
+	TEST_ASSERT(!set0.template contains<0>("1"));
+	TEST_ASSERT(!set0.template contains<1>(0));
+	TEST_ASSERT(!set0.template contains<1>(1));
+
+	TEST_ASSERT(set1.size() == 2);
+	TEST_ASSERT(set1.begin() != set1.end());
+	TEST_ASSERT(set1.template contains<0>("0"));
+	TEST_ASSERT(set1.template contains<0>("1"));
+	TEST_ASSERT(set1.template contains<1>(0));
+	TEST_ASSERT(set1.template contains<1>(1));
+
+	auto set2 = set1;
+
+	TEST_ASSERT(set2.size() == 2);
+	TEST_ASSERT(set2.template contains<0>("0"));
+	TEST_ASSERT(set2.template contains<0>("1"));
+	TEST_ASSERT(set2.template contains<1>(0));
+	TEST_ASSERT(set2.template contains<1>(1));
+	TEST_ASSERT(set2.begin() != set2.end());
+
+	TEST_ASSERT(set2 != set0);
+	TEST_ASSERT(set2 == set1);
+
+	set1.clear();
+	TEST_ASSERT(set1.empty());
+	TEST_ASSERT(set1.template find<0>("0") == set1.end());
+	TEST_ASSERT(set1.template find<0>("1") == set1.end());
+	TEST_ASSERT(set1.template find<1>(0) == set1.end());
+	TEST_ASSERT(set1.template find<1>(1) == set1.end());
+
+	const int n = 0x10000;
+	for (int i = 0; i < n; ++i)
+	{
+		const auto str = std::to_string(i);
+		const auto result = set1.emplace(str, i);
+
+		TEST_ASSERT(result.second);
+		TEST_ASSERT(result.first == set1.template find<1>(i));
+		TEST_ASSERT(result.first == set1.template find<0>(str));
+	}
+	TEST_ASSERT(set1.size() == n);
+
+	for (int i = 0; i < n; ++i)
+	{
+		const auto str = std::to_string(i);
+		TEST_ASSERT(set1.template contains<0>(str));
+		TEST_ASSERT(set1.template contains<1>(i));
+		TEST_ASSERT(set1.template find<0>(str) == set1.template find<1>(i));
+	}
 }
