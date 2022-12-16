@@ -105,11 +105,8 @@ namespace tpp
     };
 
 TPP_STRING_VIEW_HASH_IMPL(char)
-
 TPP_STRING_VIEW_HASH_IMPL(wchar_t)
-
 TPP_STRING_VIEW_HASH_IMPL(char16_t)
-
 TPP_STRING_VIEW_HASH_IMPL(char32_t)
 
 #if defined(__cpp_char8_t) && __cpp_char8_t >= 201811L
@@ -144,11 +141,8 @@ TPP_STRING_VIEW_HASH_IMPL(char8_t)
     };
 
 TPP_STRING_HASH_IMPL(char)
-
 TPP_STRING_HASH_IMPL(wchar_t)
-
 TPP_STRING_HASH_IMPL(char16_t)
-
 TPP_STRING_HASH_IMPL(char32_t)
 
 #if defined(__cpp_char8_t) && __cpp_char8_t >= 201811L
@@ -227,8 +221,10 @@ struct tpp::hash<std::error_code, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+
 import std.memory;
+
 #endif
 
 #else
@@ -285,7 +281,7 @@ struct tpp::hash<std::type_index, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 import std.filesystem;
 #endif
 
@@ -315,7 +311,7 @@ struct tpp::hash<std::filesystem::path, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 import std.threading;
 #endif
 

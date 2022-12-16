@@ -15,7 +15,7 @@
 
 #else
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 
 import std.memory;
 

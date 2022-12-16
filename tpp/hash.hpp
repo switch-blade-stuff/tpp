@@ -79,8 +79,8 @@ namespace tpp
 	}
 
 	/** @brief CRC32 byte checksum function.
- * @param[in] data Pointer to bytes of input data.
- * @param[in] n Size of the \p data buffer. */
+	 * @param[in] data Pointer to bytes of input data.
+	 * @param[in] n Size of the \p data buffer. */
 	[[nodiscard]] constexpr std::uint32_t crc32(const void *data, std::size_t n) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);
@@ -372,8 +372,8 @@ namespace tpp
 		 * @param value Scalar value to be added to the resulting hash.
 		 * @return Reference to this hash builder.
 		 * @note This overload is available only if `T` is a scalar type. */
-		template<typename T>
-		constexpr std::enable_if_t<std::is_scalar_v<std::decay_t<T>>, seahash_builder &> write(const T &value) noexcept
+		template<typename T, typename  = std::enable_if_t<std::is_scalar_v<std::decay_t<T>>>>
+		constexpr seahash_builder &write(const T &value) noexcept
 		{
 			push(&value, sizeof(std::decay_t<T>));
 			return *this;
@@ -414,7 +414,7 @@ namespace tpp
 				tail_n = 0;
 				tail = 0;
 
-				/* Handle 64-bit aligned byte sequences. */
+				/* Handle 32-byte aligned sequences. */
 				const auto *ptr = bytes + copy_n;
 				const auto *end = ptr + ((n - copy_n) & ~std::uint64_t{0x1F});
 				while (ptr < end)
@@ -587,14 +587,10 @@ namespace tpp
         }                                                                       \
     };
 
-/* Trivial types are value-casted to std::size_t (already unique). */
-
 TPP_TRIVIAL_HASH_IMPL(bool)
 
 TPP_TRIVIAL_HASH_IMPL(char)
-
 TPP_TRIVIAL_HASH_IMPL(signed char)
-
 TPP_TRIVIAL_HASH_IMPL(unsigned char)
 
 #if defined(__cpp_char8_t) && __cpp_char8_t >= 201811L
@@ -604,25 +600,19 @@ TPP_TRIVIAL_HASH_IMPL(char8_t)
 #endif
 
 TPP_TRIVIAL_HASH_IMPL(char16_t)
-
 TPP_TRIVIAL_HASH_IMPL(char32_t)
-
 TPP_TRIVIAL_HASH_IMPL(wchar_t)
 
 TPP_TRIVIAL_HASH_IMPL(short)
-
 TPP_TRIVIAL_HASH_IMPL(unsigned short)
 
 TPP_TRIVIAL_HASH_IMPL(int)
-
 TPP_TRIVIAL_HASH_IMPL(unsigned int)
 
 TPP_TRIVIAL_HASH_IMPL(long)
-
 TPP_TRIVIAL_HASH_IMPL(long long)
 
 TPP_TRIVIAL_HASH_IMPL(unsigned long)
-
 TPP_TRIVIAL_HASH_IMPL(unsigned long long)
 
 #undef TPP_TRIVIAL_HASH_IMPL
@@ -641,9 +631,7 @@ TPP_TRIVIAL_HASH_IMPL(unsigned long long)
     };
 
 TPP_FLOAT_HASH_IMPL(float);
-
 TPP_FLOAT_HASH_IMPL(double);
-
 TPP_FLOAT_HASH_IMPL(long double);
 
 #undef TPP_FLOAT_HASH_IMPL

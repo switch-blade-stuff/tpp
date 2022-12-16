@@ -4,7 +4,7 @@ So, you need a hashtable? Well, good news, I've got some for you.
 
 This repository is a collection of different hashtable-based containers - several flavors of API-compatible alternatives
 for `std::unordered_map` and `std::unordered_set`, as well as accompanying `ordered_*` versions (insertion-order
-preserving tables) and `multiset`s and `multimap`s (associative tables with multiple keys per entry).
+preserving tables), `multiset`s and `multimap`s (associative tables with multiple keys per entry).
 
 Here is a brief list of the features of this library:
 
@@ -52,7 +52,7 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>TPP_USE_MODULES</td>
     <td>-DTPP_USE_MODULES</td>
     <td>ON</td>
-    <td>Toggles support for C++20 modules.</td>
+    <td>Toggles support for C++20 modules</td>
   </tr>
   <tr>
     <td>TPP_NO_SIMD</td>
