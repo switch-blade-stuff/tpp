@@ -553,12 +553,10 @@ namespace tpp::detail
 			if constexpr (std::allocator_traits<dense_allocator>::propagate_on_container_swap::value)
 				swap(get_dense_alloc(), other.get_dense_alloc());
 
-			TPP_ASSERT(std::allocator_traits<sparse_allocator>::is_always_equal::value || get_sparse_alloc() == other.get_sparse_alloc(),
-			           "Swapped allocators must be equal");
-			TPP_ASSERT(std::allocator_traits<dense_allocator>::is_always_equal::value || get_dense_alloc() == other.get_dense_alloc(),
-			           "Swapped allocators must be equal");
+			TPP_ASSERT(allocator_eq(get_sparse_alloc(), other.get_sparse_alloc()), "Swapped allocators must be equal");
+			TPP_ASSERT(allocator_eq(get_dense_alloc(), other.get_dense_alloc()), "Swapped allocators must be equal");
 
-			swap_data(other);
+			swap_buffers(other);
 			swap(m_max_load_factor, other.m_max_load_factor);
 		}
 
@@ -940,7 +938,7 @@ namespace tpp::detail
 		}
 		TPP_CXX20_CONSTEXPR void copy_data(const dense_table &other) { copy_data(std::make_index_sequence<key_size>{}, other); }
 		TPP_CXX20_CONSTEXPR void move_data(dense_table &other) { move_data(std::make_index_sequence<key_size>{}, other); }
-		TPP_CXX20_CONSTEXPR void swap_data(dense_table &other)
+		TPP_CXX20_CONSTEXPR void swap_buffers(dense_table &other)
 		{
 			std::swap(m_dense_size, other.m_dense_size);
 			std::swap(m_dense_capacity, other.m_dense_capacity);
@@ -957,7 +955,7 @@ namespace tpp::detail
 		TPP_CXX20_CONSTEXPR void move_from(dense_table &other)
 		{
 			if (allocator_eq(get_sparse_alloc(), other.get_sparse_alloc()) && allocator_eq(get_dense_alloc(), other.get_dense_alloc()))
-				swap_data(other);
+				swap_buffers(other);
 			else
 				move_data(other);
 		}

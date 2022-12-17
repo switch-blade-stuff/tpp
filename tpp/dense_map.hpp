@@ -59,16 +59,29 @@ namespace tpp
 		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
+		/** Pair of references to `const key_type` and `mapped_type`. */
 		using reference = typename table_t::reference;
+		/** Pair of references to `const key_type` and `const mapped_type`. */
 		using const_reference = typename table_t::const_reference;
+
+		/** Fancy pointer to elements of the map, who's `operator->` returns `reference *`, and `operator*` returns `reference`. */
 		using pointer = typename table_t::pointer;
+		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
+		/** Random access iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
+		/** Random access iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
+
+		/** Random access iterator to elements of the map, equivalent to `std::reverse_iterator<iterator>`. */
 		using reverse_iterator = typename table_t::reverse_iterator;
+		/** Random access iterator to elements of the map, equivalent to `std::reverse_iterator<const_iterator>`. */
 		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+
+		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using local_iterator = typename table_t::local_iterator;
+		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;
@@ -648,16 +661,29 @@ namespace tpp
 		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
+		/** Pair of references to `const key_type` and `mapped_type`. */
 		using reference = typename table_t::reference;
+		/** Pair of references to `const key_type` and `const mapped_type`. */
 		using const_reference = typename table_t::const_reference;
+
+		/** Fancy pointer to elements of the map, who's `operator->` returns `reference *`, and `operator*` returns `reference`. */
 		using pointer = typename table_t::pointer;
+		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
+
+		/** Bidirectional iterator to elements of the map, equivalent to `std::reverse_iterator<iterator>`. */
 		using reverse_iterator = typename table_t::reverse_iterator;
+		/** Bidirectional iterator to elements of the map, equivalent to `std::reverse_iterator<const_iterator>`. */
 		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+
+		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using local_iterator = typename table_t::local_iterator;
+		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;

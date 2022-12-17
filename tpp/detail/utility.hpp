@@ -726,9 +726,9 @@ namespace tpp::detail
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
 #ifdef TPP_HAS_CONSTEVAL
-#define TPP_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg));
+#define TPP_ASSERT(cnd, msg) if (!TPP_IS_CONSTEVAL) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg))
 #else
-#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg));
+#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg))
 #endif
 #else
 #define TPP_ASSERT(cnd, msg) TPP_ASSUME(cnd)

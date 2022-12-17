@@ -48,16 +48,28 @@ namespace tpp
 		using value_type = typename table_t::value_type;
 		using key_type = typename table_t::key_type;
 
+		/** Reference to `const value_type`. */
 		using reference = typename table_t::reference;
+		/** @copydoc reference */
 		using const_reference = typename table_t::const_reference;
+		/** Pointer to `const value_type`. */
 		using pointer = typename table_t::pointer;
+		/** @copydoc pointer */
 		using const_pointer = typename table_t::const_pointer;
 
+		/** Random access iterator to elements (of const `value_type`) of the set. */
 		using iterator = typename table_t::const_iterator;
+		/** @copydoc const_iterator */
 		using const_iterator = typename table_t::const_iterator;
+
+		/** Random access iterator iterator to elements of the set, equivalent to `std::reverse_iterator<const_iterator>`. */
 		using reverse_iterator = typename table_t::const_reverse_iterator;
+		/** @copydoc reverse_iterator */
 		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+
+		/** Forward iterator used to iterate through elements (of `const value_type`) of a single bucket. */
 		using local_iterator = typename table_t::const_local_iterator;
+		/** @copydoc local_iterator */
 		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;
@@ -395,16 +407,29 @@ namespace tpp
 		using value_type = typename table_t::value_type;
 		using key_type = typename table_t::key_type;
 
+		/** Reference to `const value_type`. */
 		using reference = typename table_t::reference;
+		/** @copydoc reference */
 		using const_reference = typename table_t::const_reference;
+
+		/** Pointer to `const value_type`. */
 		using pointer = typename table_t::pointer;
+		/** @copydoc pointer */
 		using const_pointer = typename table_t::const_pointer;
 
+		/** Bidirectional iterator to elements (of const `value_type`) of the set. */
 		using iterator = typename table_t::const_iterator;
+		/** @copydoc const_iterator */
 		using const_iterator = typename table_t::const_iterator;
+
+		/** Bidirectional iterator to elements of the set, equivalent to `std::reverse_iterator<const_iterator>`. */
 		using reverse_iterator = typename table_t::const_reverse_iterator;
+		/** @copydoc reverse_iterator */
 		using const_reverse_iterator = typename table_t::const_reverse_iterator;
+
+		/** Forward iterator used to iterate through elements (of `const value_type`) of a single bucket. */
 		using local_iterator = typename table_t::const_local_iterator;
+		/** @copydoc local_iterator */
 		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;
