@@ -221,7 +221,7 @@ struct tpp::hash<std::error_code, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 
 import std.memory;
 
@@ -281,7 +281,7 @@ struct tpp::hash<std::type_index, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 import std.filesystem;
 #endif
 
@@ -311,7 +311,7 @@ struct tpp::hash<std::filesystem::path, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#ifdef _MSC_VER && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
 import std.threading;
 #endif
 
