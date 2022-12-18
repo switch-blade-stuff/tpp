@@ -164,7 +164,7 @@ namespace tpp::detail
 
 		public:
 			constexpr bucket_iterator() noexcept = default;
-			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<U *, std::add_const_t<N> *>>>
+			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<N *, U *>>>
 			constexpr bucket_iterator(const bucket_iterator<U> &other) noexcept : m_base(other.m_base), m_pos(other.m_pos) {}
 
 			constexpr explicit bucket_iterator(N *base, bucket_pos pos) noexcept : m_base(base), m_pos(pos) {}
@@ -172,21 +172,21 @@ namespace tpp::detail
 			constexpr bucket_iterator operator++(int) noexcept
 			{
 				auto tmp = *this;
-				inc(std::make_index_sequence<key_size>{});
+				increment(std::make_index_sequence<key_size>{});
 				return tmp;
 			}
 			constexpr bucket_iterator &operator++() noexcept
 			{
-				inc(std::make_index_sequence<key_size>{});
+				increment(std::make_index_sequence<key_size>{});
 				return *this;
 			}
 
 			[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{&node()->value()}; }
 			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
-			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_pos == other.m_pos; }
+			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_base == other.m_base && m_pos == other.m_pos; }
 #if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
-			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_pos != other.m_pos; }
+			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_base != other.m_base || m_pos != other.m_pos; }
 #endif
 
 		private:
@@ -388,7 +388,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr const_reference back() const noexcept { return *to_iter(back_node()); }
 
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_dense_size; }
-		[[nodiscard]] constexpr size_type max_size() const noexcept { return to_capacity(npos - 1); }
+		[[nodiscard]] constexpr size_type max_size() const noexcept { return to_capacity(max_bucket_count()); }
 		[[nodiscard]] constexpr size_type capacity() const noexcept { return to_capacity(bucket_count()); }
 		[[nodiscard]] constexpr float load_factor() const noexcept { return static_cast<float>(size()) / static_cast<float>(bucket_count()); }
 
@@ -398,7 +398,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr const_local_iterator end(size_type) const noexcept { return const_local_iterator{}; }
 
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_sparse_size; }
-		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return std::numeric_limits<size_type>::max(); }
+		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return npos - 1; }
 		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return static_cast<size_type>(std::distance(begin(n), end(n))); }
 		template<typename T>
 		[[nodiscard]] TPP_CXX20_CONSTEXPR size_type bucket(const T &key) const { return hash(key) % bucket_count(); }

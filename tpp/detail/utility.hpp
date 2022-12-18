@@ -281,6 +281,11 @@ namespace tpp::detail
 			return true;
 	}
 
+	template<typename T>
+	[[nodiscard]] constexpr static auto *void_cast(void *ptr) noexcept { return static_cast<T *>(ptr); }
+	template<typename T>
+	[[nodiscard]] constexpr static auto *void_cast(const void *ptr) noexcept { return static_cast<const T *>(ptr); }
+
 	template<typename A, typename T>
 	TPP_CXX20_CONSTEXPR void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)
 	{
@@ -294,31 +299,44 @@ namespace tpp::detail
 	}
 
 	template<typename A, typename T, typename SizeT = typename std::allocator_traits<A>::size_type>
-	TPP_CXX20_CONSTEXPR bool realloc_buffer(A &alloc, T *&buff, SizeT &buff_size, SizeT new_size)
+	TPP_CXX20_CONSTEXPR std::pair<T *, SizeT> realloc_buffer(A &alloc, std::pair<T *, SizeT> buff, SizeT new_size)
 	{
-		if (buff_size < new_size)
+		if (buff.second < new_size)
 		{
-			if (buff) std::allocator_traits<A>::deallocate(alloc, buff, buff_size);
-			buff = std::allocator_traits<A>::allocate(alloc, buff_size = new_size);
-			return true;
+			if (buff.first) std::allocator_traits<A>::deallocate(alloc, buff.first, buff.second);
+			buff.first = std::allocator_traits<A>::allocate(alloc, buff.second = new_size);
 		}
-		return false;
+		return buff;
 	}
 	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
-	TPP_CXX20_CONSTEXPR bool resize_buffer(A &alloc, T *&buff, SizeT &buff_size, SizeT new_size, F rel = relocate<A, T>)
+	TPP_CXX20_CONSTEXPR void realloc_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size)
 	{
-		if (buff_size < new_size)
-		{
-			new_size = std::max(buff_size * 2, new_size);
-			auto *new_buff = std::allocator_traits<A>::allocate(alloc, new_size);
-			relocate(alloc, buff, buff + buff_size, alloc, new_buff, rel);
+		const auto new_buff = realloc_buffer(alloc, {buff, size}, new_size);
+		buff = new_buff.first;
+		size = new_buff.second;
+	}
 
-			if (buff) std::allocator_traits<A>::deallocate(alloc, buff, buff_size);
-			buff_size = new_size;
-			buff = new_buff;
-			return true;
+	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
+	TPP_CXX20_CONSTEXPR std::pair<T *, SizeT> resize_buffer(A &alloc, std::pair<T *, SizeT> buff, SizeT new_size, F rel = relocate<A, T>)
+	{
+		if (buff.second < new_size)
+		{
+			new_size = std::max(buff.second * 2, new_size);
+			auto *new_buff = std::allocator_traits<A>::allocate(alloc, new_size);
+			relocate(alloc, buff.first, buff.first + buff.second, alloc, new_buff, rel);
+
+			if (buff.first) std::allocator_traits<A>::deallocate(alloc, buff.first, buff.second);
+			buff.second = new_size;
+			buff.first = new_buff;
 		}
-		return false;
+		return buff;
+	}
+	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
+	TPP_CXX20_CONSTEXPR void resize_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size, F rel = relocate<A, T>)
+	{
+		const auto new_buff = resize_buffer(alloc, {buff, size}, new_size, std::move(rel));
+		buff = new_buff.first;
+		size = new_buff.second;
 	}
 
 	template<typename V, typename A, typename Traits>
@@ -328,11 +346,6 @@ namespace tpp::detail
 		using hash_type = std::array<std::size_t, Traits::key_size>;
 
 		using storage_t = std::array<std::uint8_t, sizeof(hash_type) + (std::is_empty_v<V> ? 0 : sizeof(V))>;
-
-		template<typename T>
-		[[nodiscard]] constexpr static auto *void_cast(void *ptr) noexcept { return static_cast<T *>(ptr); }
-		template<typename T>
-		[[nodiscard]] constexpr static auto *void_cast(const void *ptr) noexcept { return static_cast<const T *>(ptr); }
 
 	public:
 		using allocator_type = A;
@@ -502,7 +515,7 @@ namespace tpp::detail
 		constexpr ordered_iterator() noexcept = default;
 
 		/** Implicit conversion from a const iterator. */
-		template<typename U, typename = std::enable_if_t<std::is_same_v<U, std::remove_const_t<N>> && !std::is_same_v<U, N>>>
+		template<typename U, typename = std::enable_if_t<!std::is_same_v<U, N>>>
 		constexpr ordered_iterator(const ordered_iterator<U, Traits> &other) noexcept : link(other.link) {}
 
 		constexpr explicit ordered_iterator(link_t *link) noexcept : link(link) {}

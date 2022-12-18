@@ -14,15 +14,11 @@ Here is a brief list of the features of this library:
         - [ ] `tpp::sparse_map`
         - [ ] `tpp::ordered_sparse_set`
         - [ ] `tpp::ordered_sparse_map`
-        - [ ] `tpp::sparse_multiset`
-        - [ ] `tpp::sparse_multimap`
     * Stable (elements are stored on the heap individually, references are stable)
         - [ ] `tpp::stable_set`
         - [ ] `tpp::stable_map`
         - [ ] `tpp::ordered_stable_set`
         - [ ] `tpp::ordered_stable_map`
-        - [ ] `tpp::stable_multiset`
-        - [ ] `tpp::stable_multimap`
 * Closed addressing (sparse & dense array) containers
     - [x] `tpp::dense_set`
     - [x] `tpp::dense_map`
