@@ -4,7 +4,7 @@ So, you need a hashtable? Well, good news, I've got some for you.
 
 This repository is a collection of different hashtable-based containers - several flavors of API-compatible alternatives
 for `std::unordered_map` and `std::unordered_set`, as well as accompanying `ordered_*` versions (insertion-order
-preserving tables), `multiset`s and `multimap`s (associative tables with multiple keys per entry).
+preserving tables), `dense_multiset` and `dense_multimap` (associative tables with multiple keys per entry).
 
 Here is a brief list of the features of this library:
 

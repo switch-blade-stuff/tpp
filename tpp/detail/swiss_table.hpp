@@ -68,7 +68,6 @@ namespace tpp::detail
 		constexpr explicit basic_index_mask(value_type value) noexcept : m_value(value) {}
 
 		[[nodiscard]] constexpr basic_index_mask next() const noexcept { return basic_index_mask{m_value & (m_value - 1)}; }
-		[[nodiscard]] constexpr basic_index_mask next_msb() const noexcept { return basic_index_mask{m_value & (m_value - 1)}; }
 
 		[[nodiscard]] constexpr bool empty() const noexcept { return m_value == 0; }
 		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t lsb_index() const noexcept;
@@ -83,7 +82,6 @@ namespace tpp::detail
 		value_type m_value = 0;
 	};
 
-#ifdef TPP_HAS_CONSTEVAL
 	template<typename T>
 	[[nodiscard]] constexpr std::size_t generic_ctz(T value) noexcept
 	{
@@ -100,7 +98,6 @@ namespace tpp::detail
 		while ((value & (mask >> result++)) == T{});
 		return result;
 	}
-#endif
 
 #if defined(__GNUC__) || defined(__clang__)
 	template<typename T>
@@ -119,11 +116,20 @@ namespace tpp::detail
 	[[nodiscard]] inline std::size_t builtin_clz(T value) noexcept
 	{
 		if constexpr (sizeof(T) <= sizeof(unsigned int))
-			return static_cast<std::size_t>(__builtin_clz(static_cast<unsigned int>(value)));
+		{
+			constexpr auto diff = (sizeof(unsigned int) - sizeof(T)) * 8;
+			return static_cast<std::size_t>(__builtin_clz(static_cast<unsigned int>(value))) - diff;
+		}
 		else if constexpr (sizeof(T) <= sizeof(unsigned long))
-			return static_cast<std::size_t>(__builtin_clzl(static_cast<unsigned long>(value)));
+		{
+			constexpr auto diff = (sizeof(unsigned long) - sizeof(T)) * 8;
+			return static_cast<std::size_t>(__builtin_clzl(static_cast<unsigned long>(value))) - diff;
+		}
 		else if constexpr (sizeof(T) <= sizeof(unsigned long long))
-			return static_cast<std::size_t>(__builtin_clzll(static_cast<unsigned long long>(value)));
+		{
+			constexpr auto diff = (sizeof(unsigned long long) - sizeof(T)) * 8;
+			return static_cast<std::size_t>(__builtin_clzll(static_cast<unsigned long long>(value))) - diff;
+		}
 		else
 			return generic_clz(value);
 	}
@@ -155,14 +161,14 @@ namespace tpp::detail
 		{
 			unsigned long result = 0;
 			_BitScanReverse(&result, static_cast<unsigned long>(value));
-			return static_cast<std::size_t>(result);
+			return static_cast<std::size_t>(result) - (sizeof(unsigned long) - sizeof(T));
 		}
 #ifdef _WIN64
 			else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
 			{
 				unsigned long result = 0;
 				_BitScanReverse64(&result, static_cast<unsigned __int64>(value));
-				return static_cast<std::size_t>(result);
+				return static_cast<std::size_t>(result) - (sizeof(unsigned __int64) - sizeof(T));
 			}
 #endif
 		else
@@ -218,14 +224,15 @@ namespace tpp::detail
 	{
 		using array_base = std::array<meta_byte, sizeof(block_value)>;
 
-		constexpr meta_block() noexcept = default;
-		constexpr meta_block(const meta_byte *bytes) noexcept { value() = *void_cast<const block_value>(bytes); }
+		TPP_CXX20_CONSTEXPR meta_block() noexcept = default;
+		TPP_CXX20_CONSTEXPR meta_block(const meta_byte *bytes) noexcept { value() = *void_cast<const block_value>(bytes); }
 
 		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_empty() const noexcept;
 		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_sentinel() const noexcept;
-		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_occupied() const noexcept;
 		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_available() const noexcept;
 		[[nodiscard]] TPP_CXX20_CONSTEXPR index_mask match_eq(meta_byte b) const noexcept;
+
+		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t count_occupied() const noexcept;
 
 		[[nodiscard]] constexpr void *raw_data() noexcept { return array_base::data(); }
 		[[nodiscard]] constexpr const void *raw_data() const noexcept { return array_base::data(); }
@@ -275,25 +282,6 @@ namespace tpp::detail
 	{
 		return match_eq(meta_byte::SENTINEL);
 	}
-	TPP_CXX20_CONSTEXPR index_mask meta_block::match_occupied() const noexcept
-	{
-		index_mask::value_type result = 0;
-#ifdef TPP_HAS_CONSTEVAL
-		if (TPP_IS_CONSTEVAL)
-			for (std::size_t i = 0; i < sizeof(block_value); ++i)
-			{
-				const auto a = static_cast<std::int8_t>(meta_byte::SENTINEL);
-				const auto b = static_cast<std::int8_t>((*this)[i]);
-				result |= static_cast<index_mask::value_type>(a < b) << i;
-			}
-		else
-#endif
-		{
-			const auto mask = _mm_set1_epi8(static_cast<char>(meta_byte::SENTINEL));
-			result = static_cast<index_mask::value_type>(_mm_movemask_epi8(x86_cmpgt_epi8(value(), mask)));
-		}
-		return index_mask{result};
-	}
 	TPP_CXX20_CONSTEXPR index_mask meta_block::match_available() const noexcept
 	{
 		index_mask::value_type result = 0;
@@ -328,29 +316,51 @@ namespace tpp::detail
 		}
 		return index_mask{result};
 	}
+
+	TPP_CXX20_CONSTEXPR std::size_t meta_block::count_occupied() const noexcept
+	{
+		index_mask::value_type result = 0;
+#ifdef TPP_HAS_CONSTEVAL
+		if (TPP_IS_CONSTEVAL)
+			for (std::size_t i = 0; i < sizeof(block_value); ++i)
+			{
+				const auto a = static_cast<std::int8_t>(meta_byte::SENTINEL);
+				const auto b = static_cast<std::int8_t>((*this)[i]);
+				result |= static_cast<index_mask::value_type>(a < b) << i;
+			}
+		else
+#endif
+		{
+			const auto mask = _mm_set1_epi8(static_cast<char>(meta_byte::SENTINEL));
+			result = static_cast<index_mask::value_type>(_mm_movemask_epi8(x86_cmpgt_epi8(value(), mask)));
+		}
+		return result ? index_mask{result}.msb_index() : sizeof(meta_block);
+	}
 #else
-	constexpr index_mask meta_block::match_empty() const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_empty() const noexcept
 	{
 		constexpr index_mask::value_type msb_mask = 0x8080808080808080
 		return index_mask{(value() & (~value() << 6)) & msb_mask};
 	}
-	constexpr index_mask meta_block::match_sentinel() const noexcept { return match_eq(meta_byte::SENTINEL); }
-	constexpr index_mask meta_block::match_occupied() const noexcept
-	{
-		constexpr index_mask::value_type msb_mask = 0x8080808080808080;
-		return index_mask{~(value() & (~value() << 7)) & msb_mask};
-	}
-	constexpr index_mask meta_block::match_available() const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_sentinel() const noexcept { return match_eq(meta_byte::SENTINEL); }
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_available() const noexcept
 	{
 		constexpr index_mask::value_type msb_mask = 0x8080808080808080;
 		return index_mask{(value() & (~value() << 7)) & msb_mask};
 	}
-	constexpr index_mask meta_block::match_eq(meta_byte b) const noexcept
+	TPP_CXX20_CONSTEXPR index_mask meta_block::match_eq(meta_byte b) const noexcept
 	{
 		constexpr index_mask::value_type msb_mask = 0x8080808080808080;
 		constexpr index_mask::value_type lsb_mask = 0x0101010101010101;
 		const auto x = value() ^ (lsb_mask * static_cast<std::uint8_t>(b));
 		return index_mask{(x - lsb_mask) & ~x & msb_mask};
+	}
+
+	TPP_CXX20_CONSTEXPR std::size_t meta_block::count_occupied() const noexcept
+	{
+		constexpr index_mask::value_type msb_mask = 0x0101010101010101;
+		const auto idx = index_mask{~(value() & (~value() >> 7)) & msb_mask};
+		return idx.empty() ? 0 : clz(idx) / 3;
 	}
 #endif
 
@@ -378,6 +388,13 @@ namespace tpp::detail
 		using meta_ptr = const meta_byte *;
 		using node_ptr = Node *;
 
+		// @formatter:off
+		template<typename, typename, typename, typename, typename, typename>
+		friend struct swiss_table_traits;
+		template<typename, typename, bool>
+		friend class swiss_node_iterator;
+		// @formatter:on
+
 	public:
 		using value_type = Node;
 		using pointer = Node *;
@@ -387,12 +404,13 @@ namespace tpp::detail
 		using difference_type = typename Traits::type;
 		using iterator_category = std::forward_iterator_tag;
 
+	private:
+		constexpr swiss_node_iterator(meta_ptr meta, node_ptr node) noexcept : m_meta(meta), m_node(node) { next_occupied(); }
+
 	public:
 		constexpr swiss_node_iterator() noexcept = default;
 		template<typename U, typename = std::enable_if_t<!std::is_same_v<Node, U> && std::is_constructible_v<node_ptr, U *>>>
 		constexpr swiss_node_iterator(const swiss_node_iterator<U, Traits, false> &other) noexcept : m_meta(other.m_meta), m_node(other.m_node) {}
-
-		constexpr swiss_node_iterator(meta_ptr meta, node_ptr node) noexcept : m_meta(meta), m_node(node) { next_occupied(); }
 
 		constexpr swiss_node_iterator operator++(int) noexcept
 		{
@@ -413,8 +431,7 @@ namespace tpp::detail
 		{
 			while (static_cast<std::int8_t>(*m_meta) < static_cast<std::int8_t>(meta_byte::SENTINEL))
 			{
-				const auto off_mask = meta_block{m_meta}.match_occupied();
-				const auto off = off_mask.empty() ? sizeof(meta_block) : off_mask.msb_index();
+				const auto off = meta_block{m_meta}.count_occupied();
 				m_meta += off;
 				m_node += off;
 			}
@@ -499,10 +516,9 @@ namespace tpp::detail
 			constexpr bucket_iterator() noexcept = default;
 			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<N *, U *>>>
 			constexpr bucket_iterator(const bucket_iterator<U> &other) noexcept
-					: m_meta_base(other.m_meta_base), m_node_base(other.m_node_base),
-					  m_idx(other.m_idx), m_pos(other.m_pos), m_cap(other.m_cap) {}
-			constexpr bucket_iterator(const meta_byte *meta, N *node, size_type pos, size_type cap) noexcept
-					: m_meta_base(meta), m_node_base(node), m_pos(pos), m_cap(cap) { next_occupied(); }
+					: m_meta_base(other.m_meta_base), m_node_base(other.m_node_base), m_probe(other.m_probe) {}
+			constexpr bucket_iterator(const meta_byte *meta, N *node, probe p) noexcept
+					: m_meta_base(meta), m_node_base(node), m_probe(p) { next_occupied(); }
 
 			constexpr bucket_iterator operator++(int) noexcept
 			{
@@ -522,41 +538,41 @@ namespace tpp::detail
 
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept
 			{
-				return m_node_base == other.m_node_base && m_pos == other.m_pos;
+				return m_node_base == other.m_node_base && m_probe.pos == other.m_probe.pos;
 			}
 #if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
 			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept
 			{
-				return m_node_base != other.m_node_base || m_pos != other.m_pos;
+				return m_node_base != other.m_node_base || m_probe.pos != other.m_probe.pos;
 			}
 #endif
 
 		private:
-			[[nodiscard]] constexpr auto *meta() const noexcept { return m_meta_base + m_pos; }
-			[[nodiscard]] constexpr auto *node() const noexcept { return m_node_base + m_pos; }
+			[[nodiscard]] constexpr auto *meta() const noexcept { return m_meta_base + (m_probe.pos + m_probe.idx % sizeof(meta_block)); }
+			[[nodiscard]] constexpr auto *node() const noexcept { return m_node_base + (m_probe.pos + m_probe.idx % sizeof(meta_block)); }
 
 			constexpr void next_occupied() noexcept
 			{
-				while (*meta() == meta_byte::DELETED)
-					inc_probe();
-				if (*meta() == meta_byte::EMPTY)
+				if (m_probe.idx <= m_probe.cap)
 				{
-					m_node_base = nullptr;
-					m_pos = 0;
+					while (*meta() == meta_byte::DELETED)
+						inc_probe();
+					if (*meta() != meta_byte::EMPTY)
+						return;
 				}
+				m_node_base = nullptr;
+				m_probe.pos = 0;
 			}
 			constexpr void inc_probe() noexcept
 			{
-				if ((++m_idx % sizeof(meta_block)) != 0)
-					m_pos = (m_pos + m_idx) & m_cap;
+				/* If iterated full block, increment the probe. */
+				if ((++m_probe.idx % sizeof(meta_block)) == 0)
+					m_probe.pos = (m_probe.pos + m_probe.idx) & m_probe.cap;
 			}
 
 			const meta_byte *m_meta_base = nullptr;
 			N *m_node_base = nullptr;
-
-			size_type m_idx = 0;
-			size_type m_pos = 0;
-			size_type m_cap = 0;
+			probe m_probe = {};
 		};
 
 	public:
@@ -580,6 +596,13 @@ namespace tpp::detail
 		[[nodiscard]] constexpr static std::pair<std::size_t, std::uint8_t> decompose_hash(std::size_t h) noexcept { return {h >> 7, h & 0x7f}; }
 
 	public:
+		TPP_CXX20_CONSTEXPR ~swiss_table()
+		{
+			clear_data();
+			if (m_metadata) std::allocator_traits<meta_allocator>::deallocate(get_meta_alloc(), m_metadata, m_capacity + 1);
+			if (m_buckets) std::allocator_traits<node_allocator>::deallocate(get_node_alloc(), m_buckets, m_capacity);
+		}
+
 		[[nodiscard]] constexpr iterator begin() noexcept { return to_iter(begin_node()); }
 		[[nodiscard]] constexpr const_iterator begin() const noexcept { return to_iter(begin_node()); }
 		[[nodiscard]] constexpr iterator end() noexcept { return to_iter(end_node()); }
@@ -597,11 +620,11 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept
 		{
-			return m_capacity ? local_iterator{meta_bytes(), m_buckets, n, m_capacity} : end(n);
+			return m_buckets ? local_iterator{meta_bytes(), m_buckets, {n, m_capacity}} : end(n);
 		}
 		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept
 		{
-			return m_capacity ? const_local_iterator{meta_bytes(), m_buckets, n, m_capacity} : end(n);
+			return m_buckets ? const_local_iterator{meta_bytes(), m_buckets, {n, m_capacity}} : end(n);
 		}
 		[[nodiscard]] constexpr local_iterator end(size_type) noexcept { return local_iterator{}; }
 		[[nodiscard]] constexpr const_local_iterator end(size_type) const noexcept { return const_local_iterator{}; }
@@ -612,7 +635,11 @@ namespace tpp::detail
 		template<typename T>
 		[[nodiscard]] TPP_CXX20_CONSTEXPR size_type bucket(const T &key) const { return hash(key) % bucket_count(); }
 
-		TPP_CXX20_CONSTEXPR void clear();
+		TPP_CXX20_CONSTEXPR void clear()
+		{
+			clear_data();
+			fill_metadata(meta_byte::EMPTY);
+		}
 		TPP_CXX20_CONSTEXPR void reserve(size_type n)
 		{
 			reserve_data(n);
@@ -656,8 +683,8 @@ namespace tpp::detail
 			if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_swap::value)
 				swap(get_node_alloc(), other.get_node_alloc());
 
-			TPP_ASSERT(allocator_eq(get_meta_alloc(), other.get_sparse_alloc()), "Swapped allocators must be equal");
-			TPP_ASSERT(allocator_eq(get_node_alloc(), other.get_dense_alloc()), "Swapped allocators must be equal");
+			TPP_ASSERT(allocator_eq(get_meta_alloc(), other.get_meta_alloc()), "Swapped allocators must be equal");
+			TPP_ASSERT(allocator_eq(get_node_alloc(), other.get_node_alloc()), "Swapped allocators must be equal");
 
 			swap_data(other);
 			swap(m_max_load_factor, other.m_max_load_factor);
@@ -708,6 +735,14 @@ namespace tpp::detail
 		}
 
 		[[nodiscard]] constexpr meta_byte *meta_bytes() const noexcept { return m_metadata->data(); }
+		constexpr void fill_metadata(meta_byte value) const noexcept
+		{
+			if (TPP_IS_CONSTEVAL)
+				for (size_type i = 0; i < m_capacity; ++i)
+					meta_bytes()[i] = value;
+			else
+				std::memset(meta_bytes(), value, m_capacity);
+		}
 
 		[[nodiscard]] constexpr auto to_iter(bucket_node *node) noexcept
 		{
@@ -762,6 +797,14 @@ namespace tpp::detail
 			}
 			const auto end = end_node();
 			return {m_metadata + (end - m_buckets), end};
+		}
+
+		TPP_CXX20_CONSTEXPR void clear_data()
+		{
+			auto alloc = allocator_type{get_node_alloc()};
+			for (auto pos = begin(), last = end(); pos != last; ++pos)
+				pos.m_node->destroy(alloc);
+			m_size = 0;
 		}
 
 		float m_max_load_factor = initial_load_factor;

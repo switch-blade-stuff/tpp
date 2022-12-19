@@ -308,10 +308,10 @@ namespace tpp::detail
 		}
 		return buff;
 	}
-	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
+	template<typename A, typename T, typename SizeT = typename std::allocator_traits<A>::size_type>
 	TPP_CXX20_CONSTEXPR void realloc_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size)
 	{
-		const auto new_buff = realloc_buffer(alloc, {buff, size}, new_size);
+		const auto new_buff = realloc_buffer(alloc, std::pair<T *, SizeT>{buff, size}, new_size);
 		buff = new_buff.first;
 		size = new_buff.second;
 	}
@@ -334,7 +334,7 @@ namespace tpp::detail
 	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
 	TPP_CXX20_CONSTEXPR void resize_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size, F rel = relocate<A, T>)
 	{
-		const auto new_buff = resize_buffer(alloc, {buff, size}, new_size, std::move(rel));
+		const auto new_buff = resize_buffer(alloc, std::pair<T *, SizeT>{buff, size}, new_size, std::move(rel));
 		buff = new_buff.first;
 		size = new_buff.second;
 	}
