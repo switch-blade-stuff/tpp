@@ -51,17 +51,17 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t I, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return std::get<I>(value.first); }
+			constexpr static auto &get_key(T &value) noexcept { return std::get<I>(value.first); }
 			template<typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value.first; }
+			constexpr static auto &get_key(T &value) noexcept { return value.first; }
 
 			template<typename T>
-			constexpr static auto &mapped_get(T &value) noexcept { return value.second; }
+			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
 
 			constexpr static std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
-		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using reference = typename table_t::reference;
@@ -288,7 +288,7 @@ namespace tpp
 				table_t::is_transparent::value && std::conjunction_v<std::is_invocable<hasher, Ks>...>>>
 		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(std::tuple<Ks...> key, Args &&...args)
 		{
-			return m_table.try_emplace(key, std::forward<Args>(args)...);
+			return m_table.try_emplace(std::move(key), std::forward<Args>(args)...);
 		}
 
 		/** @copybrief try_emplace
@@ -303,9 +303,21 @@ namespace tpp
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, const key_type &key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, key_type &&key, Args &&...args)
 		{
 			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, key_type &&key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -313,7 +325,14 @@ namespace tpp
 				table_t::is_transparent::value && std::conjunction_v<std::is_invocable<hasher, Ks>...>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, std::tuple<Ks...> key, Args &&...args)
 		{
-			return m_table.try_emplace(hint, key, std::forward<Args>(args)...);
+			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Ks, typename... Args, typename = std::enable_if_t<
+				table_t::is_transparent::value && std::conjunction_v<std::is_invocable<hasher, Ks>...>>>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, std::tuple<Ks...> key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::move(key), std::forward<Args>(args)...);
 		}
 
 		/** Removes the specified element from the multimap.
@@ -326,10 +345,14 @@ namespace tpp
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator erase(const K &key) { return m_table.template erase<I>(key); }
+
 		/** Removes the specified element from the multimap.
 		 * @param pos Iterator pointing to the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
 		TPP_CXX20_CONSTEXPR iterator erase(const_iterator pos) { return m_table.erase(pos); }
+		/** @copydoc erase */
+		TPP_CXX20_CONSTEXPR iterator erase(iterator pos) { return erase(const_iterator{pos}); }
+
 		/** Removes a range of elements from the multimap.
 		 * @param first Iterator to the first element of the to-be removed range.
 		 * @param last Iterator one past the last element of the to-be removed range.
@@ -428,7 +451,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
+#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator!=(const dense_multimap &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());

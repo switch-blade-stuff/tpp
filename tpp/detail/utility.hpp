@@ -13,9 +13,15 @@
 #include <iterator>
 #include <array>
 
+#if defined(__cpp_lib_bit_cast) && __cpp_lib_bit_cast >= 201806L
+
+#include <bit>
+
+#endif
+
 #else
 
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
 
 import std.memory;
 
@@ -99,6 +105,15 @@ namespace tpp::detail
 	[[nodiscard]] constexpr static std::array<T, sizeof...(Is)> make_array(std::index_sequence<Is...>, const T &value) { return {forward_n<Is>(value)...}; }
 	template<std::size_t Size, typename T>
 	[[nodiscard]] constexpr static std::array<T, Size> make_array(const T &value) noexcept { return make_array(std::make_index_sequence<Size>{}, value); }
+
+	template<typename Iter, typename Size>
+	[[nodiscard]] constexpr static Size max_distance_or_n(const Iter &first, const Iter &last, Size n) noexcept
+	{
+		if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
+			return std::max(Size{std::distance(first, last)}, n);
+		else
+			return n;
+	}
 
 	/* Helper type used to store potentially empty objects. */
 	template<typename, typename = void>
@@ -281,10 +296,34 @@ namespace tpp::detail
 			return true;
 	}
 
-	template<typename T>
-	[[nodiscard]] constexpr static auto *void_cast(void *ptr) noexcept { return static_cast<T *>(ptr); }
-	template<typename T>
-	[[nodiscard]] constexpr static auto *void_cast(const void *ptr) noexcept { return static_cast<const T *>(ptr); }
+#if !defined(__cpp_lib_bit_cast) || __cpp_lib_bit_cast < 201806L
+	/* Handle bitcasts for C++17 */
+#if defined(__has_builtin) && __has_builtin(__builtin_bit_cast)
+	template<typename To, typename From>
+	[[nodiscard]] constexpr static To trivial_bit_cast(const From &from) noexcept
+	{
+		static_assert(std::is_trivially_copyable_v<From> && std::is_trivially_copyable_v<To>);
+		return __builtin_bit_cast(To, from);
+	}
+#else
+	template<typename To, typename From>
+	[[nodiscard]] inline static To trivial_bit_cast(const From &from) noexcept
+	{
+		static_assert(std::is_trivially_copyable_v<From> && std::is_trivially_copyable_v<To>);
+		static_assert(std::is_trivially_constructible_v<To>);
+
+		To to;
+		std::memcpy(&to, &from, sizeof(To));
+		return to;
+	}
+#endif
+#else
+	template<typename To, typename From>
+	[[nodiscard]] constexpr static To trivial_bit_cast(const From &from) noexcept
+	{
+		return std::bit_cast<To>(from);
+	}
+#endif
 
 	template<typename A, typename T>
 	TPP_CXX20_CONSTEXPR void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)
@@ -345,7 +384,10 @@ namespace tpp::detail
 		using link_base = typename Traits::link_type;
 		using hash_type = std::array<std::size_t, Traits::key_size>;
 
-		using storage_t = std::array<std::uint8_t, sizeof(hash_type) + (std::is_empty_v<V> ? 0 : sizeof(V))>;
+		struct storage_t : ebo_container<V>
+		{
+			hash_type hash;
+		};
 
 	public:
 		using allocator_type = A;
@@ -372,36 +414,38 @@ namespace tpp::detail
 		}
 		TPP_CXX20_CONSTEXPR void destroy(A &alloc) { std::allocator_traits<A>::destroy(alloc, &value()); }
 
-		[[nodiscard]] constexpr auto &hash() noexcept { return data_off<hash_type>(0); }
-		[[nodiscard]] constexpr auto &hash() const noexcept { return data_off<hash_type>(0); }
+		[[nodiscard]] constexpr auto &hash() noexcept { return m_storage.hash; }
+		[[nodiscard]] constexpr auto &hash() const noexcept { return m_storage.hash; }
 
 		template<std::size_t I>
 		[[nodiscard]] constexpr auto &hash() noexcept { return hash()[I]; }
 		template<std::size_t I>
 		[[nodiscard]] constexpr auto &hash() const noexcept { return hash()[I]; }
 
-		[[nodiscard]] constexpr auto &value() noexcept { return data_off<V>(sizeof(hash_type)); }
-		[[nodiscard]] constexpr auto &value() const noexcept { return data_off<V>(sizeof(hash_type)); }
+		[[nodiscard]] constexpr auto &value() noexcept { return m_storage.value(); }
+		[[nodiscard]] constexpr auto &value() const noexcept { return m_storage.value(); }
 
 		template<std::size_t I>
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template key_get<I>(value()); }
-		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
-		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template get_key<I>(value()); }
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
+
+		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::get_mapped(value()); }
 
 		TPP_CXX20_CONSTEXPR friend void swap(packed_node &a, packed_node &b) noexcept(std::is_nothrow_swappable_v<V>)
 		{
 			using std::swap;
 			a.link_base::swap(b);
 			swap(a.value(), b.value());
+			swap(a.hash(), b.hash());
 		}
 
 	private:
-		template<typename T>
-		[[nodiscard]] constexpr T &data_off(std::size_t off) noexcept { return *void_cast<T>(m_storage.data() + off); }
-		template<typename T>
-		[[nodiscard]] constexpr const T &data_off(std::size_t off) const noexcept { return *void_cast<T>(m_storage.data() + off); }
-
-		storage_t m_storage = {};
+		union
+		{
+			std::array<std::uint8_t, sizeof(storage_t)> m_bytes = {};
+			storage_t m_storage;
+		};
 	};
 	template<typename V, typename A, typename Traits>
 	class stable_node : public Traits::link_type
@@ -456,9 +500,11 @@ namespace tpp::detail
 		[[nodiscard]] constexpr const auto &value() const noexcept { return *m_ptr; }
 
 		template<std::size_t I>
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template key_get<I>(value()); }
-		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::mapped_get(value()); }
-		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::mapped_get(value()); }
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template get_key<I>(value()); }
+		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
+
+		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::get_mapped(value()); }
 
 		constexpr friend void swap(stable_node &a, stable_node &b) noexcept
 		{
@@ -549,7 +595,7 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
 
-#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
 		[[nodiscard]] constexpr auto operator<=>(const ordered_iterator &other) const noexcept { return link <=> other.link; }
 #else
 		[[nodiscard]] constexpr bool operator!=(const ordered_iterator &other) const noexcept { return link != other.link; }
@@ -565,7 +611,7 @@ namespace tpp::detail
 	template<typename>
 	struct iterator_concept_base {};
 
-#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
 	template<std::contiguous_iterator I>
 	struct iterator_concept_base<I> { using iterator_concept = std::contiguous_iterator_tag; };
 #endif
@@ -665,7 +711,7 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr bool operator==(const table_iterator &other) const noexcept { return m_iter == other.m_iter; }
 
-#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
 		[[nodiscard]] constexpr auto operator<=>(const table_iterator &other) const noexcept { return m_iter <=> other.m_iter; }
 #else
 		[[nodiscard]] constexpr bool operator!=(const table_iterator &other) const noexcept { return m_iter != other.m_iter; }

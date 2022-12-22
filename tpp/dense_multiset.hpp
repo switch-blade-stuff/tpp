@@ -39,14 +39,14 @@ namespace tpp
 			using const_reference = const key_type &;
 
 			template<std::size_t I, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return std::get<I>(value); }
+			constexpr static auto &get_key(T &value) noexcept { return std::get<I>(value); }
 			template<typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value; }
+			constexpr static auto &get_key(T &value) noexcept { return value; }
 
 			constexpr static std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
-		using table_t = detail::dense_table<key_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -331,7 +331,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
+#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator!=(const dense_multiset &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());

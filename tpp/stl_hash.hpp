@@ -6,12 +6,6 @@
 
 #ifndef TPP_NO_HASH
 
-#if !defined(TPP_USE_IMPORT) && (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
-
-#include <version>
-
-#endif
-
 #if !defined(TPP_HAS_OPTIONAL_HASH) && (defined(TPP_STL_HASH_ALL) || defined(TPP_OPTIONAL_HASH))
 #define TPP_HAS_OPTIONAL_HASH
 
@@ -221,7 +215,7 @@ struct tpp::hash<std::error_code, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
 
 import std.memory;
 
@@ -281,7 +275,7 @@ struct tpp::hash<std::type_index, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
 import std.filesystem;
 #endif
 
@@ -311,7 +305,7 @@ struct tpp::hash<std::filesystem::path, Algo>
 
 #ifdef TPP_USE_IMPORT
 
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || _MSVC_LANG <= 202002L)
+#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
 import std.threading;
 #endif
 
@@ -343,7 +337,7 @@ struct tpp::hash<std::thread::id, Algo>
 
 /* C++20 */
 
-#if (__cplusplus >= 202002L || _MSVC_LANG >= 202002L) && defined(TPP_STL_HASH_ALL) || defined(TPP_COROUTINE_HASH)
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)) && defined(TPP_STL_HASH_ALL) || defined(TPP_COROUTINE_HASH)
 
 #ifndef TPP_USE_IMPORT
 
@@ -369,7 +363,7 @@ struct tpp::hash<std::coroutine_handle<P>, Algo>
 
 /* C++23 */
 
-#if (__cplusplus > 202002L || _MSVC_LANG > 202002L) && defined(TPP_STL_HASH_ALL) || defined(TPP_STACKTRACE_HASH)
+#if (__cplusplus > 202002L || (defined(_MSVC_LANG) && _MSVC_LANG > 202002L)) && defined(TPP_STL_HASH_ALL) || defined(TPP_STACKTRACE_HASH)
 
 #ifndef TPP_USE_IMPORT
 

@@ -31,17 +31,17 @@ namespace tpp
 			using const_reference = const Key &;
 
 			template<std::size_t, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value; }
+			constexpr static auto &get_key(T &value) noexcept { return value; }
 			template<typename T>
-			constexpr static auto key_get(T &value) noexcept { return std::forward_as_tuple(value); }
+			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value); }
 
 			template<typename T>
-			constexpr static auto &mapped_get(T &value) noexcept { return value; }
+			constexpr static auto &get_mapped(T &value) noexcept { return value; }
 
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -264,10 +264,12 @@ namespace tpp
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator erase(const K &key) { return m_table.template erase<0>(key); }
+
 		/** Removes the specified element from the set.
 		 * @param pos Iterator pointing to the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
 		TPP_CXX20_CONSTEXPR iterator erase(const_iterator pos) { return m_table.erase(pos); }
+
 		/** Removes a range of elements from the set.
 		 * @param first Iterator to the first element of the to-be removed range.
 		 * @param last Iterator one past the last element of the to-be removed range.
@@ -332,7 +334,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
+#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
 		[[nodiscard]] TPP_CXX20_CONSTEXPR bool operator!=(const dense_set &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
@@ -391,16 +393,16 @@ namespace tpp
 			using const_reference = const Key &;
 
 			template<std::size_t, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value; }
+			constexpr static auto &get_key(T &value) noexcept { return value; }
 			template<typename T>
-			constexpr static auto key_get(T &value) noexcept { return std::forward_as_tuple(value); }
+			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value); }
 			template<typename T>
-			constexpr static auto &mapped_get(T &value) noexcept { return value; }
+			constexpr static auto &get_mapped(T &value) noexcept { return value; }
 
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;

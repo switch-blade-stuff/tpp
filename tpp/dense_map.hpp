@@ -46,17 +46,17 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value.first; }
+			constexpr static auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			constexpr static auto key_get(T &value) noexcept { return std::forward_as_tuple(value.first); }
+			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
 
 			template<typename T>
-			constexpr static auto &mapped_get(T &value) noexcept { return value.second; }
+			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
 
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -372,9 +372,21 @@ namespace tpp
 		}
 		/** @copydoc emplace_or_replace */
 		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, const key_type &key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, key_type &&key, Args &&...args)
 		{
 			return m_table.emplace_or_replace(hint, std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, key_type &&key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, std::forward<key_type>(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc emplace_or_replace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -385,9 +397,21 @@ namespace tpp
 		}
 		/** @copydoc emplace_or_replace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, const K &key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, K &&key, Args &&...args)
 		{
 			return m_table.emplace_or_replace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, K &&key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
@@ -432,9 +456,21 @@ namespace tpp
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, const key_type &key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, key_type &&key, Args &&...args)
 		{
 			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, key_type &&key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -445,9 +481,21 @@ namespace tpp
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, const K &key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, K &&key, Args &&...args)
 		{
 			return m_table.try_emplace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, K &&key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Removes the specified element from the map.
@@ -458,10 +506,14 @@ namespace tpp
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator erase(const K &key) { return m_table.template erase<0>(key); }
+
 		/** Removes the specified element from the map.
 		 * @param pos Iterator pointing to the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
 		TPP_CXX20_CONSTEXPR iterator erase(const_iterator pos) { return m_table.erase(pos); }
+		/** @copydoc erase */
+		TPP_CXX20_CONSTEXPR iterator erase(iterator pos) { return erase(const_iterator{pos}); }
+
 		/** Removes a range of elements from the map.
 		 * @param first Iterator to the first element of the to-be removed range.
 		 * @param last Iterator one past the last element of the to-be removed range.
@@ -648,17 +700,17 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t, typename T>
-			constexpr static auto &key_get(T &value) noexcept { return value.first; }
+			constexpr static auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			constexpr static auto key_get(T &value) noexcept { return std::forward_as_tuple(value.first); }
+			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
 
 			template<typename T>
-			constexpr static auto &mapped_get(T &value) noexcept { return value.second; }
+			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
 
 			constexpr static std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -885,6 +937,7 @@ namespace tpp
 		{
 			return m_table.insert_or_assign(std::forward<K>(key), std::forward<T>(value));
 		}
+
 		/** @copybrief insert_or_assign
 		 * @param hint New position of the inserted element.
 		 * @param key Key of the element to insert or assign.
@@ -968,9 +1021,21 @@ namespace tpp
 		}
 		/** @copydoc emplace_or_replace */
 		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, const key_type &key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, key_type &&key, Args &&...args)
 		{
 			return m_table.emplace_or_replace(hint, std::forward<key_type>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, key_type &&key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, std::forward<key_type>(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc emplace_or_replace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -981,9 +1046,21 @@ namespace tpp
 		}
 		/** @copydoc emplace_or_replace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, const K &key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, K &&key, Args &&...args)
 		{
 			return m_table.emplace_or_replace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc emplace_or_replace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(iterator hint, K &&key, Args &&...args)
+		{
+			return emplace_or_replace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
@@ -1028,9 +1105,21 @@ namespace tpp
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, const key_type &key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, key_type &&key, Args &&...args)
 		{
 			return m_table.try_emplace(hint, std::move(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename... Args>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, key_type &&key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
@@ -1041,9 +1130,21 @@ namespace tpp
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, const K &key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, key, std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, K &&key, Args &&...args)
 		{
 			return m_table.try_emplace(hint, std::forward<K>(key), std::forward<Args>(args)...);
+		}
+		/** @copydoc try_emplace */
+		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
+		TPP_CXX20_CONSTEXPR iterator try_emplace(iterator hint, K &&key, Args &&...args)
+		{
+			return try_emplace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** Removes the specified element from the map.
@@ -1054,10 +1155,14 @@ namespace tpp
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		TPP_CXX20_CONSTEXPR iterator erase(const K &key) { return m_table.template erase<0>(key); }
+
 		/** Removes the specified element from the map.
 		 * @param pos Iterator pointing to the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
 		TPP_CXX20_CONSTEXPR iterator erase(const_iterator pos) { return m_table.erase(pos); }
+		/** @copydoc erase */
+		TPP_CXX20_CONSTEXPR iterator erase(iterator pos) { return erase(const_iterator{pos}); }
+
 		/** Removes a range of elements from the map.
 		 * @param first Iterator to the first element of the to-be removed range.
 		 * @param last Iterator one past the last element of the to-be removed range.
