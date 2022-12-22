@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "detail/define.hpp"
+#include "detail/utility.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -81,7 +81,7 @@ namespace tpp
 	/** @brief CRC32 byte checksum function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] constexpr std::uint32_t crc32(const void *data, std::size_t n) noexcept
+	[[nodiscard]] inline std::uint32_t crc32(const void *data, std::size_t n) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);
 		auto result = std::numeric_limits<std::uint32_t>::max();
@@ -137,7 +137,7 @@ namespace tpp
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer.
 	 * @param[out] result Buffer of 16 bytes to write the hash result to. */
-	TPP_CXX20_CONSTEXPR void md5(const void *data, std::size_t n, std::uint8_t (&result)[16]) noexcept
+	inline void md5(const void *data, std::size_t n, std::uint8_t (&result)[16]) noexcept
 	{
 		constexpr auto rotl = [](std::uint32_t x, std::uint32_t s) noexcept
 		{
@@ -261,10 +261,10 @@ namespace tpp
 	/** @brief SDBM byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] constexpr std::size_t sdbm(const void *data, std::size_t n) noexcept;
+	[[nodiscard]] inline std::size_t sdbm(const void *data, std::size_t n) noexcept;
 	/** @copydoc sdbm
 	 * @param[in] seed Seed used for the hash algorithm. */
-	[[nodiscard]] constexpr std::size_t sdbm(const void *data, std::size_t n, std::size_t seed) noexcept
+	[[nodiscard]] inline std::size_t sdbm(const void *data, std::size_t n, std::size_t seed) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);
 		std::size_t result = seed;
@@ -276,7 +276,7 @@ namespace tpp
 		return result;
 	}
 
-	constexpr std::size_t sdbm(const void *data, std::size_t n) noexcept
+	inline std::size_t sdbm(const void *data, std::size_t n) noexcept
 	{
 		return sdbm(data, n, 0);
 	}
@@ -284,10 +284,10 @@ namespace tpp
 	/** @brief FNV1a byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] constexpr std::size_t fnv1a(const void *data, std::size_t n) noexcept;
+	[[nodiscard]] inline std::size_t fnv1a(const void *data, std::size_t n) noexcept;
 	/** @copydoc fnv1a
 	 * @param[in] seed Seed used for the hash algorithm. */
-	[[nodiscard]] constexpr std::size_t fnv1a(const void *data, std::size_t n, std::size_t seed) noexcept
+	[[nodiscard]] inline std::size_t fnv1a(const void *data, std::size_t n, std::size_t seed) noexcept
 	{
 		auto *bytes = static_cast<const std::uint8_t *>(data);
 		std::size_t result = seed;
@@ -299,7 +299,7 @@ namespace tpp
 		return result;
 	}
 
-	constexpr std::size_t fnv1a(const void *data, std::size_t n) noexcept
+	inline std::size_t fnv1a(const void *data, std::size_t n) noexcept
 	{
 		return fnv1a(data, n, detail::fnv1a_offset);
 	}
@@ -308,48 +308,7 @@ namespace tpp
 	 * @note Reference implementation at <a href="https://docs.rs/seahash/latest/src/seahash/stream.rs.html">https://docs.rs/seahash/latest/src/seahash/stream.rs.html</a>. */
 	class seahash_builder
 	{
-		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_buff(const void *data, std::size_t n) noexcept
-		{
-			switch (n)
-			{
-				case 0: return 0;
-				case 1: return static_cast<std::uint64_t>(*static_cast<const std::uint8_t *>(data));
-				case 2: return static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
-				case 3:
-				{
-					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 2));
-					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint16_t *>(data));
-					return l | (h << 16);
-				}
-				case 4: return static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-				case 5:
-				{
-					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 4));
-					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-					return l | (h << 32);
-				}
-				case 6:
-				{
-					const auto h = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
-					const auto l = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-					return l | (h << 32);
-				}
-				case 7:
-				{
-					const auto a = static_cast<std::uint64_t>(*(static_cast<const std::uint16_t *>(data) + 2));
-					const auto b = static_cast<std::uint64_t>(*(static_cast<const std::uint8_t *>(data) + 6));
-					const auto c = static_cast<std::uint64_t>(*static_cast<const std::uint32_t *>(data));
-					return c | (a << 32) | (b << 48);
-				}
-				case 8: return read_u64_aligned(data);
-				default: TPP_UNREACHABLE();
-			}
-		}
-		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t read_u64_aligned(const void *data) noexcept
-		{
-			return *static_cast<const std::uint64_t *>(data);
-		}
-		[[nodiscard]] constexpr TPP_FORCEINLINE static std::uint64_t diffuse(std::uint64_t x) noexcept
+		[[nodiscard]] TPP_FORCEINLINE static std::uint64_t diffuse(std::uint64_t x) noexcept
 		{
 			/* Diffuse constants from the reference implementation at `https://docs.rs/seahash/latest/src/seahash/helper.rs.html#85`. */
 			const std::uint64_t c = 0x6eed0e9da4d94a4f;
@@ -373,7 +332,7 @@ namespace tpp
 		 * @return Reference to this hash builder.
 		 * @note This overload is available only if `T` is a scalar type. */
 		template<typename T, typename  = std::enable_if_t<std::is_scalar_v<std::decay_t<T>>>>
-		constexpr seahash_builder &write(const T &value) noexcept
+		seahash_builder &write(const T &value) noexcept
 		{
 			push(&value, sizeof(std::decay_t<T>));
 			return *this;
@@ -382,7 +341,7 @@ namespace tpp
 		 * @param data Pointer to the source buffer to be added to the resulting hash.
 		 * @param n Size of the source buffer in bytes.
 		 * @return Reference to this hash builder. */
-		constexpr seahash_builder &write(const void *data, std::size_t n) noexcept
+		seahash_builder &write(const void *data, std::size_t n) noexcept
 		{
 			push(data, n);
 			return *this;
@@ -390,20 +349,20 @@ namespace tpp
 
 		/** Finalizes the hash and returns it's value.
 		 * @note Returned hash is always a 64-bit unsigned integer, even if `std::size_t` is 32-bit. */
-		[[nodiscard]] constexpr std::uint64_t finish() noexcept
+		[[nodiscard]] std::uint64_t finish() noexcept
 		{
-			const auto a = tail_n > 0 ? diffuse(state[0] ^ read_u64_buff(&tail, tail_n)) : 0;
+			const auto a = tail_n > 0 ? diffuse(state[0] ^ detail::read_buffer<std::uint64_t>(&tail, tail_n)) : 0;
 			return diffuse(a ^ state[1] ^ state[2] ^ state[3] ^ (std::uint64_t{written} + std::uint64_t{tail_n}));
 		}
 
 	private:
-		constexpr TPP_FORCEINLINE void push(const void *data, std::size_t n) noexcept
+		TPP_FORCEINLINE void push(const void *data, std::size_t n) noexcept
 		{
 			const auto overflow = std::size_t{8} - tail_n;
 			const auto copy_n = overflow < n ? overflow : n;
 			auto *bytes = static_cast<const std::uint8_t *>(data);
 
-			if (auto tail_tmp = read_u64_buff(bytes + tail_n, copy_n); copy_n + tail_n != 8)
+			if (auto tail_tmp = detail::read_buffer<std::uint64_t>(bytes + tail_n, copy_n); copy_n + tail_n != 8)
 			{
 				tail = tail_tmp;
 				tail_n += copy_n;
@@ -419,10 +378,10 @@ namespace tpp
 				const auto *end = ptr + ((n - copy_n) & ~std::uint64_t{0x1F});
 				while (ptr < end)
 				{
-					state[0] = diffuse(state[0] ^ read_u64_aligned(ptr));
-					state[1] = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
-					state[2] = diffuse(state[2] ^ read_u64_aligned(ptr + 16));
-					state[3] = diffuse(state[3] ^ read_u64_aligned(ptr + 24));
+					state[0] = diffuse(state[0] ^ detail::read_unaligned<std::uint64_t>(ptr));
+					state[1] = diffuse(state[1] ^ detail::read_unaligned<std::uint64_t>(ptr + 8));
+					state[2] = diffuse(state[2] ^ detail::read_unaligned<std::uint64_t>(ptr + 16));
+					state[3] = diffuse(state[3] ^ detail::read_unaligned<std::uint64_t>(ptr + 24));
 					written += 32;
 					ptr += 32;
 				}
@@ -439,13 +398,13 @@ namespace tpp
 					case 6:
 					case 7:
 					{
-						tail = read_u64_buff(ptr, excess);
+						tail = detail::read_buffer<std::uint64_t>(ptr, excess);
 						tail_n = excess;
 						break;
 					}
 					case 8:
 					{
-						push_u64(read_u64_aligned(ptr));
+						push_u64(detail::read_unaligned<std::uint64_t>(ptr));
 						break;
 					}
 					case 9:
@@ -456,15 +415,15 @@ namespace tpp
 					case 14:
 					case 15:
 					{
-						push_u64(read_u64_aligned(ptr));
-						tail = read_u64_buff(ptr + 8, excess -= 8);
+						push_u64(detail::read_unaligned<std::uint64_t>(ptr));
+						tail = detail::read_buffer<std::uint64_t>(ptr + 8, excess -= 8);
 						tail_n = excess;
 						break;
 					}
 					case 16:
 					{
-						const auto a = diffuse(state[0] ^ read_u64_aligned(ptr));
-						const auto b = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
+						const auto a = diffuse(state[0] ^ detail::read_unaligned<std::uint64_t>(ptr));
+						const auto b = diffuse(state[1] ^ detail::read_unaligned<std::uint64_t>(ptr + 8));
 
 						state[0] = state[2];
 						state[1] = state[3];
@@ -481,23 +440,23 @@ namespace tpp
 					case 22:
 					case 23:
 					{
-						const auto a = diffuse(state[0] ^ read_u64_aligned(ptr));
-						const auto b = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
+						const auto a = diffuse(state[0] ^ detail::read_unaligned<std::uint64_t>(ptr));
+						const auto b = diffuse(state[1] ^ detail::read_unaligned<std::uint64_t>(ptr + 8));
 
 						state[0] = state[2];
 						state[1] = state[3];
 						state[2] = a;
 						state[3] = b;
-						tail = read_u64_buff(ptr + 16, excess -= 16);
+						tail = detail::read_buffer<std::uint64_t>(ptr + 16, excess -= 16);
 						tail_n = excess;
 						written += 16;
 						break;
 					}
 					case 24:
 					{
-						const auto a = diffuse(state[0] ^ read_u64_aligned(ptr));
-						const auto b = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
-						const auto c = diffuse(state[2] ^ read_u64_aligned(ptr + 16));
+						const auto a = diffuse(state[0] ^ detail::read_unaligned<std::uint64_t>(ptr));
+						const auto b = diffuse(state[1] ^ detail::read_unaligned<std::uint64_t>(ptr + 8));
+						const auto c = diffuse(state[2] ^ detail::read_unaligned<std::uint64_t>(ptr + 16));
 
 						state[0] = state[3];
 						state[1] = a;
@@ -514,14 +473,14 @@ namespace tpp
 					case 30:
 					case 31:
 					{
-						const auto a = diffuse(state[0] ^ read_u64_aligned(ptr));
-						const auto b = diffuse(state[1] ^ read_u64_aligned(ptr + 8));
-						const auto c = diffuse(state[2] ^ read_u64_aligned(ptr + 16));
+						const auto a = diffuse(state[0] ^ detail::read_unaligned<std::uint64_t>(ptr));
+						const auto b = diffuse(state[1] ^ detail::read_unaligned<std::uint64_t>(ptr + 8));
+						const auto c = diffuse(state[2] ^ detail::read_unaligned<std::uint64_t>(ptr + 16));
 						state[0] = state[3];
 						state[1] = a;
 						state[2] = b;
 						state[3] = c;
-						tail = read_u64_buff(ptr + 24, excess -= 24);
+						tail = detail::read_buffer<std::uint64_t>(ptr + 24, excess -= 24);
 						tail_n = excess;
 						written += 24;
 						break;
@@ -530,7 +489,7 @@ namespace tpp
 				}
 			}
 		}
-		constexpr TPP_FORCEINLINE void push_u64(std::uint64_t x) noexcept
+		TPP_FORCEINLINE void push_u64(std::uint64_t x) noexcept
 		{
 			x = diffuse(state[0] ^ x);
 			state[0] = state[1];
@@ -550,14 +509,14 @@ namespace tpp
 	/** @brief SeaHash byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] constexpr std::size_t seahash(const void *data, std::size_t n) noexcept
+	[[nodiscard]] inline std::size_t seahash(const void *data, std::size_t n) noexcept
 	{
 		auto builder = seahash_builder{};
 		return static_cast<std::size_t>(builder.write(data, n).finish());
 	}
 	/** @copydoc seahash
 	 * @param[in] seed Seed used for the hash algorithm. */
-	[[nodiscard]] constexpr std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
+	[[nodiscard]] inline std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
 	{
 		auto builder = seahash_builder{seed};
 		return static_cast<std::size_t>(builder.write(data, n).finish());
@@ -577,14 +536,14 @@ namespace tpp
 	using sdbm_hash = hash<T, sdbm>;
 }
 
-#define TPP_TRIVIAL_HASH_IMPL(T)                                                \
-    template<std::size_t (*Algo)(const void *, std::size_t)>                    \
-    struct tpp::hash<T, Algo>                                                   \
-    {                                                                           \
-        [[nodiscard]] constexpr std::size_t operator()(T value) const noexcept  \
-        {                                                                       \
-            return Algo(&value, sizeof(T));                                     \
-        }                                                                       \
+#define TPP_TRIVIAL_HASH_IMPL(T)                                        \
+    template<std::size_t (*Algo)(const void *, std::size_t)>            \
+    struct tpp::hash<T, Algo>                                           \
+    {                                                                   \
+        [[nodiscard]] std::size_t operator()(T value) const noexcept    \
+        {                                                               \
+            return Algo(&value, sizeof(T));                             \
+        }                                                               \
     };
 
 TPP_TRIVIAL_HASH_IMPL(bool)
@@ -621,7 +580,7 @@ TPP_TRIVIAL_HASH_IMPL(unsigned long long)
     template<std::size_t (*Algo)(const void *, std::size_t)>                    \
     struct tpp::hash<T, Algo>                                                   \
     {                                                                           \
-        [[nodiscard]] constexpr std::size_t operator()(T value) const noexcept  \
+        [[nodiscard]] std::size_t operator()(T value) const noexcept            \
         {                                                                       \
             if (value != static_cast<T>(0.0)) /* -0.0 must be equal to 0.0 */   \
                 return Algo(&value, sizeof(T));                                 \

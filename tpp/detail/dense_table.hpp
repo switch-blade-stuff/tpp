@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "utility.hpp"
+#include "table_common.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -35,22 +35,22 @@ namespace tpp::detail
 		struct bucket_node : table_node<I, Alloc, ValueTraits>
 		{
 			template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<I, Args...>>>
-			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, Args &&...args)
+			void construct(Alloc &alloc, Args &&...args)
 			{
 				table_node<I, Alloc, ValueTraits>::construct(alloc, std::forward<Args>(args)...);
 				next = make_array<key_size>(npos);
 			}
-			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, const bucket_node &other)
+			void construct(Alloc &alloc, const bucket_node &other)
 			{
 				table_node<I, Alloc, ValueTraits>::construct(alloc, other);
 				next = other.next;
 			}
-			TPP_CXX20_CONSTEXPR void construct(Alloc &alloc, bucket_node &&other)
+			void construct(Alloc &alloc, bucket_node &&other)
 			{
 				table_node<I, Alloc, ValueTraits>::construct(alloc, std::move(other));
 				next = other.next;
 			}
-			TPP_CXX20_CONSTEXPR void move_from(bucket_node &other)
+			void move_from(bucket_node &other)
 			{
 				table_node<I, Alloc, ValueTraits>::move_from(other);
 				next = other.next;
@@ -214,7 +214,7 @@ namespace tpp::detail
 
 	private:
 		template<typename T>
-		TPP_CXX20_CONSTEXPR static void replace_value(bucket_node &node, T &&value)
+		static void replace_value(bucket_node &node, T &&value)
 		{
 			auto &mapped = node.mapped();
 			using mapped_t = std::remove_reference_t<decltype(mapped)>;
@@ -232,7 +232,7 @@ namespace tpp::detail
 			}
 		}
 		template<typename... Args>
-		TPP_CXX20_CONSTEXPR static void replace_value(bucket_node &node, Args &&...args)
+		static void replace_value(bucket_node &node, Args &&...args)
 		{
 			auto &mapped = node.mapped();
 			using mapped_t = std::remove_reference_t<decltype(mapped)>;
@@ -245,17 +245,17 @@ namespace tpp::detail
 		}
 
 	public:
-		TPP_CXX20_CONSTEXPR dense_table() {}
+		dense_table() {}
 
-		TPP_CXX20_CONSTEXPR dense_table(const allocator_type &alloc) : sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}) {}
-		TPP_CXX20_CONSTEXPR dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
+		dense_table(const allocator_type &alloc) : sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}) {}
+		dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(hash), cmp_base(cmp) { init(bucket_count); }
 
 		template<typename Iter>
-		TPP_CXX20_CONSTEXPR dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
+		dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
 				: dense_table(max_distance_or_n(first, last, bucket_count), hash, cmp, alloc) { insert(first, last); }
 
-		TPP_CXX20_CONSTEXPR dense_table(const dense_table &other)
+		dense_table(const dense_table &other)
 				: header_base(other),
 				  sparse_alloc_base(std::allocator_traits<sparse_allocator>::select_on_container_copy_construction(other.sparse_alloc())),
 				  dense_alloc_base(std::allocator_traits<dense_allocator>::select_on_container_copy_construction(other.dense_alloc())),
@@ -264,7 +264,7 @@ namespace tpp::detail
 		{
 			copy_data(other);
 		}
-		TPP_CXX20_CONSTEXPR dense_table(const dense_table &other, const allocator_type &alloc)
+		dense_table(const dense_table &other, const allocator_type &alloc)
 				: header_base(other),
 				  sparse_alloc_base(alloc),
 				  dense_alloc_base(alloc),
@@ -275,7 +275,7 @@ namespace tpp::detail
 			copy_data(other);
 		}
 
-		TPP_CXX20_CONSTEXPR dense_table(dense_table &&other)
+		dense_table(dense_table &&other)
 		noexcept(std::is_nothrow_move_constructible_v<sparse_allocator> &&
 		         std::is_nothrow_move_constructible_v<dense_allocator> &&
 		         std::is_nothrow_move_constructible_v<hasher> &&
@@ -287,7 +287,7 @@ namespace tpp::detail
 		{
 			move_from(other);
 		}
-		TPP_CXX20_CONSTEXPR dense_table(dense_table &&other, const allocator_type &alloc)
+		dense_table(dense_table &&other, const allocator_type &alloc)
 		noexcept(std::is_nothrow_constructible_v<sparse_allocator, sparse_allocator> &&
 		         std::is_nothrow_constructible_v<dense_allocator, dense_allocator> &&
 		         std::is_nothrow_move_constructible_v<hasher> &&
@@ -300,7 +300,7 @@ namespace tpp::detail
 			move_from(other);
 		}
 
-		TPP_CXX20_CONSTEXPR dense_table &operator=(const dense_table &other)
+		dense_table &operator=(const dense_table &other)
 		{
 			if (this != &other)
 			{
@@ -326,7 +326,7 @@ namespace tpp::detail
 			}
 			return *this;
 		}
-		TPP_CXX20_CONSTEXPR dense_table &operator=(dense_table &&other)
+		dense_table &operator=(dense_table &&other)
 		noexcept(std::is_nothrow_move_assignable_v<sparse_allocator> &&
 		         std::is_nothrow_move_assignable_v<dense_allocator> &&
 		         std::is_nothrow_move_assignable_v<hasher> &&
@@ -358,7 +358,7 @@ namespace tpp::detail
 			return *this;
 		}
 
-		TPP_CXX20_CONSTEXPR ~dense_table()
+		~dense_table()
 		{
 			clear_data();
 			if (m_dense) std::allocator_traits<dense_allocator>::deallocate(dense_alloc(), m_dense, m_dense_capacity);
@@ -366,7 +366,7 @@ namespace tpp::detail
 		}
 
 		template<typename Iter>
-		TPP_CXX20_CONSTEXPR void assign(Iter first, Iter last)
+		void assign(Iter first, Iter last)
 		{
 			clear();
 			insert(first, last);
@@ -401,9 +401,9 @@ namespace tpp::detail
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return npos - 1; }
 		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return static_cast<size_type>(std::distance(begin(n), end(n))); }
 		template<typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR size_type bucket(const T &key) const { return hash(key) % bucket_count(); }
+		[[nodiscard]] size_type bucket(const T &key) const { return hash(key) % bucket_count(); }
 
-		TPP_CXX20_CONSTEXPR void clear()
+		void clear()
 		{
 			/* Reset header link. */
 			if constexpr (is_ordered::value) *header_link() = bucket_link{};
@@ -412,44 +412,44 @@ namespace tpp::detail
 			std::fill_n(m_sparse, bucket_count(), make_array<key_size>(npos));
 			clear_data();
 		}
-		TPP_CXX20_CONSTEXPR void reserve(size_type n)
+		void reserve(size_type n)
 		{
 			reserve_data(n);
 			rehash(static_cast<size_type>(static_cast<float>(n) / m_max_load_factor));
 		}
 
 		template<std::size_t J, typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR bool contains(const T &key) const { return find_node<J>(key, hash(key)).first != end_node(); }
+		[[nodiscard]] bool contains(const T &key) const { return find_node<J>(key, hash(key)).first != end_node(); }
 
 		template<std::size_t J, typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR iterator find(const T &key) { return to_iter(find_node<J>(key, hash(key)).first); }
+		[[nodiscard]] iterator find(const T &key) { return to_iter(find_node<J>(key, hash(key)).first); }
 		template<std::size_t J, typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR const_iterator find(const T &key) const { return to_iter(find_node<J>(key, hash(key)).first); }
+		[[nodiscard]] const_iterator find(const T &key) const { return to_iter(find_node<J>(key, hash(key)).first); }
 
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, ValueTraits::get_key(value), value); }
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, ValueTraits::get_key(value), std::move(value)); }
-		TPP_CXX20_CONSTEXPR iterator insert(const_iterator hint, const insert_type &value)
+		std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, ValueTraits::get_key(value), value); }
+		std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, ValueTraits::get_key(value), std::move(value)); }
+		iterator insert(const_iterator hint, const insert_type &value)
 		{
 			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), value).first;
 		}
-		TPP_CXX20_CONSTEXPR iterator insert(const_iterator hint, insert_type &&value)
+		iterator insert(const_iterator hint, insert_type &&value)
 		{
 			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), std::move(value)).first;
 		}
 
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
+		std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
 			return emplace_impl({}, std::forward<T>(value));
 		}
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
-		TPP_CXX20_CONSTEXPR iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
+		iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
 			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
 		}
 
 		template<typename Iter>
-		TPP_CXX20_CONSTEXPR void insert(Iter first, Iter last)
+		void insert(Iter first, Iter last)
 		{
 			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
 				reserve(static_cast<size_type>(std::distance(first, last)));
@@ -457,84 +457,85 @@ namespace tpp::detail
 		}
 
 		template<typename T, typename U>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
+		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl({}, key, std::forward<U>(value));
 		}
 		template<typename T, typename U>
-		TPP_CXX20_CONSTEXPR iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
+		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
 			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
 		}
 
 		template<typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
 			return emplace_impl({}, std::forward<Args>(args)...);
 		}
 		template<typename... Args>
-		TPP_CXX20_CONSTEXPR iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
+		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
 			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
 		template<typename U, typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES(
+		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return insert_or_assign_impl({}, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 		template<typename U, typename... Args>
-		TPP_CXX20_CONSTEXPR iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
+		iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return insert_or_assign_impl(hint, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
+		std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return try_emplace_impl({}, std::move(keys), std::forward<Args>(args)...);
 		}
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
+		iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return try_emplace_impl(to_underlying(hint), std::move(keys), std::forward<Args>(args)...).first;
 		}
 
 		template<std::size_t J, typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
-		TPP_CXX20_CONSTEXPR iterator erase(const T &key) { return erase_impl<J>(key, hash(key)); }
-		TPP_CXX20_CONSTEXPR iterator erase(const_iterator where)
+		iterator erase(const T &key) { return erase_impl<J>(key, hash(key)); }
+		iterator erase(const_iterator where)
 		{
 			const auto pos = &(*to_underlying(where)) - m_dense;
 			return erase_impl(pos, m_dense + pos);
 		}
-		TPP_CXX20_CONSTEXPR iterator erase(const_iterator first, const_iterator last)
+		iterator erase(const_iterator first, const_iterator last)
 		{
 			iterator result = end();
 			while (last != first) result = erase(--last);
 			return result;
 		}
 
-		TPP_CXX20_CONSTEXPR void rehash(size_type n)
+		void rehash(size_type n)
 		{
-			using std::max;
+			/* Skip rehash if table is empty and requested size is 0. */
+			TPP_IF_UNLIKELY(!n && !m_dense_size) return;
 
 			/* Adjust the capacity to be at least large enough to fit the current size. */
-			const auto new_cap = max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), n);
-			if (n == 0 || new_cap != m_sparse_size) rehash_impl(new_cap);
+			const auto new_cap = std::max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), n);
+			if (!n || new_cap != m_sparse_size) rehash_impl(new_cap);
 		}
 
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
 		constexpr void max_load_factor(float f) noexcept { m_max_load_factor = f; }
 
-		[[nodiscard]] TPP_CXX20_CONSTEXPR auto &get_allocator() const { return dense_alloc(); }
-		[[nodiscard]] TPP_CXX20_CONSTEXPR auto &get_hash() const noexcept { return hash_base::value(); }
-		[[nodiscard]] TPP_CXX20_CONSTEXPR auto &get_cmp() const noexcept { return cmp_base::value(); }
+		[[nodiscard]] auto &get_allocator() const { return dense_alloc(); }
+		[[nodiscard]] auto &get_hash() const noexcept { return hash_base::value(); }
+		[[nodiscard]] auto &get_cmp() const noexcept { return cmp_base::value(); }
 
-		TPP_CXX20_CONSTEXPR void swap(dense_table &other)
+		void swap(dense_table &other)
 		noexcept(std::is_nothrow_swappable_v<sparse_allocator> &&
 		         std::is_nothrow_swappable_v<dense_allocator> &&
 		         std::is_nothrow_swappable_v<hasher> &&
@@ -567,9 +568,9 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &dense_alloc() const noexcept { return dense_alloc_base::value(); }
 
 		template<typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR std::size_t hash(const T &k) const { return get_hash()(k); }
+		[[nodiscard]] std::size_t hash(const T &k) const { return get_hash()(k); }
 		template<typename T, typename U>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
+		[[nodiscard]] bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
 
 		[[nodiscard]] constexpr auto *header_link() const noexcept
 		{
@@ -615,7 +616,7 @@ namespace tpp::detail
 			return bucket;
 		}
 		template<std::size_t J, typename T>
-		[[nodiscard]] TPP_CXX20_CONSTEXPR std::pair<bucket_node *, size_type *> find_node(const T &key, std::size_t h) const
+		[[nodiscard]] std::pair<bucket_node *, size_type *> find_node(const T &key, std::size_t h) const
 		{
 			auto *idx = get_chain<J>(h);
 			if (idx)
@@ -630,7 +631,7 @@ namespace tpp::detail
 		}
 
 		template<typename... Args>
-		TPP_CXX20_CONSTEXPR auto push_node(Args &&...args) -> std::pair<size_type, bucket_node *>
+		auto push_node(Args &&...args) -> std::pair<size_type, bucket_node *>
 		{
 			const auto pos = m_dense_size++;
 			resize_buffer(dense_alloc(), m_dense, m_dense_capacity, std::max(m_dense_size, initial_capacity), relocate_node{});
@@ -639,10 +640,10 @@ namespace tpp::detail
 			m_dense[pos].construct(alloc, std::forward<Args>(args)...);
 			return {pos, m_dense + pos};
 		}
-		TPP_CXX20_CONSTEXPR void pop_node()
+		void pop_node()
 		{
 			auto alloc = allocator_type{dense_alloc()};
-			std::allocator_traits<allocator_type>::destroy(alloc, m_dense + (--m_dense_size));
+			m_dense[--m_dense_size].destroy(alloc);
 		}
 
 		template<std::size_t J>
@@ -661,7 +662,7 @@ namespace tpp::detail
 		}
 
 		template<std::size_t... Is>
-		TPP_CXX20_CONSTEXPR iterator commit_node(hint_t hint, size_type pos, chain_slice slice, bucket_hash hashes, bucket_node *node)
+		iterator commit_node(hint_t hint, size_type pos, chain_slice slice, bucket_hash hashes, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
 			if constexpr (is_ordered::value) node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
@@ -671,13 +672,13 @@ namespace tpp::detail
 			return to_iter(node);
 		}
 		template<std::size_t... Is, typename... Args>
-		TPP_CXX20_CONSTEXPR iterator emplace_node(hint_t hint, chain_slice slice, bucket_hash hashes, Args &&...args)
+		iterator emplace_node(hint_t hint, chain_slice slice, bucket_hash hashes, Args &&...args)
 		{
 			const auto [pos, node] = push_node(std::forward<Args>(args)...);
 			return commit_node<Is...>(hint, pos, slice, hashes, node);
 		}
 		template<std::size_t... Is>
-		TPP_CXX20_CONSTEXPR iterator erase_node(size_type pos, bucket_node *node, chain_slice slice)
+		iterator erase_node(size_type pos, bucket_node *node, chain_slice slice)
 		{
 			TPP_ASSERT(node != end_node(), "Erased node cannot be the end node");
 			auto *next = node;
@@ -703,7 +704,7 @@ namespace tpp::detail
 		}
 
 		template<typename... Args, std::size_t... Is>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, hint_t hint, Args &&...args)
+		std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, hint_t hint, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -723,14 +724,14 @@ namespace tpp::detail
 			return {commit_node<Is...>(hint, pos, {node_list[Is].second...}, hs, tmp), true};
 		}
 		template<typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> emplace_impl(hint_t hint, Args &&...args)
+		std::pair<iterator, bool> emplace_impl(hint_t hint, Args &&...args)
 		{
 			return emplace_impl(std::make_index_sequence<key_size>{}, hint, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only for containers where `value_type` is a pair. */
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, hint_t hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, hint_t hint, std::tuple<Ks...> ks, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -749,13 +750,13 @@ namespace tpp::detail
 			                            std::forward_as_tuple(std::forward<Args>(args)...)), true};
 		}
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> try_emplace_impl(hint_t hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> try_emplace_impl(hint_t hint, std::tuple<Ks...> ks, Args &&...args)
 		{
 			return try_emplace_impl(std::make_index_sequence<key_size>{}, hint, std::move(ks), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -773,14 +774,14 @@ namespace tpp::detail
 			return {emplace_node<Is...>(hint, {node_list[Is].second...}, hs, std::forward<Args>(args)...), true};
 		}
 		template<typename... Ks, typename... Args>
-		TPP_CXX20_CONSTEXPR std::pair<iterator, bool> insert_impl(hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> insert_impl(hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
 			return insert_impl(std::make_index_sequence<key_size>{}, hint, ks, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only if there is a single key. Otherwise, we cannot assign conflicting entries. */
 		template<typename T, typename... Args>
-		TPP_CXX20_CONSTEXPR auto insert_or_assign_impl(hint_t hint, T &&key, Args &&...args) -> std::pair<iterator, bool>
+		auto insert_or_assign_impl(hint_t hint, T &&key, Args &&...args) -> std::pair<iterator, bool>
 		{
 			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
 
@@ -804,7 +805,7 @@ namespace tpp::detail
 		}
 
 		template<std::size_t... Is>
-		TPP_CXX20_CONSTEXPR iterator erase_impl(std::index_sequence<Is...>, size_type pos, bucket_node *node)
+		iterator erase_impl(std::index_sequence<Is...>, size_type pos, bucket_node *node)
 		{
 			if (const auto end = end_node(); node == end)
 				return to_iter(end);
@@ -812,13 +813,13 @@ namespace tpp::detail
 			const auto slice = chain_slice{find_chain_ptr<Is...>(get_chain<Is>(node->template hash<Is>()), pos)...};
 			return erase_node<Is...>(pos, node, slice);
 		}
-		TPP_CXX20_CONSTEXPR iterator erase_impl(size_type pos, bucket_node *node)
+		iterator erase_impl(size_type pos, bucket_node *node)
 		{
 			return erase_impl(std::make_index_sequence<key_size>{}, pos, node);
 		}
 
 		template<std::size_t J, typename T, std::size_t... Is>
-		TPP_CXX20_CONSTEXPR iterator erase_impl(std::index_sequence<Is...>, const T &key, std::size_t h)
+		iterator erase_impl(std::index_sequence<Is...>, const T &key, std::size_t h)
 		{
 			for (auto *chain_idx = get_chain<J>(h); *chain_idx != npos;)
 			{
@@ -837,13 +838,13 @@ namespace tpp::detail
 			return end();
 		}
 		template<std::size_t J, typename T>
-		TPP_CXX20_CONSTEXPR iterator erase_impl(const T &key, std::size_t h)
+		iterator erase_impl(const T &key, std::size_t h)
 		{
 			return erase_impl<J>(remove_index_t<J, std::make_index_sequence<key_size>>{}, key, h);
 		}
 
 		template<size_type... Is>
-		TPP_CXX20_CONSTEXPR void rehash_impl(std::index_sequence<Is...>, size_type new_cap)
+		void rehash_impl(std::index_sequence<Is...>, size_type new_cap)
 		{
 			/* Reallocate the sparse buffer. */
 			realloc_buffer(sparse_alloc(), m_sparse, m_sparse_size, new_cap);
@@ -852,8 +853,8 @@ namespace tpp::detail
 			/* Go through each entry & re-insert it. */
 			for (size_type i = 0; i < size(); ++i) (insert_node<Is>(m_dense[i], i), ...);
 		}
-		TPP_CXX20_CONSTEXPR void rehash_impl(size_type new_cap) { rehash_impl(std::make_index_sequence<key_size>{}, new_cap); }
-		TPP_CXX20_CONSTEXPR void maybe_rehash()
+		void rehash_impl(size_type new_cap) { rehash_impl(std::make_index_sequence<key_size>{}, new_cap); }
+		void maybe_rehash()
 		{
 			// @formatter:off
 			TPP_IF_UNLIKELY(bucket_count() == 0)
@@ -863,21 +864,21 @@ namespace tpp::detail
 			// @formatter:on
 		}
 
-		TPP_CXX20_CONSTEXPR void reserve_data(size_type new_cap)
+		void reserve_data(size_type capacity)
 		{
-			if (new_cap > m_dense_capacity)
+			if (capacity > m_dense_capacity)
 			{
 				auto &alloc = dense_alloc();
-				auto *new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, new_cap);
+				auto *new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
 				relocate(alloc, m_dense, m_dense + m_dense_size, alloc, new_dense, relocate_node{});
 				std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
-				m_dense_capacity = new_cap;
+				m_dense_capacity = capacity;
 				m_dense = new_dense;
 			}
 		}
 
 		template<std::size_t... Is>
-		TPP_CXX20_CONSTEXPR void copy_data(std::index_sequence<Is...>, const dense_table &other)
+		void copy_data(std::index_sequence<Is...>, const dense_table &other)
 		{
 			/* Expect that there is no data in the buffers, but the buffers might still exist. */
 			TPP_ASSERT(size() == 0, "Table must be empty prior to copying elements");
@@ -909,7 +910,7 @@ namespace tpp::detail
 			}
 		}
 		template<std::size_t... Is>
-		TPP_CXX20_CONSTEXPR void move_data(std::index_sequence<Is...>, dense_table &other)
+		void move_data(std::index_sequence<Is...>, dense_table &other)
 		{
 			/* Expect that there is no data in the buffers, but the buffers might still exist. */
 			TPP_ASSERT(size() == 0, "Table must be empty prior to moving elements");
@@ -931,7 +932,7 @@ namespace tpp::detail
 			other.m_dense_size = 0;
 		}
 
-		TPP_CXX20_CONSTEXPR void init(size_type capacity)
+		void init(size_type capacity)
 		{
 			TPP_IF_LIKELY(capacity != 0)
 			{
@@ -940,9 +941,9 @@ namespace tpp::detail
 				std::fill_n(m_sparse, m_sparse_size, make_array<key_size>(npos));
 			}
 		}
-		TPP_CXX20_CONSTEXPR void copy_data(const dense_table &other) { copy_data(std::make_index_sequence<key_size>{}, other); }
-		TPP_CXX20_CONSTEXPR void move_data(dense_table &other) { move_data(std::make_index_sequence<key_size>{}, other); }
-		TPP_CXX20_CONSTEXPR void swap_buffers(dense_table &other)
+		void copy_data(const dense_table &other) { copy_data(std::make_index_sequence<key_size>{}, other); }
+		void move_data(dense_table &other) { move_data(std::make_index_sequence<key_size>{}, other); }
+		void swap_buffers(dense_table &other)
 		{
 			std::swap(m_dense_size, other.m_dense_size);
 			std::swap(m_dense_capacity, other.m_dense_capacity);
@@ -950,13 +951,13 @@ namespace tpp::detail
 			std::swap(m_sparse, other.m_sparse);
 			std::swap(m_dense, other.m_dense);
 		}
-		TPP_CXX20_CONSTEXPR void clear_data()
+		void clear_data()
 		{
 			auto alloc = allocator_type{dense_alloc()};
 			for (size_type i = 0, n = std::exchange(m_dense_size, 0); i < n; ++i) m_dense[i].destroy(alloc);
 		}
 
-		TPP_CXX20_CONSTEXPR void move_from(dense_table &other)
+		void move_from(dense_table &other)
 		{
 			if (allocator_eq(sparse_alloc(), other.sparse_alloc()) && allocator_eq(dense_alloc(), other.dense_alloc()))
 				swap_buffers(other);

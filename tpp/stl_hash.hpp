@@ -23,7 +23,7 @@ struct tpp::hash<std::optional<T>, Algo>
 	/* Use a sentinel value for nullopt. Value taken from `https://github.com/gcc-mirror/gcc/blob/c838119946c9f75f1e42f4320275355822cc86fc/libstdc%2B%2B-v3/include/std/optional#L1480` */
 	constexpr static auto nullopt_sentinel = static_cast<std::size_t>(-3333);
 
-	[[nodiscard]] constexpr std::size_t operator()(const std::optional<T> &value) const noexcept(noexcept(value_hash{}(*value)))
+	[[nodiscard]] std::size_t operator()(const std::optional<T> &value) const noexcept(noexcept(value_hash{}(*value)))
 	{
 		return value ? value_hash{}(*value) : nullopt_sentinel;
 	}
@@ -63,7 +63,7 @@ namespace tpp
 	template<typename... Ts, std::size_t (*Algo)(const void *, std::size_t)>
 	struct hash<std::variant<Ts...>, Algo>
 	{
-		[[nodiscard]] constexpr std::size_t operator()(const std::variant<Ts...> &value) const
+		[[nodiscard]] std::size_t operator()(const std::variant<Ts...> &value) const
 		noexcept((std::is_nothrow_invocable_v<hash<std::decay_t<Ts>, Algo>, Ts> && ...))
 		{
 			using visitor_hash = detail::hash_overload<hash<std::decay_t<Ts>, Algo>...>;
@@ -86,16 +86,16 @@ namespace tpp
 
 #endif
 
-#define TPP_STRING_VIEW_HASH_IMPL(C)                                                        \
-    template<std::size_t (*Algo)(const void *, std::size_t)>                                \
-    struct tpp::hash<std::basic_string_view<C>, Algo>                                       \
-    {                                                                                       \
-        using value_t = std::basic_string_view<C>;                                          \
-                                                                                            \
-        [[nodiscard]] constexpr std::size_t operator()(const value_t &value) const noexcept \
-        {                                                                                   \
-            return Algo(value.data(), value.size() * sizeof(C));                            \
-        }                                                                                   \
+#define TPP_STRING_VIEW_HASH_IMPL(C)                                                \
+    template<std::size_t (*Algo)(const void *, std::size_t)>                        \
+    struct tpp::hash<std::basic_string_view<C>, Algo>                               \
+    {                                                                               \
+        using value_t = std::basic_string_view<C>;                                  \
+                                                                                    \
+        [[nodiscard]] std::size_t operator()(const value_t &value) const noexcept   \
+        {                                                                           \
+            return Algo(value.data(), value.size() * sizeof(C));                    \
+        }                                                                           \
     };
 
 TPP_STRING_VIEW_HASH_IMPL(char)
@@ -122,16 +122,16 @@ TPP_STRING_VIEW_HASH_IMPL(char8_t)
 
 #endif
 
-#define TPP_STRING_HASH_IMPL(C)                                                             \
-    template<typename Alloc, std::size_t (*Algo)(const void *, std::size_t)>                \
-    struct tpp::hash<std::basic_string<C, std::char_traits<C>, Alloc>, Algo>                \
-    {                                                                                       \
-        using value_t = std::basic_string<C, std::char_traits<C>, Alloc>;                   \
-                                                                                            \
-        [[nodiscard]] constexpr std::size_t operator()(const value_t &value) const noexcept \
-        {                                                                                   \
-            return Algo(value.data(), value.size() * sizeof(C));                            \
-        }                                                                                   \
+#define TPP_STRING_HASH_IMPL(C)                                                     \
+    template<typename Alloc, std::size_t (*Algo)(const void *, std::size_t)>        \
+    struct tpp::hash<std::basic_string<C, std::char_traits<C>, Alloc>, Algo>        \
+    {                                                                               \
+        using value_t = std::basic_string<C, std::char_traits<C>, Alloc>;           \
+                                                                                    \
+        [[nodiscard]] std::size_t operator()(const value_t &value) const noexcept   \
+        {                                                                           \
+            return Algo(value.data(), value.size() * sizeof(C));                    \
+        }                                                                           \
     };
 
 TPP_STRING_HASH_IMPL(char)
@@ -161,7 +161,7 @@ TPP_STRING_HASH_IMPL(char8_t)
 template<std::size_t N, std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::bitset<N>, Algo>
 {
-	[[nodiscard]] constexpr std::size_t operator()(const std::bitset<N> &value) const noexcept
+	[[nodiscard]] std::size_t operator()(const std::bitset<N> &value) const noexcept
 	{
 		if constexpr (N == 0)
 			return 0;
@@ -261,7 +261,7 @@ struct tpp::hash<std::shared_ptr<T>, Algo>
 template<std::size_t (*Algo)(const void *, std::size_t)>
 struct tpp::hash<std::type_index, Algo>
 {
-	[[nodiscard]] constexpr std::size_t operator()(const std::type_index &i) const noexcept
+	[[nodiscard]] std::size_t operator()(const std::type_index &i) const noexcept
 	{
 		/* type_index is already unique. */
 		return i.hash_code();
