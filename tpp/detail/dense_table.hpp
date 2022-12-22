@@ -518,13 +518,13 @@ namespace tpp::detail
 			return result;
 		}
 
-		TPP_CXX20_CONSTEXPR void rehash(size_type new_cap)
+		TPP_CXX20_CONSTEXPR void rehash(size_type n)
 		{
 			using std::max;
 
 			/* Adjust the capacity to be at least large enough to fit the current size. */
-			new_cap = max(max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), new_cap), initial_capacity);
-			if (new_cap != m_sparse_size) rehash_impl(new_cap);
+			const auto new_cap = max(max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), n), initial_capacity);
+			if (n == 0 || new_cap != m_sparse_size) rehash_impl(new_cap);
 		}
 
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
