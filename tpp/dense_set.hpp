@@ -93,12 +93,12 @@ namespace tpp
 		/** Move-constructs the set. */
 		dense_set(dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		dense_set(dense_set &&other, const allocator_type &alloc)
-		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
+		dense_set(dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
 		explicit dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                       const allocator_type &alloc = allocator_type{})
+		                   const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
 		dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -108,15 +108,13 @@ namespace tpp
 				: dense_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -137,9 +135,8 @@ namespace tpp
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -350,7 +347,7 @@ namespace tpp
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename H, typename C, typename A, typename P>
-	typename dense_set<K, H, C, A>::size_type erase_if(dense_set<K, H, C, A> &set, P pred)
+	inline typename dense_set<K, H, C, A>::size_type erase_if(dense_set<K, H, C, A> &set, P pred)
 	{
 		typename dense_set<K, H, C, A>::size_type result = 0;
 		for (auto i = set.cbegin(), last = set.cend(); i != last;)
@@ -367,8 +364,7 @@ namespace tpp
 	}
 
 	template<typename K, typename H, typename C, typename A>
-	void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
+	inline void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
 
 	/** @brief Ordered hash set based on dense hash table.
 	 *
@@ -455,12 +451,12 @@ namespace tpp
 		/** Move-constructs the set. */
 		ordered_dense_set(ordered_dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc)
-		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
+		ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
 		explicit ordered_dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                               const allocator_type &alloc = allocator_type{})
+		                           const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
 		ordered_dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -470,15 +466,13 @@ namespace tpp
 				: ordered_dense_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                      const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                  const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                      const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                  const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -499,9 +493,8 @@ namespace tpp
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_dense_set(I first, I last, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                      const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                  const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -711,7 +704,7 @@ namespace tpp
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename H, typename C, typename A, typename P>
-	typename ordered_dense_set<K, H, C, A>::size_type erase_if(ordered_dense_set<K, H, C, A> &set, P pred)
+	inline typename ordered_dense_set<K, H, C, A>::size_type erase_if(ordered_dense_set<K, H, C, A> &set, P pred)
 	{
 		typename dense_set<K, H, C, A>::size_type result = 0;
 		for (auto i = set.cbegin(), last = set.cend(); i != last;)
@@ -728,6 +721,6 @@ namespace tpp
 	}
 
 	template<typename K, typename H, typename C, typename A>
-	void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b)
+	inline void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b)
 	noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
 }

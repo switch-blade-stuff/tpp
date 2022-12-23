@@ -87,12 +87,12 @@ namespace tpp
 		/** Move-constructs the multiset. */
 		dense_multiset(dense_multiset &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the multiset using the specified allocator. */
-		dense_multiset(dense_multiset &&other, const allocator_type &alloc)
-		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
+		dense_multiset(dense_multiset &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the multiset with the specified bucket count, hasher, comparator and allocator. */
 		explicit dense_multiset(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                            const allocator_type &alloc = allocator_type{})
+		                        const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multiset with the specified bucket count, hasher and allocator. */
 		dense_multiset(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -102,14 +102,13 @@ namespace tpp
 				: dense_multiset(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the multiset with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_multiset(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                   const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                   const allocator_type &alloc = allocator_type{})
+		dense_multiset(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: dense_multiset(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_multiset(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                                   const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		dense_multiset(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: dense_multiset(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the multiset with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -130,8 +129,8 @@ namespace tpp
 
 		/** Initializes the multiset with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_multiset(I first, I last, size_type bucket_count = table_t::initial_capacity, const hasher &hash = hasher{},
-		                                   const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
+		dense_multiset(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multiset with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -347,7 +346,7 @@ namespace tpp
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename Mk, typename H, typename C, typename A, typename P>
-	typename dense_multiset<Mk, H, C, A>::size_type erase_if(dense_multiset<Mk, H, C, A> &set, P pred)
+	inline typename dense_multiset<Mk, H, C, A>::size_type erase_if(dense_multiset<Mk, H, C, A> &set, P pred)
 	{
 		typename dense_multiset<Mk, H, C, A>::size_type result = 0;
 		for (auto i = set.cbegin(), last = set.cend(); i != last;)
@@ -364,6 +363,8 @@ namespace tpp
 	}
 
 	template<typename Mk, typename H, typename C, typename A>
-	void swap(dense_multiset<Mk, H, C, A> &a, dense_multiset<Mk, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<dense_multiset<Mk, H, C, A>>) { a.swap(b); }
+	inline void swap(dense_multiset<Mk, H, C, A> &a, dense_multiset<Mk, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multiset<Mk, H, C, A>>)
+	{
+		a.swap(b);
+	}
 }

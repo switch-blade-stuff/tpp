@@ -352,29 +352,6 @@ namespace tpp::detail
 		buff = new_buff.first;
 		size = new_buff.second;
 	}
-
-	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
-	inline std::pair<T *, SizeT> resize_buffer(A &alloc, std::pair<T *, SizeT> buff, SizeT new_size, F rel = relocate<A, T>)
-	{
-		if (buff.second < new_size)
-		{
-			new_size = std::max(buff.second * 2, new_size);
-			auto *new_buff = std::allocator_traits<A>::allocate(alloc, new_size);
-			relocate(alloc, buff.first, buff.first + buff.second, alloc, new_buff, rel);
-
-			if (buff.first) std::allocator_traits<A>::deallocate(alloc, buff.first, buff.second);
-			buff.second = new_size;
-			buff.first = new_buff;
-		}
-		return buff;
-	}
-	template<typename A, typename T, typename F, typename SizeT = typename std::allocator_traits<A>::size_type>
-	inline void resize_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size, F rel = relocate<A, T>)
-	{
-		const auto new_buff = resize_buffer(alloc, std::pair<T *, SizeT>{buff, size}, new_size, std::move(rel));
-		buff = new_buff.first;
-		size = new_buff.second;
-	}
 }
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)

@@ -261,7 +261,7 @@ namespace tpp
 	/** @brief SDBM byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] inline std::size_t sdbm(const void *data, std::size_t n) noexcept;
+	[[nodiscard]] inline TPP_FORCEINLINE std::size_t sdbm(const void *data, std::size_t n) noexcept;
 	/** @copydoc sdbm
 	 * @param[in] seed Seed used for the hash algorithm. */
 	[[nodiscard]] inline std::size_t sdbm(const void *data, std::size_t n, std::size_t seed) noexcept
@@ -276,7 +276,7 @@ namespace tpp
 		return result;
 	}
 
-	inline std::size_t sdbm(const void *data, std::size_t n) noexcept
+	inline TPP_FORCEINLINE std::size_t sdbm(const void *data, std::size_t n) noexcept
 	{
 		return sdbm(data, n, 0);
 	}
@@ -284,7 +284,7 @@ namespace tpp
 	/** @brief FNV1a byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] inline std::size_t fnv1a(const void *data, std::size_t n) noexcept;
+	[[nodiscard]] inline TPP_FORCEINLINE std::size_t fnv1a(const void *data, std::size_t n) noexcept;
 	/** @copydoc fnv1a
 	 * @param[in] seed Seed used for the hash algorithm. */
 	[[nodiscard]] inline std::size_t fnv1a(const void *data, std::size_t n, std::size_t seed) noexcept
@@ -299,7 +299,7 @@ namespace tpp
 		return result;
 	}
 
-	inline std::size_t fnv1a(const void *data, std::size_t n) noexcept
+	inline TPP_FORCEINLINE std::size_t fnv1a(const void *data, std::size_t n) noexcept
 	{
 		return fnv1a(data, n, detail::fnv1a_offset);
 	}
@@ -509,14 +509,14 @@ namespace tpp
 	/** @brief SeaHash byte hash function.
 	 * @param[in] data Pointer to bytes of input data.
 	 * @param[in] n Size of the \p data buffer. */
-	[[nodiscard]] inline std::size_t seahash(const void *data, std::size_t n) noexcept
+	[[nodiscard]] inline TPP_FORCEINLINE std::size_t seahash(const void *data, std::size_t n) noexcept
 	{
 		auto builder = seahash_builder{};
 		return static_cast<std::size_t>(builder.write(data, n).finish());
 	}
 	/** @copydoc seahash
 	 * @param[in] seed Seed used for the hash algorithm. */
-	[[nodiscard]] inline std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
+	[[nodiscard]] inline TPP_FORCEINLINE std::size_t seahash(const void *data, std::size_t n, const std::uint64_t (&seed)[4]) noexcept
 	{
 		auto builder = seahash_builder{seed};
 		return static_cast<std::size_t>(builder.write(data, n).finish());

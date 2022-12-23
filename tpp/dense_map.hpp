@@ -113,20 +113,20 @@ namespace tpp
 		                   const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
-		dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_map(bucket_count, hash, key_equal{}, alloc) {}
+		dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: dense_map(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with the specified bucket count and allocator. */
-		dense_map(size_type bucket_count, const allocator_type &alloc) : dense_map(bucket_count, hasher{}, alloc) {}
+		dense_map(size_type bucket_count, const allocator_type &alloc)
+				: dense_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_map(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -147,9 +147,8 @@ namespace tpp
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity,
-		                              const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                              const allocator_type &alloc = allocator_type{})
+		dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		          const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -215,7 +214,7 @@ namespace tpp
 		[[nodiscard]] constexpr float load_factor() const noexcept { return m_table.load_factor(); }
 
 		/** Erases all elements from the map. */
-		 void clear() { m_table.clear(); }
+		void clear() { m_table.clear(); }
 
 		/** @brief Inserts an element (of `value_type`) into the map if it does not exist yet.
 		 * @param value Value of the to-be inserted element.
@@ -640,7 +639,7 @@ namespace tpp
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
-	typename dense_map<K, M, H, C, A>::size_type erase_if(dense_map<K, M, H, C, A> &map, P pred)
+	inline typename dense_map<K, M, H, C, A>::size_type erase_if(dense_map<K, M, H, C, A> &map, P pred)
 	{
 		typename dense_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
@@ -657,8 +656,7 @@ namespace tpp
 	}
 
 	template<typename K, typename M, typename H, typename C, typename A>
-	void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
+	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
 
 	/** @brief Ordered hash map based on dense hash table.
 	 *
@@ -757,14 +755,12 @@ namespace tpp
 		/** Move-constructs the map. */
 		ordered_dense_map(ordered_dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t,
-		                                                                                                                                       table_t &&,
-		                                                                                                                                       allocator_type>)
+		ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
 		explicit ordered_dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                               const allocator_type &alloc = allocator_type{})
+		                           const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
 		ordered_dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -774,9 +770,8 @@ namespace tpp
 				: ordered_dense_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                      const allocator_type &alloc = allocator_type{})
+		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                  const allocator_type &alloc = allocator_type{})
 				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
 		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -787,9 +782,8 @@ namespace tpp
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count = table_t::initial_capacity,
-		                                      const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                      const allocator_type &alloc = allocator_type{})
+		ordered_dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                  const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -1289,7 +1283,7 @@ namespace tpp
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
-	typename ordered_dense_map<K, M, H, C, A>::size_type erase_if(ordered_dense_map<K, M, H, C, A> &map, P pred)
+	inline typename ordered_dense_map<K, M, H, C, A>::size_type erase_if(ordered_dense_map<K, M, H, C, A> &map, P pred)
 	{
 		typename dense_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
@@ -1306,6 +1300,6 @@ namespace tpp
 	}
 
 	template<typename K, typename M, typename H, typename C, typename A>
-	void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
+	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
 	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
 }

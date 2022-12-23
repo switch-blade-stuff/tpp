@@ -99,12 +99,12 @@ namespace tpp
 		/** Move-constructs the multimap. */
 		dense_multimap(dense_multimap &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the multimap using the specified allocator. */
-		dense_multimap(dense_multimap &&other, const allocator_type &alloc)
-		noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
+		dense_multimap(dense_multimap &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the multimap with the specified bucket count, hasher, comparator and allocator. */
 		explicit dense_multimap(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                            const allocator_type &alloc = allocator_type{})
+		                        const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multimap with the specified bucket count, hasher and allocator. */
 		dense_multimap(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
@@ -114,15 +114,13 @@ namespace tpp
 				: dense_multimap(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the multimap with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count = table_t::initial_capacity,
-		                                   const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                   const allocator_type &alloc = allocator_type{})
+		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: dense_multimap(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_multimap */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_multimap(std::initializer_list<T> il, size_type bucket_count = table_t::initial_capacity,
-		                                   const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                   const allocator_type &alloc = allocator_type{})
+		dense_multimap(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: dense_multimap(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the multimap with an initializer list of elements and the specified bucket count, hasher and allocator. */
@@ -143,9 +141,8 @@ namespace tpp
 
 		/** Initializes the multimap with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_multimap(I first, I last, size_type bucket_count = table_t::initial_capacity,
-		                                   const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                                   const allocator_type &alloc = allocator_type{})
+		dense_multimap(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		               const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multimap with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
@@ -476,7 +473,7 @@ namespace tpp
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename Mk, typename M, typename H, typename C, typename A, typename P>
-	typename dense_multimap<Mk, M, H, C, A>::size_type erase_if(dense_multimap<Mk, M, H, C, A> &map, P pred)
+	inline typename dense_multimap<Mk, M, H, C, A>::size_type erase_if(dense_multimap<Mk, M, H, C, A> &map, P pred)
 	{
 		typename dense_multimap<Mk, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
@@ -493,6 +490,8 @@ namespace tpp
 	}
 
 	template<typename Mk, typename M, typename H, typename C, typename A>
-	void swap(dense_multimap<Mk, M, H, C, A> &a, dense_multimap<Mk, M, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<dense_multimap<Mk, H, C, A>>) { a.swap(b); }
+	inline void swap(dense_multimap<Mk, M, H, C, A> &a, dense_multimap<Mk, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multimap<Mk, H, C, A>>)
+	{
+		a.swap(b);
+	}
 }

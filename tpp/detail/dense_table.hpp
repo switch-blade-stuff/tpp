@@ -21,9 +21,7 @@ namespace tpp::detail
 		using size_type = typename table_traits<V, V, K, Kh, Kc, Alloc>::size_type;
 
 		constexpr static size_type key_size = ValueTraits::key_size;
-
 		constexpr static size_type npos = std::numeric_limits<size_type>::max();
-		constexpr static size_type initial_capacity = 8;
 
 		using is_transparent = std::conjunction<detail::is_transparent<Kh>, detail::is_transparent<Kc>>;
 		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
@@ -90,7 +88,6 @@ namespace tpp::detail
 
 		constexpr static size_type npos = traits_t::npos;
 		constexpr static size_type key_size = traits_t::key_size;
-		constexpr static size_type initial_capacity = traits_t::initial_capacity;
 
 		constexpr static float initial_load_factor = .875f;
 
@@ -249,7 +246,15 @@ namespace tpp::detail
 
 		dense_table(const allocator_type &alloc) : sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}) {}
 		dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
-				: sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(hash), cmp_base(cmp) { init(bucket_count); }
+				: sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(hash), cmp_base(cmp)
+		{
+			TPP_IF_LIKELY(bucket_count != 0)
+			{
+				m_dense = std::allocator_traits<dense_allocator>::allocate(dense_alloc(), m_dense_capacity = bucket_count);
+				m_sparse = std::allocator_traits<sparse_allocator>::allocate(sparse_alloc(), m_sparse_size = bucket_count);
+				std::fill_n(m_sparse, m_sparse_size, make_array<key_size>(npos));
+			}
+		}
 
 		template<typename Iter>
 		dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
@@ -414,7 +419,7 @@ namespace tpp::detail
 		}
 		void reserve(size_type n)
 		{
-			reserve_data(n);
+			if (n > m_dense_capacity) resize_data(n);
 			rehash(static_cast<size_type>(static_cast<float>(n) / m_max_load_factor));
 		}
 
@@ -633,9 +638,9 @@ namespace tpp::detail
 		template<typename... Args>
 		auto push_node(Args &&...args) -> std::pair<size_type, bucket_node *>
 		{
-			const auto pos = m_dense_size++;
-			resize_buffer(dense_alloc(), m_dense, m_dense_capacity, std::max(m_dense_size, initial_capacity), relocate_node{});
+			if (m_dense_capacity == m_dense_size) resize_data(m_dense_capacity ? m_dense_capacity * 2 : 1);
 
+			const auto pos = m_dense_size++;
 			auto alloc = allocator_type{dense_alloc()};
 			m_dense[pos].construct(alloc, std::forward<Args>(args)...);
 			return {pos, m_dense + pos};
@@ -858,23 +863,21 @@ namespace tpp::detail
 		{
 			// @formatter:off
 			TPP_IF_UNLIKELY(bucket_count() == 0)
-				rehash(initial_capacity);
+				rehash(8);
 			else if (load_factor() >= m_max_load_factor)
 				rehash(bucket_count() * 2);
 			// @formatter:on
 		}
 
-		void reserve_data(size_type capacity)
+		void resize_data(size_type capacity)
 		{
-			if (capacity > m_dense_capacity)
-			{
-				auto &alloc = dense_alloc();
-				auto *new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
-				relocate(alloc, m_dense, m_dense + m_dense_size, alloc, new_dense, relocate_node{});
-				std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
-				m_dense_capacity = capacity;
-				m_dense = new_dense;
-			}
+			auto &alloc = dense_alloc();
+			auto *new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
+			relocate(alloc, m_dense, m_dense + m_dense_size, alloc, new_dense, relocate_node{});
+
+			if (m_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
+			m_dense_capacity = capacity;
+			m_dense = new_dense;
 		}
 
 		template<std::size_t... Is>
@@ -932,15 +935,6 @@ namespace tpp::detail
 			other.m_dense_size = 0;
 		}
 
-		void init(size_type capacity)
-		{
-			TPP_IF_LIKELY(capacity != 0)
-			{
-				m_dense = std::allocator_traits<dense_allocator>::allocate(dense_alloc(), m_dense_capacity = capacity);
-				m_sparse = std::allocator_traits<sparse_allocator>::allocate(sparse_alloc(), m_sparse_size = capacity);
-				std::fill_n(m_sparse, m_sparse_size, make_array<key_size>(npos));
-			}
-		}
 		void copy_data(const dense_table &other) { copy_data(std::make_index_sequence<key_size>{}, other); }
 		void move_data(dense_table &other) { move_data(std::make_index_sequence<key_size>{}, other); }
 		void swap_buffers(dense_table &other)
