@@ -25,7 +25,7 @@ void test_ordered_dense_map() noexcept;
 void test_dense_multiset() noexcept;
 void test_dense_multimap() noexcept;
 
-constexpr static std::pair<std::string_view, void (*)()> tests[] = {
+static constexpr std::pair<std::string_view, void (*)()> tests[] = {
 		{"dense_set", test_dense_set},
 		{"dense_map", test_dense_map},
 		{"ordered_dense_set", test_ordered_dense_set},

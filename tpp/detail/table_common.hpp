@@ -114,17 +114,17 @@ namespace tpp::detail
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
-		[[nodiscard]] constexpr static std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
+		[[nodiscard]] static constexpr std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
 		{
 			const auto a_bytes = static_cast<const std::uint8_t *>(a);
 			const auto b_bytes = static_cast<const std::uint8_t *>(b);
 			return a_bytes - b_bytes;
 		}
-		[[nodiscard]] constexpr static const void *byte_off(const void *p, std::ptrdiff_t n) noexcept
+		[[nodiscard]] static constexpr const void *byte_off(const void *p, std::ptrdiff_t n) noexcept
 		{
 			return static_cast<const std::uint8_t *>(p) + n;
 		}
-		[[nodiscard]] constexpr static void *byte_off(void *p, std::ptrdiff_t n) noexcept
+		[[nodiscard]] static constexpr void *byte_off(void *p, std::ptrdiff_t n) noexcept
 		{
 			return static_cast<std::uint8_t *>(p) + n;
 		}
@@ -163,8 +163,8 @@ namespace tpp::detail
 		}
 		void unlink() noexcept
 		{
-			auto *next_ptr = off(std::exchange(next, 0));
-			auto *prev_ptr = off(std::exchange(prev, 0));
+			auto *next_ptr = off(next);
+			auto *prev_ptr = off(prev);
 			next_ptr->prev = byte_diff(prev_ptr, next_ptr);
 			prev_ptr->next = byte_diff(next_ptr, prev_ptr);
 		}
@@ -229,6 +229,18 @@ namespace tpp::detail
 			value() = std::move(other.value());
 			hash() = other.hash();
 		}
+		template<typename... Args>
+		void replace(Args &&...args)
+		{
+			auto &target = mapped();
+			using mapped_t = std::remove_reference_t<decltype(target)>;
+
+			if constexpr (!std::is_trivially_destructible_v<mapped_t>)
+				target.~mapped_t();
+
+			static_assert(std::is_constructible_v<mapped_t, Args...>);
+			new(&target) mapped_t(std::forward<Args>(args)...);
+		}
 		void destroy(A &alloc) { std::allocator_traits<A>::destroy(alloc, &value()); }
 
 		[[nodiscard]] constexpr auto &hash() noexcept { return m_storage.hash; }
@@ -274,12 +286,94 @@ namespace tpp::detail
 		using allocator_type = A;
 		using is_extractable = std::true_type;
 
-		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
-		void construct(A &alloc, Args &&...args)
+		class extracted_type : ebo_container<A>
 		{
-			m_ptr = std::allocator_traits<A>::allocate(alloc, 1);
-			std::allocator_traits<A>::construct(alloc, m_ptr, std::forward<Args>(args)...);
-		}
+			friend class stable_node;
+
+			using alloc_base = ebo_container<A>;
+
+		public:
+			constexpr extracted_type() noexcept = default;
+
+			extracted_type(extracted_type &&other) noexcept : alloc_base(std::move(other)), m_ptr(std::exchange(other.m_ptr, nullptr)), m_hash(other.m_hash)
+			{
+				assert_alloc(other);
+			}
+			extracted_type(A &alloc, extracted_type &&other) noexcept : alloc_base(alloc), m_ptr(std::exchange(other.m_ptr, nullptr)), m_hash(other.m_hash)
+			{
+				assert_alloc(other);
+			}
+
+			extracted_type &operator=(extracted_type &&other) noexcept
+			{
+				if (this != &other)
+				{
+					destroy_impl();
+
+					if constexpr (std::allocator_traits<A>::propagate_on_container_move_assignment::value)
+						alloc_base::operator=(std::move(other));
+
+					m_ptr = std::exchange(other.m_ptr, nullptr);
+					m_hash = other.m_hash;
+					assert_alloc(other);
+				}
+				return *this;
+			}
+
+			~extracted_type() { destroy_impl(); }
+
+			[[nodiscard]] constexpr bool empty() const noexcept { return m_ptr == nullptr; }
+			[[nodiscard]] constexpr operator bool() const noexcept { return !empty(); }
+
+			[[nodiscard]] allocator_type get_allocator() const { return alloc(); }
+
+			[[nodiscard]] constexpr auto &value() const noexcept { return *m_ptr; }
+			[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
+			[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::get_mapped(value()); }
+
+			void swap(extracted_type &other) noexcept(std::is_nothrow_swappable_v<A>)
+			{
+				using std::swap;
+				if constexpr (std::allocator_traits<A>::propagate_on_container_swap::value)
+					swap(alloc(), other.alloc());
+
+				assert_alloc(other);
+
+				swap(m_ptr, other.m_ptr);
+				swap(m_hash, other.m_hash);
+			}
+			friend void swap(extracted_type &a, extracted_type &b) noexcept(std::is_nothrow_swappable_v<extracted_type>) { a.swap(b); }
+
+		private:
+			[[nodiscard]] constexpr auto &alloc() noexcept { return alloc_base::value(); }
+			[[nodiscard]] constexpr auto &alloc() const noexcept { return alloc_base::value(); }
+
+			void assert_alloc(const extracted_type &other) const noexcept
+			{
+				TPP_ASSERT(allocator_eq(alloc(), other.alloc()), "Node allocators must compare equal");
+			}
+			void destroy_impl()
+			{
+				if (!empty())
+				{
+					std::allocator_traits<A>::destroy(alloc(), m_ptr);
+					std::allocator_traits<A>::deallocate(alloc(), m_ptr, 1);
+				}
+			}
+
+			V *m_ptr = nullptr;
+			hash_type m_hash = 0;
+		};
+
+		/* NOTE: Template signature is defined by the standard. */
+		template<typename Iter, typename NodeType>
+		struct insert_return
+		{
+			Iter position = {};
+			bool inserted = false;
+			NodeType node = {};
+		};
+
 		void construct(A &alloc, const stable_node &other)
 		{
 			link_base::operator=(other);
@@ -297,6 +391,31 @@ namespace tpp::detail
 			link_base::operator=(std::move(other));
 			std::swap(m_ptr, other.m_ptr);
 			m_hash = other.m_hash;
+		}
+
+		void construct(A &, extracted_type &&other)
+		{
+			std::swap(m_ptr, other.m_ptr);
+			std::swap(m_hash, other.m_hash);
+		}
+
+		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
+		void construct(A &alloc, Args &&...args)
+		{
+			m_ptr = std::allocator_traits<A>::allocate(alloc, 1);
+			std::allocator_traits<A>::construct(alloc, m_ptr, std::forward<Args>(args)...);
+		}
+		template<typename... Args>
+		void replace(Args &&...args)
+		{
+			auto &target = mapped();
+			using mapped_t = std::remove_reference_t<decltype(target)>;
+
+			if constexpr (!std::is_trivially_destructible_v<mapped_t>)
+				target.~mapped_t();
+
+			static_assert(std::is_constructible_v<mapped_t, Args...>);
+			new(&target) mapped_t(std::forward<Args>(args)...);
 		}
 		void destroy(A &alloc)
 		{

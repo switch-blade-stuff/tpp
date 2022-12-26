@@ -21,7 +21,7 @@ struct tpp::hash<std::optional<T>, Algo>
 	using value_hash = hash<T, Algo>;
 
 	/* Use a sentinel value for nullopt. Value taken from `https://github.com/gcc-mirror/gcc/blob/c838119946c9f75f1e42f4320275355822cc86fc/libstdc%2B%2B-v3/include/std/optional#L1480` */
-	constexpr static auto nullopt_sentinel = static_cast<std::size_t>(-3333);
+	static constexpr auto nullopt_sentinel = static_cast<std::size_t>(-3333);
 
 	[[nodiscard]] std::size_t operator()(const std::optional<T> &value) const noexcept(noexcept(value_hash{}(*value)))
 	{

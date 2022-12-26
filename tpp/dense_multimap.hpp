@@ -51,14 +51,14 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t I, typename T>
-			constexpr static auto &get_key(T &value) noexcept { return std::get<I>(value.first); }
+			static constexpr auto &get_key(T &value) noexcept { return std::get<I>(value.first); }
 			template<typename T>
-			constexpr static auto &get_key(T &value) noexcept { return value.first; }
+			static constexpr auto &get_key(T &value) noexcept { return value.first; }
 
 			template<typename T>
-			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
+			static constexpr auto &get_mapped(T &value) noexcept { return value.second; }
 
-			constexpr static std::size_t key_size = std::tuple_size_v<key_type>;
+			static constexpr std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
 		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
@@ -83,7 +83,7 @@ namespace tpp
 		using key_equal = typename table_t::key_equal;
 		using allocator_type = typename table_t::allocator_type;
 
-		constexpr static auto key_size = table_t::key_size;
+		static constexpr auto key_size = table_t::key_size;
 
 	public:
 		/** Initializes the multimap with default capacity. */

@@ -20,8 +20,8 @@ namespace tpp::detail
 	{
 		using size_type = typename table_traits<V, V, K, Kh, Kc, Alloc>::size_type;
 
-		constexpr static size_type key_size = ValueTraits::key_size;
-		constexpr static size_type npos = std::numeric_limits<size_type>::max();
+		static constexpr size_type key_size = ValueTraits::key_size;
+		static constexpr size_type npos = std::numeric_limits<size_type>::max();
 
 		using is_transparent = std::conjunction<detail::is_transparent<Kh>, detail::is_transparent<Kc>>;
 		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
@@ -86,10 +86,10 @@ namespace tpp::detail
 		using is_transparent = typename traits_t::is_transparent;
 		using is_ordered = typename traits_t::is_ordered;
 
-		constexpr static size_type npos = traits_t::npos;
-		constexpr static size_type key_size = traits_t::key_size;
+		static constexpr size_type npos = traits_t::npos;
+		static constexpr size_type key_size = traits_t::key_size;
 
-		constexpr static float initial_load_factor = .875f;
+		static constexpr float initial_load_factor = .875f;
 
 	private:
 		using bucket_node = typename traits_t::bucket_node;
@@ -208,38 +208,6 @@ namespace tpp::detail
 		using const_reference = typename const_iterator::reference;
 		using pointer = typename iterator::pointer;
 		using const_pointer = typename const_iterator::pointer;
-
-	private:
-		template<typename T>
-		static void replace_value(bucket_node &node, T &&value)
-		{
-			auto &mapped = node.mapped();
-			using mapped_t = std::remove_reference_t<decltype(mapped)>;
-
-			/* If move-assign is possible, do that. Otherwise, re-init the value. */
-			if constexpr (std::is_assignable_v<mapped_t, T>)
-				mapped = std::forward<T>(value);
-			else
-			{
-				if constexpr (!std::is_trivially_destructible_v<mapped_t>)
-					mapped.~mapped_t();
-
-				static_assert(std::is_constructible_v<mapped_t, T>);
-				new(&mapped) mapped_t(std::forward<T>(value));
-			}
-		}
-		template<typename... Args>
-		static void replace_value(bucket_node &node, Args &&...args)
-		{
-			auto &mapped = node.mapped();
-			using mapped_t = std::remove_reference_t<decltype(mapped)>;
-
-			if constexpr (!std::is_trivially_destructible_v<mapped_t>)
-				mapped.~mapped_t();
-
-			static_assert(std::is_constructible_v<mapped_t, Args...>);
-			new(&mapped) mapped_t(std::forward<Args>(args)...);
-		}
 
 	public:
 		dense_table() {}
@@ -786,7 +754,7 @@ namespace tpp::detail
 
 		/* NOTE: insert_or_assign is available only if there is a single key. Otherwise, we cannot assign conflicting entries. */
 		template<typename T, typename... Args>
-		auto insert_or_assign_impl(hint_t hint, T &&key, Args &&...args) -> std::pair<iterator, bool>
+		std::pair<iterator, bool> insert_or_assign_impl(hint_t hint, T &&key, Args &&...args)
 		{
 			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
 
@@ -804,7 +772,7 @@ namespace tpp::detail
 			}
 			else
 			{
-				replace_value(*candidate, std::forward<Args>(args)...);
+				candidate->replace(std::forward<Args>(args)...);
 				return {to_iter(candidate), false};
 			}
 		}

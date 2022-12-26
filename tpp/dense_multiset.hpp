@@ -39,11 +39,11 @@ namespace tpp
 			using const_reference = const key_type &;
 
 			template<std::size_t I, typename T>
-			constexpr static auto &get_key(T &value) noexcept { return std::get<I>(value); }
+			static constexpr auto &get_key(T &value) noexcept { return std::get<I>(value); }
 			template<typename T>
-			constexpr static auto &get_key(T &value) noexcept { return value; }
+			static constexpr auto &get_key(T &value) noexcept { return value; }
 
-			constexpr static std::size_t key_size = std::tuple_size_v<key_type>;
+			static constexpr std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
 		using table_t = detail::dense_table<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
@@ -71,7 +71,7 @@ namespace tpp
 		using key_equal = typename table_t::key_equal;
 		using allocator_type = typename table_t::allocator_type;
 
-		constexpr static auto key_size = table_t::key_size;
+		static constexpr auto key_size = table_t::key_size;
 
 	public:
 		/** Initializes the multiset with default capacity. */

@@ -46,14 +46,14 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t, typename T>
-			constexpr static auto &get_key(T &value) noexcept { return value.first; }
+			static constexpr auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
+			static constexpr auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
 
 			template<typename T>
-			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
+			static constexpr auto &get_mapped(T &value) noexcept { return value.second; }
 
-			constexpr static std::size_t key_size = 1;
+			static constexpr std::size_t key_size = 1;
 		};
 
 		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
@@ -696,14 +696,14 @@ namespace tpp
 			using const_reference = typename const_pointer::reference;
 
 			template<std::size_t, typename T>
-			constexpr static auto &get_key(T &value) noexcept { return value.first; }
+			static constexpr auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			constexpr static auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
+			static constexpr auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
 
 			template<typename T>
-			constexpr static auto &get_mapped(T &value) noexcept { return value.second; }
+			static constexpr auto &get_mapped(T &value) noexcept { return value.second; }
 
-			constexpr static std::size_t key_size = 1;
+			static constexpr std::size_t key_size = 1;
 		};
 
 		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
