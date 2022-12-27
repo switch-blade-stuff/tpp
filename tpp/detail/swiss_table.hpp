@@ -528,12 +528,12 @@ namespace tpp::detail
 					node_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_copy_assignment::value ||
-				              std::allocator_traits<node_allocator>::propagate_on_container_copy_assignment::value)
+							  std::allocator_traits<node_allocator>::propagate_on_container_copy_assignment::value)
 					capacity = 0;
 			}
 			buffer_type &operator=(buffer_type &&other)
 			noexcept(std::is_nothrow_move_assignable_v<meta_allocator> &&
-			         std::is_nothrow_move_assignable_v<node_allocator>)
+					 std::is_nothrow_move_assignable_v<node_allocator>)
 			{
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_move_assignment::value)
 				{
@@ -546,7 +546,7 @@ namespace tpp::detail
 					node_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_move_assignment::value ||
-				              std::allocator_traits<node_allocator>::propagate_on_container_move_assignment::value)
+							  std::allocator_traits<node_allocator>::propagate_on_container_move_assignment::value)
 					capacity = 0;
 			}
 
@@ -626,7 +626,7 @@ namespace tpp::detail
 					swap(node_alloc(), other.node_alloc());
 
 				TPP_ASSERT(allocator_eq(meta_alloc(), other.meta_alloc()) && allocator_eq(node_alloc(), other.node_alloc()),
-				           "Swapped allocators must be equal");
+						   "Swapped allocators must be equal");
 
 				swap(capacity, other.capacity);
 				swap(m_metadata, other.m_metadata);
@@ -695,9 +695,9 @@ namespace tpp::detail
 				m_buffer.fill_empty();
 			}
 
-			[[nodiscard]] meta_word *metadata() const noexcept { return reinterpret_cast<meta_word *>(bytes()); }
+			[[nodiscard]] meta_word *metadata() const noexcept { return m_data ? reinterpret_cast<meta_word *>(bytes()) : nullptr; }
 			[[nodiscard]] meta_word *tail() const noexcept { return metadata() + capacity + 1; }
-			[[nodiscard]] bucket_node *nodes() const noexcept { return reinterpret_cast<bucket_node *>(bytes() + nodes_offset(capacity)); }
+			[[nodiscard]] bucket_node *nodes() const noexcept { return m_data ? reinterpret_cast<bucket_node *>(bytes() + nodes_offset(capacity)) : nullptr; }
 
 			void fill_empty() noexcept
 			{
@@ -713,11 +713,11 @@ namespace tpp::detail
 
 				if (old_data != nullptr)
 				{
-					auto *old_nodes = reinterpret_cast<bucket_node *>(static_cast<std::uint8_t *>(old_data) + nodes_offset(n));
+					auto *old_nodes = reinterpret_cast<bucket_node *>(static_cast<std::uint8_t *>(old_data) + nodes_offset(old_capacity));
 					auto *old_metadata = static_cast<meta_word *>(old_data);
 
 					relocate(old_metadata, old_nodes, old_capacity);
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), old_data, buffer_size(n));
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(old_data), buffer_size(n));
 				}
 			}
 
