@@ -49,6 +49,18 @@ macro(test_target_cxx)
     add_test(NAME dense_multiset-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_multiset)
     add_test(NAME dense_multimap-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> dense_multimap)
 
+    # Sparse table tests
+    add_test(NAME sparse_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> sparse_set)
+    add_test(NAME sparse_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> sparse_map)
+    add_test(NAME ordered_sparse_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_sparse_set)
+    add_test(NAME ordered_sparse_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_sparse_map)
+
+    # Stable table tests
+    add_test(NAME stable_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> stable_set)
+    add_test(NAME stable_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> stable_map)
+    add_test(NAME ordered_stable_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_stable_set)
+    add_test(NAME ordered_stable_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_stable_map)
+
     # Hash function tests
     add_test(NAME seahash-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> seahash)
     add_test(NAME crc32-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> crc32)

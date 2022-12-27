@@ -331,7 +331,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
+#if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
 		[[nodiscard]] bool operator!=(const dense_set &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
@@ -369,8 +369,8 @@ namespace tpp
 	/** @brief Ordered hash set based on dense hash table.
 	 *
 	 * Internally, ordered dense set stores it's elements in a contiguous vector with additional ordering
-	 * links between elements. Insert and erase operations on a dense set may invalidate references to it's
-	 * elements due to the internal element vector being reordered.
+	 * links between elements. Insert and erase operations on an ordered dense set may invalidate references
+	 * to it's elements due to the internal element vector being reordered.
 	 *
 	 * @tparam Key Key type stored by the set.
 	 * @tparam KeyHash Hash functor used by the set.
@@ -688,7 +688,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || _MSVC_LANG < 202002L)
+#if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
 		[[nodiscard]] bool operator!=(const ordered_dense_set &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());

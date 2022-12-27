@@ -1,20 +1,20 @@
 /*
- * Created by switchblade on 11/5/22.
+ * Created by switchblade on 12/26/22.
  */
 
 #pragma once
 
-#include "detail/dense_table.hpp"
+#include "detail/swiss_table.hpp"
 
 namespace tpp
 {
-	/** @brief Hash map based on dense hash table.
+	/** @brief Hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, dense map stores it's elements in a contiguous unordered vector.
-	 * Insert and erase operations on a dense map may invalidate references to it's
-	 * elements due to the internal element vector being reordered.<br><br>
-	 * Dense map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
-	 * This is required as the internal storage of dense map elements can be reordered, and as such elements are
+	 * Internally, sparse map stores it's elements in an open-addressing element and metadata buffers.
+	 * Insert and erase operations on a sparse map may invalidate references to it's elements due to the table being rehashed.
+	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
+	 * Sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
+	 * This is required as the internal storage of sparse map elements can be reordered, and as such elements are
 	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
 	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
 	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
@@ -27,7 +27,7 @@ namespace tpp
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
 	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
-	class dense_map
+	class sparse_map
 	{
 	public:
 		using key_type = Key;
@@ -45,18 +45,13 @@ namespace tpp
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
-			template<std::size_t, typename T>
+			template<typename T>
 			static constexpr auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			static constexpr auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
-
-			template<typename T>
 			static constexpr auto &get_mapped(T &value) noexcept { return value.second; }
-
-			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::swiss_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -69,20 +64,10 @@ namespace tpp
 		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Random access iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
+		/** Forward iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
-		/** Random access iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
+		/** Forward iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
-
-		/** Random access iterator to elements of the map, equivalent to `std::reverse_iterator<iterator>`. */
-		using reverse_iterator = typename table_t::reverse_iterator;
-		/** Random access iterator to elements of the map, equivalent to `std::reverse_iterator<const_iterator>`. */
-		using const_reverse_iterator = typename table_t::const_reverse_iterator;
-
-		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
-		using local_iterator = typename table_t::local_iterator;
-		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
-		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;
 		using difference_type = typename table_t::difference_type;
@@ -93,79 +78,79 @@ namespace tpp
 
 	public:
 		/** Initializes the map with default capacity. */
-		dense_map() = default;
+		sparse_map() = default;
 		/** Initializes the map with default capacity using the specified allocator. */
-		explicit dense_map(const allocator_type &alloc) : m_table(alloc) {}
+		explicit sparse_map(const allocator_type &alloc) : m_table(alloc) {}
 
 		/** Copy-constructs the map. */
-		dense_map(const dense_map &other) = default;
+		sparse_map(const sparse_map &other) = default;
 		/** Copy-constructs the map using the specified allocator. */
-		dense_map(const dense_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
+		sparse_map(const sparse_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the map. */
-		dense_map(dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
+		sparse_map(sparse_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		dense_map(dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+		sparse_map(sparse_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
-		explicit dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
+		explicit sparse_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                    const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
-		dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(bucket_count, hash, key_equal{}, alloc) {}
+		sparse_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: sparse_map(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with the specified bucket count and allocator. */
-		dense_map(size_type bucket_count, const allocator_type &alloc)
-				: dense_map(bucket_count, hasher{}, alloc) {}
+		sparse_map(size_type bucket_count, const allocator_type &alloc)
+				: sparse_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
-				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
-		/** @copydoc dense_map */
+		sparse_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		           const allocator_type &alloc = allocator_type{})
+				: sparse_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		/** @copydoc sparse_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
-				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		sparse_map(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		           const allocator_type &alloc = allocator_type{})
+				: sparse_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
-		/** @copydoc dense_map */
+		sparse_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: sparse_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		/** @copydoc sparse_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		sparse_map(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: sparse_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
-		/** @copydoc dense_map */
+		sparse_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: sparse_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		/** @copydoc sparse_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		sparse_map(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
+				: sparse_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		sparse_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		           const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		sparse_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: sparse_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(first, last, bucket_count, hasher{}, alloc) {}
+		sparse_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
+				: sparse_map(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the map. */
-		dense_map &operator=(const dense_map &) = default;
+		sparse_map &operator=(const sparse_map &) = default;
 		/** Move-assigns the map. */
-		dense_map &operator=(dense_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
+		sparse_map &operator=(sparse_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
-		dense_map &operator=(std::initializer_list<value_type> il)
+		sparse_map &operator=(std::initializer_list<value_type> il)
 		{
 			m_table.assign(il.begin(), il.end());
 			return *this;
@@ -186,21 +171,6 @@ namespace tpp
 		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
 		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
-
-		/** Returns reverse iterator to the last element of the map.
-		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
-		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
-		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
-		/** Returns reverse iterator one past the first element of the map.
-		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return m_table.rend(); }
-		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
-		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns the total number of elements within the map. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -419,26 +389,26 @@ namespace tpp
 		template<typename... Args>
 		std::pair<iterator, bool> try_emplace(const key_type &key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
 		std::pair<iterator, bool> try_emplace(key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(std::move(key)), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		std::pair<iterator, bool> try_emplace(const K &key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		std::pair<iterator, bool> try_emplace(K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(std::forward<K>(key)), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** @copybrief try_emplace
@@ -498,11 +468,11 @@ namespace tpp
 		/** Removes the specified element from the map.
 		 * @param key Key of the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
-		iterator erase(const key_type &key) { return m_table.template erase<0>(key); }
+		iterator erase(const key_type &key) { return m_table.erase(key); }
 		/** @copydoc erase
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		iterator erase(const K &key) { return m_table.template erase<0>(key); }
+		iterator erase(const K &key) { return m_table.erase(key); }
 
 		/** Removes the specified element from the map.
 		 * @param pos Iterator pointing to the element to remove.
@@ -520,25 +490,25 @@ namespace tpp
 		/** Searches for the specified element within the map.
 		 * @param key Key of the element to search for.
 		 * @return Iterator to the specified element, or `end()`. */
-		[[nodiscard]] iterator find(const key_type &key) { return m_table.template find<0>(key); }
+		[[nodiscard]] iterator find(const key_type &key) { return m_table.find(key); }
 		/** @copydoc find */
-		[[nodiscard]] const_iterator find(const key_type &key) const { return m_table.template find<0>(key); }
+		[[nodiscard]] const_iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] iterator find(const K &key) { return m_table.template find<0>(key); }
+		[[nodiscard]] iterator find(const K &key) { return m_table.find(key); }
 		/** @copydoc find */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] const_iterator find(const K &key) const { return m_table.template find<0>(key); }
+		[[nodiscard]] const_iterator find(const K &key) const { return m_table.find(key); }
 
 		/** Checks if the specified element is present within the map as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
 		 * @return `true` if the element is present within the map, `false` otherwise. */
-		[[nodiscard]] bool contains(const key_type &key) const { return m_table.template contains<0>(key); }
+		[[nodiscard]] bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] bool contains(const K &key) const { return m_table.template contains<0>(key); }
+		[[nodiscard]] bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns reference to the specified element.
 		 * @param key Key of the element to search for.
@@ -569,19 +539,6 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
-		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
-		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
-		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
-		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
-		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
-
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
 		/** @copydoc bucket
@@ -601,34 +558,32 @@ namespace tpp
 		/** Reserves space for at least `n` buckets and rehashes the map if necessary.
 		 * @note The new amount of buckets is clamped to be at least `size() / max_load_factor()`. */
 		void rehash(size_type n) { m_table.rehash(n); }
-		/** Returns the current maximum load factor. */
+		/** Returns the maximum load fact. */
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor(); }
-		/** Sets the current maximum load factor. */
-		constexpr void max_load_factor(float f) noexcept { m_table.max_load_factor(f); }
 
 		[[nodiscard]] allocator_type get_allocator() const { return allocator_type{m_table.get_allocator()}; }
 		[[nodiscard]] hasher hash_function() const { return m_table.get_hash(); }
 		[[nodiscard]] key_equal key_eq() const { return m_table.get_cmp(); }
 
-		[[nodiscard]] bool operator==(const dense_map &other) const
+		[[nodiscard]] bool operator==(const sparse_map &other) const
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
 #if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
-		[[nodiscard]] bool operator!=(const dense_map &other) const
+		[[nodiscard]] bool operator!=(const sparse_map &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
 #endif
 
-		void swap(dense_map &other) noexcept(std::is_nothrow_swappable_v<table_t>) { m_table.swap(other.m_table); }
+		void swap(sparse_map &other) noexcept(std::is_nothrow_swappable_v<table_t>) { m_table.swap(other.m_table); }
 
 	private:
 		template<typename I>
 		[[nodiscard]] inline auto guard_at(I iter) const
 		{
 			if (iter == end())
-				throw std::out_of_range("`dense_map::at` - invalid key");
+				throw std::out_of_range("`sparse_map::at` - invalid key");
 			else
 				return iter;
 		}
@@ -639,9 +594,9 @@ namespace tpp
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
-	inline typename dense_map<K, M, H, C, A>::size_type erase_if(dense_map<K, M, H, C, A> &map, P pred)
+	inline typename sparse_map<K, M, H, C, A>::size_type erase_if(sparse_map<K, M, H, C, A> &map, P pred)
 	{
-		typename dense_map<K, M, H, C, A>::size_type result = 0;
+		typename sparse_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
 		{
 			if (pred(*i))
@@ -656,15 +611,15 @@ namespace tpp
 	}
 
 	template<typename K, typename M, typename H, typename C, typename A>
-	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
+	inline void swap(sparse_map<K, M, H, C, A> &a, sparse_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<sparse_map<K, H, C, A>>) { a.swap(b); }
 
-	/** @brief Ordered hash map based on dense hash table.
+	/** @brief Ordered hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, ordered dense map stores it's elements in a contiguous vector with additional ordering
-	 * links between elements. Insert and erase operations on an ordered dense map may invalidate references
-	 * to it's elements due to the internal element vector being reordered.<br><br>
-	 * Ordered dense map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
-	 * This is required as the internal storage of ordered dense map elements can be reordered, and as such elements are
+	 * Internally, ordered sparse map stores it's elements in an open-addressing element and metadata buffers.
+	 * Insert and erase operations on an ordered sparse map may invalidate references to it's elements due to the table being rehashed.
+	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
+	 * Ordered sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
+	 * This is required as the internal storage of ordered sparse map elements can be reordered, and as such elements are
 	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
 	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
 	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
@@ -677,7 +632,7 @@ namespace tpp
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
 	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
-	class ordered_dense_map
+	class ordered_sparse_map
 	{
 	public:
 		using key_type = Key;
@@ -695,18 +650,13 @@ namespace tpp
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
-			template<std::size_t, typename T>
+			template<typename T>
 			static constexpr auto &get_key(T &value) noexcept { return value.first; }
 			template<typename T>
-			static constexpr auto get_key(T &value) noexcept { return std::forward_as_tuple(value.first); }
-
-			template<typename T>
 			static constexpr auto &get_mapped(T &value) noexcept { return value.second; }
-
-			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = detail::swiss_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -719,20 +669,10 @@ namespace tpp
 		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Bidirectional iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
+		/** Forward iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
-		/** Bidirectional iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
+		/** Forward iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
-
-		/** Bidirectional iterator to elements of the map, equivalent to `std::reverse_iterator<iterator>`. */
-		using reverse_iterator = typename table_t::reverse_iterator;
-		/** Bidirectional iterator to elements of the map, equivalent to `std::reverse_iterator<const_iterator>`. */
-		using const_reverse_iterator = typename table_t::const_reverse_iterator;
-
-		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
-		using local_iterator = typename table_t::local_iterator;
-		/** Forward iterator used to iterate through elements of a single bucket, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
-		using const_local_iterator = typename table_t::const_local_iterator;
 
 		using size_type = typename table_t::size_type;
 		using difference_type = typename table_t::difference_type;
@@ -743,64 +683,66 @@ namespace tpp
 
 	public:
 		/** Initializes the map with default capacity. */
-		ordered_dense_map() = default;
+		ordered_sparse_map() = default;
 		/** Initializes the map with default capacity using the specified allocator. */
-		explicit ordered_dense_map(const allocator_type &alloc) : m_table(alloc) {}
+		explicit ordered_sparse_map(const allocator_type &alloc) : m_table(alloc) {}
 
 		/** Copy-constructs the map. */
-		ordered_dense_map(const ordered_dense_map &other) = default;
+		ordered_sparse_map(const ordered_sparse_map &other) = default;
 		/** Copy-constructs the map using the specified allocator. */
-		ordered_dense_map(const ordered_dense_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
+		ordered_sparse_map(const ordered_sparse_map &other, const allocator_type &alloc) : m_table(other.m_table, alloc) {}
 
 		/** Move-constructs the map. */
-		ordered_dense_map(ordered_dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
+		ordered_sparse_map(ordered_sparse_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
+		ordered_sparse_map(ordered_sparse_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t,
+		                                                                                                                     table_t &&,
+		                                                                                                                     allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
-		explicit ordered_dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                           const allocator_type &alloc = allocator_type{})
+		explicit ordered_sparse_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                            const allocator_type &alloc = allocator_type{})
 				: m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
-		ordered_dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(bucket_count, hash, key_equal{}, alloc) {}
+		ordered_sparse_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_sparse_map(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with the specified bucket count and allocator. */
-		ordered_dense_map(size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(bucket_count, hasher{}, alloc) {}
+		ordered_sparse_map(size_type bucket_count, const allocator_type &alloc)
+				: ordered_sparse_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
-				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
+		ordered_sparse_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                   const allocator_type &alloc = allocator_type{})
+				: ordered_sparse_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_sparse_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_sparse_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_sparse_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
+				: ordered_sparse_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_sparse_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
+		                   const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		ordered_sparse_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
+				: ordered_sparse_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(first, last, bucket_count, hasher{}, alloc) {}
+		ordered_sparse_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
+				: ordered_sparse_map(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the map. */
-		ordered_dense_map &operator=(const ordered_dense_map &) = default;
+		ordered_sparse_map &operator=(const ordered_sparse_map &) = default;
 		/** Move-assigns the map. */
-		ordered_dense_map &operator=(ordered_dense_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
+		ordered_sparse_map &operator=(ordered_sparse_map &&) noexcept(std::is_nothrow_move_assignable_v<table_t>) = default;
 
 		/** Replaces elements of the map with elements of the initializer list. */
-		ordered_dense_map &operator=(std::initializer_list<value_type> il)
+		ordered_sparse_map &operator=(std::initializer_list<value_type> il)
 		{
 			m_table.assign(il.begin(), il.end());
 			return *this;
@@ -821,21 +763,6 @@ namespace tpp
 		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
 		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
-
-		/** Returns reverse iterator to the last element of the map.
-		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
-		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
-		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
-		/** Returns reverse iterator one past the first element of the map.
-		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return m_table.rend(); }
-		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
-		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns reference to the first element of the map. */
 		[[nodiscard]] constexpr reference front() noexcept { return m_table.front(); }
@@ -1063,26 +990,26 @@ namespace tpp
 		template<typename... Args>
 		std::pair<iterator, bool> try_emplace(const key_type &key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename... Args>
 		std::pair<iterator, bool> try_emplace(key_type &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(std::move(key)), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::move(key), std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		std::pair<iterator, bool> try_emplace(const K &key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(key), std::forward<Args>(args)...);
+			return m_table.try_emplace(key, std::forward<Args>(args)...);
 		}
 		/** @copydoc try_emplace */
 		template<typename K, typename... Args, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		std::pair<iterator, bool> try_emplace(K &&key, Args &&...args)
 		{
-			return m_table.try_emplace(std::forward_as_tuple(std::forward<K>(key)), std::forward<Args>(args)...);
+			return m_table.try_emplace(std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
 		/** @copybrief try_emplace
@@ -1142,11 +1069,11 @@ namespace tpp
 		/** Removes the specified element from the map.
 		 * @param key Key of the element to remove.
 		 * @return Iterator to the element following the erased one, or `end()`. */
-		iterator erase(const key_type &key) { return m_table.template erase<0>(key); }
+		iterator erase(const key_type &key) { return m_table.erase(key); }
 		/** @copydoc erase
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		iterator erase(const K &key) { return m_table.template erase<0>(key); }
+		iterator erase(const K &key) { return m_table.erase(key); }
 
 		/** Removes the specified element from the map.
 		 * @param pos Iterator pointing to the element to remove.
@@ -1164,25 +1091,25 @@ namespace tpp
 		/** Searches for the specified element within the map.
 		 * @param key Key of the element to search for.
 		 * @return Iterator to the specified element, or `end()`. */
-		[[nodiscard]] iterator find(const key_type &key) { return m_table.template find<0>(key); }
+		[[nodiscard]] iterator find(const key_type &key) { return m_table.find(key); }
 		/** @copydoc find */
-		[[nodiscard]] const_iterator find(const key_type &key) const { return m_table.template find<0>(key); }
+		[[nodiscard]] const_iterator find(const key_type &key) const { return m_table.find(key); }
 		/** @copydoc find
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] iterator find(const K &key) { return m_table.template find<0>(key); }
+		[[nodiscard]] iterator find(const K &key) { return m_table.find(key); }
 		/** @copydoc find */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] const_iterator find(const K &key) const { return m_table.template find<0>(key); }
+		[[nodiscard]] const_iterator find(const K &key) const { return m_table.find(key); }
 
 		/** Checks if the specified element is present within the map as if by `find(key) != end()`.
 		 * @param key Key of the element to search for.
 		 * @return `true` if the element is present within the map, `false` otherwise. */
-		[[nodiscard]] bool contains(const key_type &key) const { return m_table.template contains<0>(key); }
+		[[nodiscard]] bool contains(const key_type &key) const { return m_table.contains(key); }
 		/** @copydoc contains
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] bool contains(const K &key) const { return m_table.template contains<0>(key); }
+		[[nodiscard]] bool contains(const K &key) const { return m_table.contains(key); }
 
 		/** Returns reference to the specified element.
 		 * @param key Key of the element to search for.
@@ -1213,19 +1140,6 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
-		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
-		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
-		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
-		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
-		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
-
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
 		/** @copydoc bucket
@@ -1245,34 +1159,32 @@ namespace tpp
 		/** Reserves space for at least `n` buckets and rehashes the map if necessary.
 		 * @note The new amount of buckets is clamped to be at least `size() / max_load_factor()`. */
 		void rehash(size_type n) { m_table.rehash(n); }
-		/** Returns the current maximum load factor. */
+		/** Returns the maximum load factor. */
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_table.max_load_factor(); }
-		/** Sets the current maximum load factor. */
-		constexpr void max_load_factor(float f) noexcept { m_table.max_load_factor(f); }
 
 		[[nodiscard]] allocator_type get_allocator() const { return allocator_type{m_table.get_allocator()}; }
 		[[nodiscard]] hasher hash_function() const { return m_table.get_hash(); }
 		[[nodiscard]] key_equal key_eq() const { return m_table.get_cmp(); }
 
-		[[nodiscard]] bool operator==(const ordered_dense_map &other) const
+		[[nodiscard]] bool operator==(const ordered_sparse_map &other) const
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
 #if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
-		[[nodiscard]] bool operator!=(const ordered_dense_map &other) const
+		[[nodiscard]] bool operator!=(const ordered_sparse_map &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
 #endif
 
-		void swap(ordered_dense_map &other) noexcept(std::is_nothrow_swappable_v<table_t>) { m_table.swap(other.m_table); }
+		void swap(ordered_sparse_map &other) noexcept(std::is_nothrow_swappable_v<table_t>) { m_table.swap(other.m_table); }
 
 	private:
 		template<typename I>
 		[[nodiscard]] inline auto guard_at(I iter) const
 		{
 			if (iter == end())
-				throw std::out_of_range("`dense_map::at` - invalid key");
+				throw std::out_of_range("`sparse_map::at` - invalid key");
 			else
 				return iter;
 		}
@@ -1283,9 +1195,9 @@ namespace tpp
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
-	inline typename ordered_dense_map<K, M, H, C, A>::size_type erase_if(ordered_dense_map<K, M, H, C, A> &map, P pred)
+	inline typename ordered_sparse_map<K, M, H, C, A>::size_type erase_if(ordered_sparse_map<K, M, H, C, A> &map, P pred)
 	{
-		typename dense_map<K, M, H, C, A>::size_type result = 0;
+		typename sparse_map<K, M, H, C, A>::size_type result = 0;
 		for (auto i = map.cbegin(), last = map.cend(); i != last;)
 		{
 			if (pred(*i))
@@ -1300,6 +1212,6 @@ namespace tpp
 	}
 
 	template<typename K, typename M, typename H, typename C, typename A>
-	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
+	inline void swap(ordered_sparse_map<K, M, H, C, A> &a, ordered_sparse_map<K, M, H, C, A> &b)
+	noexcept(std::is_nothrow_swappable_v<ordered_sparse_map<K, M, H, C, A>>) { a.swap(b); }
 }

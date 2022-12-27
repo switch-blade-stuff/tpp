@@ -322,6 +322,8 @@ namespace tpp::detail
 		else
 			return true;
 	}
+	template<typename Alloc>
+	[[nodiscard]] inline auto allocator_copy(const Alloc &alloc) { return std::allocator_traits<Alloc>::select_on_container_copy_construction(alloc); }
 
 	template<typename A, typename T>
 	inline void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)

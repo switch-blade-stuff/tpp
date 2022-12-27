@@ -182,7 +182,7 @@ namespace tpp::detail
 			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_base == other.m_base && m_pos == other.m_pos; }
-#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
+#if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
 			[[nodiscard]] constexpr bool operator!=(const bucket_iterator &other) const noexcept { return m_base != other.m_base || m_pos != other.m_pos; }
 #endif
 
@@ -230,8 +230,8 @@ namespace tpp::detail
 
 		dense_table(const dense_table &other)
 				: header_base(other),
-				  sparse_alloc_base(std::allocator_traits<sparse_allocator>::select_on_container_copy_construction(other.sparse_alloc())),
-				  dense_alloc_base(std::allocator_traits<dense_allocator>::select_on_container_copy_construction(other.dense_alloc())),
+				  sparse_alloc_base(allocator_copy(other.sparse_alloc())),
+				  dense_alloc_base(allocator_copy(other.dense_alloc())),
 				  hash_base(other), cmp_base(other),
 				  m_max_load_factor(other.m_max_load_factor)
 		{
@@ -425,7 +425,7 @@ namespace tpp::detail
 		void insert(Iter first, Iter last)
 		{
 			if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
-				reserve(static_cast<size_type>(std::distance(first, last)));
+				reserve(size() + static_cast<size_type>(std::distance(first, last)));
 			for (; first != last; ++first) insert(*first);
 		}
 
@@ -854,6 +854,13 @@ namespace tpp::detail
 			/* Expect that there is no data in the buffers, but the buffers might still exist. */
 			TPP_ASSERT(size() == 0, "Table must be empty prior to copying elements");
 
+			/* Ignore empty tables. */
+			TPP_IF_UNLIKELY(other.size() == 0)
+			{
+				m_dense_size = 0;
+				return;
+			}
+
 			/* (re)allocate the bucket & element buffers if needed. */
 			realloc_buffer(sparse_alloc(), m_sparse, m_sparse_size, other.m_sparse_size);
 			realloc_buffer(dense_alloc(), m_dense, m_dense_capacity, other.m_dense_size);
@@ -871,20 +878,25 @@ namespace tpp::detail
 
 			/* If the node link is ordered, update header offsets to point to the copied data. */
 			if constexpr (is_ordered::value)
-			{
 				if (m_dense_size != 0)
 				{
 					const auto front_off = other.front_node() - other.m_dense;
 					const auto back_off = other.back_node() - other.m_dense;
 					header_base::link(m_dense + front_off, m_dense + back_off);
 				}
-			}
 		}
 		template<std::size_t... Is>
 		void move_data(std::index_sequence<Is...>, dense_table &other)
 		{
 			/* Expect that there is no data in the buffers, but the buffers might still exist. */
 			TPP_ASSERT(size() == 0, "Table must be empty prior to moving elements");
+
+			/* Ignore empty tables. */
+			TPP_IF_UNLIKELY(other.size() == 0)
+			{
+				m_dense_size = 0;
+				return;
+			}
 
 			/* (re)allocate the bucket & element buffers if needed. */
 			realloc_buffer(sparse_alloc(), m_sparse, m_sparse_size, other.m_sparse_size);

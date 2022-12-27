@@ -89,9 +89,12 @@ endif ()
 
 set(TPP_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/tpp)
 add_library(${PROJECT_NAME} INTERFACE
-        # Common utilities
+        # Common definitions & utilities
+        ${TPP_SOURCE_DIR}/detail/arch.hpp
         ${TPP_SOURCE_DIR}/detail/define.hpp
         ${TPP_SOURCE_DIR}/detail/utility.hpp
+        ${TPP_SOURCE_DIR}/detail/multikey.hpp
+        ${TPP_SOURCE_DIR}/detail/table_common.hpp
 
         # Hash utilities
         ${TPP_SOURCE_DIR}/hash.hpp
@@ -102,11 +105,12 @@ add_library(${PROJECT_NAME} INTERFACE
         ${TPP_SOURCE_DIR}/dense_set.hpp
         ${TPP_SOURCE_DIR}/dense_map.hpp
         ${TPP_SOURCE_DIR}/dense_multiset.hpp
+        ${TPP_SOURCE_DIR}/dense_multimap.hpp
 
         # Swiss table containers
         ${TPP_SOURCE_DIR}/detail/swiss_table.hpp
-        ${TPP_SOURCE_DIR}/swiss_set.hpp
-        ${TPP_SOURCE_DIR}/swiss_map.hpp
+        ${TPP_SOURCE_DIR}/sparse_set.hpp
+        ${TPP_SOURCE_DIR}/sparse_map.hpp
         )
 
 # Unit tests

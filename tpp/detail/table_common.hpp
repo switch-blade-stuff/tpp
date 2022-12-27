@@ -193,13 +193,28 @@ namespace tpp::detail
 	template<typename, typename = void>
 	struct is_transparent : std::false_type {};
 	template<typename T>
-	struct is_transparent<T, std::void_t<typename T::is_transparent>> : std::true_type {};
+	struct is_transparent<T, std::void_t<typename T::is_transparent>> : T::is_transparent {};
+
+	template<typename T>
+	struct has_key_size
+	{
+		template<typename C>
+		[[maybe_unused]] static std::true_type test_key_size(decltype(&C::key_size));
+		template<typename C>
+		[[maybe_unused]] static std::false_type test_key_size(...);
+
+		constexpr static bool value = std::is_same_v<decltype(test_key_size<T>(nullptr)), std::true_type>;
+	};
+	template<typename T, bool = has_key_size<T>::value>
+	struct node_key { using type = std::array<std::size_t, T::key_size>; };
+	template<typename T>
+	struct node_key<T, false> { using type = std::size_t; };
 
 	template<typename V, typename A, typename Traits>
 	class packed_node : public Traits::link_type
 	{
+		using hash_type = typename node_key<Traits>::type;
 		using link_base = typename Traits::link_type;
-		using hash_type = std::array<std::size_t, Traits::key_size>;
 
 		struct storage_t : ebo_container<V>
 		{
@@ -208,6 +223,9 @@ namespace tpp::detail
 
 	public:
 		using allocator_type = A;
+
+		constexpr packed_node() noexcept {}
+		~packed_node() {}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		void construct(A &alloc, Args &&...args) { std::allocator_traits<A>::construct(alloc, &value(), std::forward<Args>(args)...); }
@@ -255,11 +273,11 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto &value() const noexcept { return m_storage.value(); }
 
 		template<std::size_t I>
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template get_key<I>(value()); }
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
+		[[nodiscard]] constexpr decltype(auto) key() const noexcept { return Traits::template get_key<I>(value()); }
+		[[nodiscard]] constexpr decltype(auto) key() const noexcept { return Traits::get_key(value()); }
 
-		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::get_mapped(value()); }
-		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr decltype(auto) mapped() noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr decltype(auto) mapped() const noexcept { return Traits::get_mapped(value()); }
 
 		friend void swap(packed_node &a, packed_node &b) noexcept(std::is_nothrow_swappable_v<V>)
 		{
@@ -279,8 +297,8 @@ namespace tpp::detail
 	template<typename V, typename A, typename Traits>
 	class stable_node : public Traits::link_type
 	{
+		using hash_type = typename node_key<Traits>::type;
 		using link_base = typename Traits::link_type;
-		using hash_type = std::array<std::size_t, Traits::key_size>;
 
 	public:
 		using allocator_type = A;
@@ -374,6 +392,9 @@ namespace tpp::detail
 			NodeType node = {};
 		};
 
+	public:
+		constexpr stable_node() noexcept = default;
+
 		void construct(A &alloc, const stable_node &other)
 		{
 			link_base::operator=(other);
@@ -436,11 +457,11 @@ namespace tpp::detail
 		[[nodiscard]] constexpr const auto &value() const noexcept { return *m_ptr; }
 
 		template<std::size_t I>
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::template get_key<I>(value()); }
-		[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
+		[[nodiscard]] constexpr decltype(auto) key() const noexcept { return Traits::template get_key<I>(value()); }
+		[[nodiscard]] constexpr decltype(auto) key() const noexcept { return Traits::get_key(value()); }
 
-		[[nodiscard]] constexpr auto &mapped() noexcept { return Traits::get_mapped(value()); }
-		[[nodiscard]] constexpr auto &mapped() const noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr decltype(auto) mapped() noexcept { return Traits::get_mapped(value()); }
+		[[nodiscard]] constexpr decltype(auto) mapped() const noexcept { return Traits::get_mapped(value()); }
 
 		constexpr friend void swap(stable_node &a, stable_node &b) noexcept
 		{
@@ -477,7 +498,7 @@ namespace tpp::detail
 	template<typename T, typename = void>
 	struct is_stable : std::false_type {};
 	template<typename T>
-	struct is_stable<T, std::void_t<typename T::is_stable>> : std::true_type {};
+	struct is_stable<T, std::void_t<typename T::is_stable>> : T::is_stable {};
 	template<typename V, typename Traits, typename Alloc>
 	using table_node = std::conditional_t<is_stable<Traits>::value, stable_node<V, Traits, Alloc>, packed_node<V, Traits, Alloc>>;
 
@@ -552,12 +573,6 @@ namespace tpp::detail
 	struct iterator_concept_base<I> { using iterator_concept = std::contiguous_iterator_tag; };
 #endif
 
-	template<typename, typename, typename>
-	class table_iterator;
-
-	template<typename V, typename T, typename I>
-	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I>) noexcept;
-
 	template<typename, typename = void>
 	struct iter_size { using type = std::size_t; };
 	template<typename T>
@@ -588,6 +603,12 @@ namespace tpp::detail
 	};
 	template<typename I, typename T>
 	struct random_access_iterator_base<I, T, std::enable_if_t<!std::is_base_of_v<std::random_access_iterator_tag, typename T::iterator_category>>> {};
+
+	template<typename, typename, typename>
+	class table_iterator;
+
+	template<typename V, typename T, typename I>
+	[[nodiscard]] constexpr auto to_underlying(table_iterator<V, T, I>) noexcept;
 
 	template<typename V, typename Traits, typename I>
 	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>

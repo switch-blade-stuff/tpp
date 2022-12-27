@@ -448,7 +448,7 @@ namespace tpp
 		{
 			return std::is_permutation(begin(), end(), other.begin(), other.end());
 		}
-#if (__cplusplus < 202002L || (defined(_MSVC_LANG) && _MSVC_LANG < 202002L))
+#if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
 		[[nodiscard]] bool operator!=(const dense_multimap &other) const
 		{
 			return !std::is_permutation(begin(), end(), other.begin(), other.end());
