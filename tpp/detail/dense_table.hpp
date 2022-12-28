@@ -30,27 +30,27 @@ namespace tpp::detail
 		using bucket_hash = std::array<std::size_t, ValueTraits::key_size>;
 		using bucket_pos = std::array<size_type, ValueTraits::key_size>;
 
-		struct bucket_node : table_node<I, Alloc, ValueTraits>
+		struct bucket_node : packed_node<I, Alloc, ValueTraits>
 		{
 			template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<I, Args...>>>
 			void construct(Alloc &alloc, Args &&...args)
 			{
-				table_node<I, Alloc, ValueTraits>::construct(alloc, std::forward<Args>(args)...);
+				packed_node<I, Alloc, ValueTraits>::construct(alloc, std::forward<Args>(args)...);
 				next = make_array<key_size>(npos);
 			}
 			void construct(Alloc &alloc, const bucket_node &other)
 			{
-				table_node<I, Alloc, ValueTraits>::construct(alloc, other);
+				packed_node<I, Alloc, ValueTraits>::construct(alloc, other);
 				next = other.next;
 			}
 			void construct(Alloc &alloc, bucket_node &&other)
 			{
-				table_node<I, Alloc, ValueTraits>::construct(alloc, std::move(other));
+				packed_node<I, Alloc, ValueTraits>::construct(alloc, std::move(other));
 				next = other.next;
 			}
 			void move_from(bucket_node &other)
 			{
-				table_node<I, Alloc, ValueTraits>::move_from(other);
+				packed_node<I, Alloc, ValueTraits>::move_from(other);
 				next = other.next;
 			}
 
