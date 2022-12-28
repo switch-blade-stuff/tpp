@@ -695,7 +695,7 @@ namespace tpp::detail
 				m_buffer.fill_empty();
 			}
 
-			[[nodiscard]] meta_word *metadata() const noexcept { return m_data ? reinterpret_cast<meta_word *>(bytes()) : nullptr; }
+			[[nodiscard]] meta_word *metadata() const noexcept { return reinterpret_cast<meta_word *>(bytes()); }
 			[[nodiscard]] meta_word *tail() const noexcept { return metadata() + capacity + 1; }
 			[[nodiscard]] bucket_node *nodes() const noexcept { return m_data ? reinterpret_cast<bucket_node *>(bytes() + nodes_offset(capacity)) : nullptr; }
 
@@ -836,7 +836,7 @@ namespace tpp::detail
 		}
 
 	public:
-		swiss_table() {}
+		swiss_table() = default;
 
 		swiss_table(const allocator_type &alloc) : m_buffer(alloc) {}
 		swiss_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
@@ -1263,15 +1263,16 @@ namespace tpp::detail
 			TPP_IF_LIKELY(m_size != 0)
 			{
 				const auto [h1, h2] = decompose_hash(h);
+				auto *metadata = m_buffer.metadata();
+				auto *nodes = m_buffer.nodes();
 				for (auto probe = bucket_probe{h1 & m_buffer.capacity, m_buffer.capacity};; ++probe)
 				{
 					/* Go through each matched element in the block and test for equality. */
-					const auto block = meta_block{m_buffer.metadata() + probe.pos};
+					const auto block = meta_block{metadata + probe.pos};
 					for (auto match = block.match_eq(h2); !match.empty(); ++match)
 					{
 						const auto offset = probe.off(match.lsb_index());
-						const auto &node = m_buffer.nodes()[offset];
-						TPP_IF_LIKELY(node.hash() == h && cmp(node.key(), key)) return offset;
+						TPP_IF_LIKELY(cmp(nodes[offset].key(), key)) return offset;
 					}
 					/* Fail if the block is empty and there are no matching elements. */
 					TPP_IF_UNLIKELY(!block.match_empty().empty()) break;
@@ -1283,9 +1284,10 @@ namespace tpp::detail
 		size_type find_available(std::size_t h) const noexcept
 		{
 			const auto [h1, h2] = decompose_hash(h);
+			auto *metadata = m_buffer.metadata();
 			for (auto probe = bucket_probe{h1 & m_buffer.capacity, m_buffer.capacity};; ++probe)
 			{
-				const auto block = meta_block{m_buffer.metadata() + probe.pos};
+				const auto block = meta_block{metadata + probe.pos};
 				if (const auto match = block.match_available(); !match.empty())
 					return probe.off(match.lsb_index());
 				assert_probe(probe);
@@ -1437,21 +1439,24 @@ namespace tpp::detail
 		}
 		void rehash_deleted()
 		{
+			auto *metadata = m_buffer.metadata(), *tail = m_buffer.tail();
+			auto *nodes = m_buffer.nodes();
+
 			/* Set all occupied as deleted. */
 			for (size_type i = 0; i < m_buffer.capacity; i += sizeof(meta_block))
 			{
-				const auto old_block = m_buffer.metadata() + i;
+				const auto old_block = metadata + i;
 				const auto new_block = meta_block{old_block}.reset_occupied();
 				std::memcpy(old_block, &new_block, sizeof(meta_block));
 			}
-			std::memcpy(m_buffer.tail(), m_buffer.metadata(), sizeof(meta_block) - 1);
-			m_buffer.metadata()[m_buffer.capacity] = meta_word::sentinel;
+			std::memcpy(tail, metadata, sizeof(meta_block) - 1);
+			metadata[m_buffer.capacity] = meta_word::sentinel;
 
 			/* Relocation algorithm as described by the reference implementation at https://github.com/abseil/abseil-cpp/blob/f7affaf32a6a396465507dd10520a3fe183d4e40/absl/container/internal/raw_hash_set.cc#L97 */
 			for (size_type i = 0; i < m_buffer.capacity; ++i)
-				if (m_buffer.metadata()[i] == meta_word::deleted)
+				if (metadata[i] == meta_word::deleted)
 				{
-					auto *node = m_buffer.nodes() + i;
+					auto *node = nodes + i;
 
 				process_node:
 					const auto target_pos = find_available(node->hash());
@@ -1466,17 +1471,17 @@ namespace tpp::detail
 					}
 
 					/* If the target is in a different block and is empty, relocate the node. Otherwise, swap with the other element. */
-					if (m_buffer.metadata()[target_pos] == meta_word::empty)
+					if (metadata[target_pos] == meta_word::empty)
 					{
 						auto alloc = allocator_type{get_allocator()};
-						relocate_node{}(alloc, node, alloc, m_buffer.nodes() + target_pos);
+						relocate_node{}(alloc, node, alloc, nodes + target_pos);
 						set_metadata(i, meta_word::empty);
 						set_metadata(target_pos, h2);
 					}
 					else
 					{
 						using std::swap;
-						swap(*node, m_buffer.nodes()[target_pos]);
+						swap(*node, nodes[target_pos]);
 						set_metadata(target_pos, h2);
 						goto process_node; /* Process the swapped-with node. */
 					}
@@ -1513,7 +1518,6 @@ namespace tpp::detail
 					nodes[i].construct(alloc, other_nodes[i]);
 					set_metadata(i, other_metadata[i]);
 				}
-
 			m_size = other.m_size;
 			m_num_empty = capacity_to_max_size(m_buffer.capacity) - m_size;
 
@@ -1555,11 +1559,11 @@ namespace tpp::detail
 					src_node->destroy(other_alloc);
 					set_metadata(i, other_metadata[i]);
 				}
-
-			m_size = std::exchange(other.m_size, 0);
+			m_size = other.m_size;
 			m_num_empty = capacity_to_max_size(m_buffer.capacity) - m_size;
 
 			/* Reset the other table. */
+			other.m_size = 0;
 			other.m_num_empty = capacity_to_max_size(other.m_buffer.capacity);
 			other.m_buffer.fill_empty();
 		}

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "define.hpp"
+#include "../stl_hash.hpp"
 
 #ifndef TPP_USE_IMPORT
 

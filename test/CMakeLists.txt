@@ -31,7 +31,7 @@ macro(test_target_cxx)
     endif ()
 
     # Enable ASan in debug builds
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug"#[[ OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"]])
         if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
             target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address /Zi)
