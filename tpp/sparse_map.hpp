@@ -26,7 +26,7 @@ namespace tpp
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+			typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class sparse_map
 	{
 	public:
@@ -603,8 +603,7 @@ namespace tpp
 			{
 				i = map.erase(i);
 				++result;
-			}
-			else
+			} else
 				++i;
 		}
 		return result;
@@ -631,7 +630,7 @@ namespace tpp
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
 	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-	         typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+			typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class ordered_sparse_map
 	{
 	public:
@@ -696,8 +695,8 @@ namespace tpp
 		ordered_sparse_map(ordered_sparse_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
 		ordered_sparse_map(ordered_sparse_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t,
-		                                                                                                                     table_t &&,
-		                                                                                                                     allocator_type>)
+				table_t &&,
+				allocator_type>)
 				: m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
@@ -1204,8 +1203,7 @@ namespace tpp
 			{
 				i = map.erase(i);
 				++result;
-			}
-			else
+			} else
 				++i;
 		}
 		return result;

@@ -79,8 +79,8 @@ namespace tpp::detail
 	constexpr meta_word meta_word::deleted = meta_word{static_cast<std::int8_t>(0b1111'1110)};
 	constexpr meta_word meta_word::sentinel = meta_word{static_cast<std::int8_t>(0b1111'1111)};
 
-    constexpr bool meta_word::is_occupied() const noexcept { return value > sentinel.value; }
-    constexpr bool meta_word::is_available() const noexcept { return value < sentinel.value; }
+	constexpr bool meta_word::is_occupied() const noexcept { return value > sentinel.value; }
+	constexpr bool meta_word::is_available() const noexcept { return value < sentinel.value; }
 
 	template<typename T, std::size_t P>
 	class basic_index_mask
@@ -379,11 +379,11 @@ namespace tpp::detail
 	}
 #endif
 
-    /* Helper used to select node table type. */
-    template<typename T, typename = void>
-    struct is_stable : std::false_type {};
-    template<typename T>
-    struct is_stable<T, std::void_t<typename T::is_stable>> : T::is_stable {};
+	/* Helper used to select node table type. */
+	template<typename T, typename = void>
+	struct is_stable : std::false_type {};
+	template<typename T>
+	struct is_stable<T, std::void_t<typename T::is_stable>> : T::is_stable {};
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
 	struct swiss_table_traits : table_traits<I, V, K, Kh, Kc, Alloc>
@@ -393,8 +393,8 @@ namespace tpp::detail
 		using is_transparent = std::conjunction<detail::is_transparent<Kh>, detail::is_transparent<Kc>>;
 		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
 
-        using bucket_node = std::conditional_t<is_stable<ValueTraits>::value, stable_node<V, Alloc, ValueTraits>, packed_node<I, Alloc, ValueTraits>>;
-        using bucket_link = typename ValueTraits::link_type;
+		using bucket_node = std::conditional_t<is_stable<ValueTraits>::value, stable_node<V, Alloc, ValueTraits>, packed_node<I, Alloc, ValueTraits>>;
+		using bucket_link = typename ValueTraits::link_type;
 
 		using meta_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<meta_word>;
 		using node_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
@@ -424,9 +424,11 @@ namespace tpp::detail
 
 		// @formatter:off
 		template<typename, typename, typename, typename, typename, typename, typename>
-		friend class swiss_table;
+		friend
+		class swiss_table;
 		template<typename, typename, bool>
-		friend class swiss_node_iterator;
+		friend
+		class swiss_node_iterator;
 		// @formatter:on
 
 	public:
@@ -508,7 +510,7 @@ namespace tpp::detail
 		using bucket_node = typename traits_t::bucket_node;
 		using meta_allocator = typename traits_t::meta_allocator;
 		using node_allocator = typename traits_t::node_allocator;
-        using value_allocator = typename bucket_node::allocator_type;
+		using value_allocator = typename bucket_node::allocator_type;
 
 #ifdef TPP_DEBUG /* Use dual buffers in debug mode for ease of debugging. */
 		class buffer_type : ebo_container<meta_allocator>, ebo_container<node_allocator>
@@ -927,12 +929,12 @@ namespace tpp::detail
 			m_buffer.deallocate();
 		}
 
-        template<typename Iter>
-        void assign(Iter first, Iter last)
-        {
-            clear();
-            insert(first, last);
-        }
+		template<typename Iter>
+		void assign(Iter first, Iter last)
+		{
+			clear();
+			insert(first, last);
+		}
 
 		[[nodiscard]] constexpr iterator begin() noexcept { return to_iter(begin_node()); }
 		[[nodiscard]] constexpr const_iterator begin() const noexcept { return to_iter(begin_node()); }
@@ -1000,7 +1002,7 @@ namespace tpp::detail
 		template<typename N>
 		auto insert(N &&node) -> typename stable_node<I, Alloc, ValueTraits>::template insert_return<iterator, N>
 		{
-            const auto h = hash(node.value());
+			const auto h = hash(node.value());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return {emplace_node({}, h, std::forward<N>(node)), true};
 			else
@@ -1009,7 +1011,7 @@ namespace tpp::detail
 		template<typename N>
 		auto insert(const_iterator hint, N &&node) -> iterator
 		{
-            const auto h = hash(node.value());
+			const auto h = hash(node.value());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return emplace_node(hint, h, std::forward<N>(node));
 			else
@@ -1036,9 +1038,9 @@ namespace tpp::detail
 		}
 
 		template<typename N>
-        std::pair<iterator, bool> insert_or_assign(N &&node)
+		std::pair<iterator, bool> insert_or_assign(N &&node)
 		{
-            const auto h = hash(node.value());
+			const auto h = hash(node.value());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return {emplace_node({}, h, std::forward<N>(node)), true};
 			else
@@ -1049,9 +1051,9 @@ namespace tpp::detail
 			}
 		}
 		template<typename N>
-        iterator insert_or_assign(hint_t hint, N &&node)
+		iterator insert_or_assign(hint_t hint, N &&node)
 		{
-            const auto h = hash(node.value());
+			const auto h = hash(node.value());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return emplace_node(hint, h, std::forward<N>(node));
 			else
@@ -1167,21 +1169,21 @@ namespace tpp::detail
 
 			/* Extract nodes from other and insert into this. */
 			for (; pos != last; ++pos)
-            {
-                const auto &key = ValueTraits::get_key(*pos);
-                const auto h = hash(key);
-                if (find_impl(key, h) == m_buffer.capacity) emplace_node({}, h, other.extract(pos));
-            }
+			{
+				const auto &key = ValueTraits::get_key(*pos);
+				const auto h = hash(key);
+				if (find_impl(key, h) == m_buffer.capacity) emplace_node({}, h, other.extract(pos));
+			}
 		}
 		template<typename Kh2, typename Kc2>
 		void merge(swiss_table<I, V, K, Kh2, Kc2, Alloc, ValueTraits> &&other) { merge(other); }
-        void merge(swiss_table &&other)
-        {
-            if (m_size == 0)
-                operator=(std::move(other));
-            else
-                merge(other);
-        }
+		void merge(swiss_table &&other)
+		{
+			if (m_size == 0)
+				operator=(std::move(other));
+			else
+				merge(other);
+		}
 
 		void rehash(size_type n)
 		{
@@ -1338,8 +1340,7 @@ namespace tpp::detail
 			{
 				rehash_impl(1);
 				target_pos = find_available(h);
-			}
-			else
+			} else
 			{
 				target_pos = find_available(h);
 				TPP_IF_UNLIKELY(!m_num_empty && m_buffer.metadata()[target_pos] != meta_word::deleted)
@@ -1482,7 +1483,7 @@ namespace tpp::detail
 				{
 					auto *node = nodes + i;
 
-				process_node:
+					process_node:
 					const auto target_pos = find_available(node->hash());
 					const auto [h1, h2] = decompose_hash(node->hash());
 

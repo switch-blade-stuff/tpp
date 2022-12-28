@@ -222,16 +222,16 @@ namespace tpp::detail
 		};
 
 	public:
-        using allocator_type = typename std::allocator_traits<A>::template rebind_alloc<V>;
+		using allocator_type = typename std::allocator_traits<A>::template rebind_alloc<V>;
 
 		constexpr packed_node() noexcept {}
 		~packed_node() {}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		void construct(allocator_type &alloc, Args &&...args)
-        {
-            std::allocator_traits<allocator_type>::construct(alloc, &value(), std::forward<Args>(args)...);
-        }
+		{
+			std::allocator_traits<allocator_type>::construct(alloc, &value(), std::forward<Args>(args)...);
+		}
 		void construct(allocator_type &alloc, const packed_node &other)
 		{
 			link_base::operator=(other);
@@ -400,20 +400,15 @@ namespace tpp::detail
 			construct(alloc, other.value());
 			m_hash = other.m_hash;
 		}
-		void construct(allocator_type &, stable_node &&other)
-		{
-			link_base::operator=(std::move(other));
-			std::swap(m_ptr, other.m_ptr);
-			m_hash = other.m_hash;
-		}
+		void construct(allocator_type &, stable_node &&other) { move_from(other); }
 		void move_from(stable_node &other)
 		{
 			link_base::operator=(std::move(other));
-			std::swap(m_ptr, other.m_ptr);
+			m_ptr = std::exchange(other.m_ptr, nullptr);
 			m_hash = other.m_hash;
 		}
 
-		void construct(allocator_type &, extracted_type &&other) { std::swap(m_ptr, other.m_ptr); }
+		void construct(allocator_type &, extracted_type &&other) { m_ptr = std::exchange(other.m_ptr, nullptr); }
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		void construct(allocator_type &alloc, Args &&...args)
@@ -443,8 +438,8 @@ namespace tpp::detail
 			}
 		}
 
-        [[nodiscard]] constexpr auto &hash() noexcept { return m_hash; }
-        [[nodiscard]] constexpr auto &hash() const noexcept { return m_hash; }
+		[[nodiscard]] constexpr auto &hash() noexcept { return m_hash; }
+		[[nodiscard]] constexpr auto &hash() const noexcept { return m_hash; }
 
 		template<std::size_t I>
 		[[nodiscard]] constexpr auto &hash() noexcept { return m_hash[I]; }
@@ -605,7 +600,8 @@ namespace tpp::detail
 	{
 		// @formatter:off
 		template<typename, typename, typename>
-		friend class table_iterator;
+		friend
+		class table_iterator;
 		friend struct random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>;
 		// @formatter:on
 

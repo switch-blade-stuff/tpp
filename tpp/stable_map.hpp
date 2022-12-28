@@ -9,20 +9,20 @@
 
 namespace tpp
 {
-    /** @brief Hash map based on SwissHash open addressing hash table.
-     *
-     * Internally, stable map stores it's elements in an open-addressing element and metadata buffers.
-     * Insert and erase operations on a stable map may invalidate iterators to it's elements due to the table being rehashed.
-     * References to table elements are invalidated only when the element is destroyed.
-     * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
-     * Stable maps store their elements in independently-allocated nodes, and as such can guarantee
-     * pointer stability and enable node-based extraction & insertion API.
-     *
-     * @tparam Key Key type stored by the map.
-     * @tparam Mapped Mapped type associated with map keys.
-     * @tparam KeyHash Hash functor used by the map.
-     * @tparam KeyCmp Compare functor used by the map.
-     * @tparam Alloc Allocator used by the map. */
+	/** @brief Hash map based on SwissHash open addressing hash table.
+	 *
+	 * Internally, stable map stores it's elements in an open-addressing element and metadata buffers.
+	 * Insert and erase operations on a stable map may invalidate iterators to it's elements due to the table being rehashed.
+	 * References to table elements are invalidated only when the element is destroyed.
+	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
+	 * Stable maps store their elements in independently-allocated nodes, and as such can guarantee
+	 * pointer stability and enable node-based extraction & insertion API.
+	 *
+	 * @tparam Key Key type stored by the map.
+	 * @tparam Mapped Mapped type associated with map keys.
+	 * @tparam KeyHash Hash functor used by the map.
+	 * @tparam KeyCmp Compare functor used by the map.
+	 * @tparam Alloc Allocator used by the map. */
     template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
             typename Alloc = std::allocator<std::pair<const Key, Mapped>>>
     class stable_map
