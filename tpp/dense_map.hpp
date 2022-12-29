@@ -544,16 +544,16 @@ namespace tpp
 		 * @param key Key of the element to search for.
 		 * @return Reference to the specified element.
 		 * @throw std::out_of_range If no such element exists within the map. */
-		[[nodiscard]] reference at(const key_type &key) { return *guard_at(find(key)); }
+		[[nodiscard]] mapped_type &at(const key_type &key) { return guard_at(find(key))->second; }
 		/** @copydoc at */
-		[[nodiscard]] const_reference at(const key_type &key) const { return *guard_at(find(key)); }
+		[[nodiscard]] const mapped_type &at(const key_type &key) const { return guard_at(find(key))->second; }
 		/** @copydoc at
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] reference at(const K &key) { return *guard_at(find(key)); }
+		[[nodiscard]] mapped_type &at(const K &key) { return guard_at(find(key))->second; }
 		/** @copydoc at */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] const_reference at(const K &key) const { return *guard_at(find(key)); }
+		[[nodiscard]] const mapped_type &at(const K &key) const { return guard_at(find(key))->second; }
 
 		/** Returns reference to the specified element. If the element is not present within the map, inserts a default-constructed instance.
 		 * @param key Key of the element to search for.
@@ -627,7 +627,7 @@ namespace tpp
 		template<typename I>
 		[[nodiscard]] inline auto guard_at(I iter) const
 		{
-			if (iter == end())
+			if (const_iterator{iter} == end())
 				throw std::out_of_range("`dense_map::at` - invalid key");
 			else
 				return iter;
@@ -648,7 +648,8 @@ namespace tpp
 			{
 				i = map.erase(i);
 				++result;
-			} else
+			}
+			else
 				++i;
 		}
 		return result;
@@ -1187,16 +1188,16 @@ namespace tpp
 		 * @param key Key of the element to search for.
 		 * @return Reference to the specified element.
 		 * @throw std::out_of_range If no such element exists within the map. */
-		[[nodiscard]] reference at(const key_type &key) { return *guard_at(find(key)); }
+		[[nodiscard]] mapped_type &at(const key_type &key) { return guard_at(find(key))->second; }
 		/** @copydoc at */
-		[[nodiscard]] const_reference at(const key_type &key) const { return *guard_at(find(key)); }
+		[[nodiscard]] const mapped_type &at(const key_type &key) const { return guard_at(find(key))->second; }
 		/** @copydoc at
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] reference at(const K &key) { return *guard_at(find(key)); }
+		[[nodiscard]] mapped_type &at(const K &key) { return guard_at(find(key))->second; }
 		/** @copydoc at */
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] const_reference at(const K &key) const { return *guard_at(find(key)); }
+		[[nodiscard]] const mapped_type &at(const K &key) const { return guard_at(find(key))->second; }
 
 		/** Returns reference to the specified element. If the element is not present within the map, inserts a default-constructed instance.
 		 * @param key Key of the element to search for.
@@ -1270,7 +1271,7 @@ namespace tpp
 		template<typename I>
 		[[nodiscard]] inline auto guard_at(I iter) const
 		{
-			if (iter == end())
+			if (const_iterator{iter} == end())
 				throw std::out_of_range("`dense_map::at` - invalid key");
 			else
 				return iter;
@@ -1291,7 +1292,8 @@ namespace tpp
 			{
 				i = map.erase(i);
 				++result;
-			} else
+			}
+			else
 				++i;
 		}
 		return result;

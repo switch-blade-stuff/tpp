@@ -400,14 +400,14 @@ namespace tpp::detail
 		using node_allocator = typename std::allocator_traits<Alloc>::template rebind_alloc<bucket_node>;
 	};
 
-	template<typename, typename, typename, typename = void>
+	template<typename V, typename A, typename T, bool = is_stable<T>::value>
 	struct swiss_node_traits {};
-	template<typename I, typename A, typename T>
-	struct swiss_node_traits<I, A, T, std::void_t<typename T::is_stable>>
+	template<typename V, typename A, typename T>
+	struct swiss_node_traits<V, A, T, true>
 	{
-		using node_type = typename stable_node<I, A, T>::extracted_type;
+		using node_type = typename stable_node<V, A, T>::extracted_type;
 		template<typename Iter>
-		using insert_return_type = typename stable_node<I, A, T>::template insert_return<Iter, node_type>;
+		using insert_return_type = typename stable_node<V, A, T>::template insert_return<Iter, node_type>;
 	};
 
 	template<typename Node, typename Traits, bool = true>
@@ -424,11 +424,9 @@ namespace tpp::detail
 
 		// @formatter:off
 		template<typename, typename, typename, typename, typename, typename, typename>
-		friend
-		class swiss_table;
+		friend class swiss_table;
 		template<typename, typename, bool>
-		friend
-		class swiss_node_iterator;
+		friend class swiss_node_iterator;
 		// @formatter:on
 
 	public:
@@ -445,7 +443,7 @@ namespace tpp::detail
 
 	public:
 		constexpr swiss_node_iterator() noexcept = default;
-		template<typename U, typename = std::enable_if_t<!std::is_same_v<Node, U> && std::is_constructible_v<node_ptr, U *>>>
+		template<typename U, typename = std::enable_if_t<!std::is_same_v<Node, U> && std::is_convertible_v<U *, node_ptr>>>
 		constexpr swiss_node_iterator(const swiss_node_iterator<U, Traits, false> &other) noexcept : m_meta(other.m_meta), m_node(other.m_node) {}
 
 		swiss_node_iterator operator++(int) noexcept
@@ -486,7 +484,7 @@ namespace tpp::detail
 	};
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
-	class swiss_table : ValueTraits::link_type, ebo_container<Kh>, ebo_container<Kc>, public swiss_node_traits<I, Alloc, ValueTraits>
+	class swiss_table : ValueTraits::link_type, ebo_container<Kh>, ebo_container<Kc>, public swiss_node_traits<V, Alloc, ValueTraits>
 	{
 		using traits_t = swiss_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>;
 
@@ -1000,18 +998,18 @@ namespace tpp::detail
 		}
 
 		template<typename N>
-		auto insert(N &&node) -> typename stable_node<I, Alloc, ValueTraits>::template insert_return<iterator, N>
+		auto insert_node(N &&node) -> typename stable_node<V, Alloc, ValueTraits>::template insert_return<iterator, N>
 		{
-			const auto h = hash(node.value());
+			const auto h = hash(node.key());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return {emplace_node({}, h, std::forward<N>(node)), true};
 			else
 				return {to_iter(target_pos), false, std::forward<N>(node)};
 		}
 		template<typename N>
-		auto insert(const_iterator hint, N &&node) -> iterator
+		auto insert_node(const_iterator hint, N &&node) -> iterator
 		{
-			const auto h = hash(node.value());
+			const auto h = hash(node.key());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return emplace_node(hint, h, std::forward<N>(node));
 			else
@@ -1038,9 +1036,9 @@ namespace tpp::detail
 		}
 
 		template<typename N>
-		std::pair<iterator, bool> insert_or_assign(N &&node)
+		std::pair<iterator, bool> insert_or_assign_node(N &&node)
 		{
-			const auto h = hash(node.value());
+			const auto h = hash(node.key());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return {emplace_node({}, h, std::forward<N>(node)), true};
 			else
@@ -1051,9 +1049,9 @@ namespace tpp::detail
 			}
 		}
 		template<typename N>
-		iterator insert_or_assign(hint_t hint, N &&node)
+		iterator insert_or_assign_node(hint_t hint, N &&node)
 		{
-			const auto h = hash(node.value());
+			const auto h = hash(node.key());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
 				return emplace_node(hint, h, std::forward<N>(node));
 			else
@@ -1127,23 +1125,19 @@ namespace tpp::detail
 		}
 
 		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
-		typename stable_node<I, Alloc, ValueTraits>::extracted_type extract(const T &key)
+		typename stable_node<V, Alloc, ValueTraits>::extracted_type extract(const T &key)
 		{
-			if (auto pos = find(key); pos != end())
-			{
-				auto alloc = value_allocator{get_allocator()};
-				return {alloc, std::move(extract_impl(pos))};
-			}
+			if (const auto pos = find_node(key, hash(key)); pos != m_buffer.capacity)
+				return {value_allocator{get_allocator()}, std::move(extract_impl(pos))};
 			else
 				return {};
 		}
-		typename stable_node<I, Alloc, ValueTraits>::extracted_type extract(const_iterator where)
+		typename stable_node<V, Alloc, ValueTraits>::extracted_type extract(const_iterator where)
 		{
-			if (where != end())
+			if (where != const_iterator{end()})
 			{
-				auto alloc = value_allocator{get_allocator()};
 				const auto pos = &(*to_underlying(where)) - m_buffer.nodes();
-				return {alloc, std::move(extract_impl(pos))};
+				return {value_allocator{get_allocator()}, std::move(extract_impl(pos))};
 			}
 			else
 				return {};
@@ -1154,26 +1148,18 @@ namespace tpp::detail
 		{
 			reserve(m_size + other.size());
 
-			/* Iterate backwards for ordered links, since the ordered iterators are invalidated on erase. */
-			std::conditional_t<is_ordered::value, std::reverse_iterator<iterator>, iterator> pos, last;
-			if constexpr (is_ordered::value)
-			{
-				pos = std::reverse_iterator{other.end()};
-				last = std::reverse_iterator{other.begin()};
-			}
-			else
-			{
-				pos = other.begin();
-				last = other.end();
-			}
-
 			/* Extract nodes from other and insert into this. */
-			for (; pos != last; ++pos)
+			/* Iterate backwards for ordered links, since the ordered iterators are invalidated on erase. */
+			const auto transfer = [&](const const_iterator &pos) noexcept
 			{
 				const auto &key = ValueTraits::get_key(*pos);
 				const auto h = hash(key);
-				if (find_impl(key, h) == m_buffer.capacity) emplace_node({}, h, other.extract(pos));
-			}
+				if (find_node(key, h) == m_buffer.capacity) emplace_node({}, h, other.extract(pos));
+			};
+			if constexpr (!is_ordered::value)
+				for (auto pos = other.begin(), last = other.end(); pos != last; ++pos) transfer(pos);
+			else
+				for (auto pos = other.end(), last = other.begin(); --pos != last;) transfer(pos);
 		}
 		template<typename Kh2, typename Kc2>
 		void merge(swiss_table<I, V, K, Kh2, Kc2, Alloc, ValueTraits> &&other) { merge(other); }

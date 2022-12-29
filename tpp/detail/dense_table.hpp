@@ -116,8 +116,7 @@ namespace tpp::detail
 		{
 			// @formatter:off
 			template<typename>
-			friend
-			class bucket_iterator;
+			friend class bucket_iterator;
 			// @formatter:on
 
 			using value_pointer = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer>;
@@ -831,7 +830,8 @@ namespace tpp::detail
 		void maybe_rehash()
 		{
 			// @formatter:off
-			TPP_IF_UNLIKELY(bucket_count() == 0) rehash(8);
+			TPP_IF_UNLIKELY(bucket_count() == 0)
+				rehash(8);
 			else if (load_factor() >= m_max_load_factor)
 				rehash(bucket_count() * 2);
 			// @formatter:on

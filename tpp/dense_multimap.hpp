@@ -390,17 +390,17 @@ namespace tpp
 		 * @return Reference to the specified element.
 		 * @throw std::out_of_range If no such element exists within the multimap. */
 		template<std::size_t I>
-		[[nodiscard]] reference at(const std::tuple_element_t<I, key_type> &key) { return *guard_at(find<I>(key)); }
+		[[nodiscard]] mapped_type &at(const std::tuple_element_t<I, key_type> &key) { return guard_at(find<I>(key))->second; }
 		/** @copydoc at */
 		template<std::size_t I>
-		[[nodiscard]] const_reference at(const std::tuple_element_t<I, key_type> &key) const { return *guard_at(find<I>(key)); }
+		[[nodiscard]] const mapped_type &at(const std::tuple_element_t<I, key_type> &key) const { return guard_at(find<I>(key))->second; }
 		/** @copydoc at
 		 * @note This overload is available only if the hash & compare functors are transparent. */
 		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] reference at(const K &key) { return *guard_at(find<I>(key)); }
+		[[nodiscard]] mapped_type &at(const K &key) { return guard_at(find<I>(key))->second; }
 		/** @copydoc at */
 		template<std::size_t I, typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] const_reference at(const K &key) const { return *guard_at(find<I>(key)); }
+		[[nodiscard]] const mapped_type &at(const K &key) const { return guard_at(find<I>(key))->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
 		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
@@ -461,7 +461,7 @@ namespace tpp
 		template<typename I>
 		[[nodiscard]] inline auto guard_at(I iter) const
 		{
-			if (iter == end())
+			if (const_iterator{iter} == end())
 				throw std::out_of_range("`dense_multimap::at` - invalid key");
 			else
 				return iter;

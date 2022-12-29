@@ -232,3 +232,57 @@ static void test_multimap() noexcept
 	TEST_ASSERT(map2 != map0);
 	TEST_ASSERT(map2 == map1);
 }
+
+template<template<typename...> typename T, typename map_t = T<std::string, int>>
+static void test_node_map() noexcept
+{
+	auto map0 = map_t{};
+
+	TEST_ASSERT(map0.size() == 0);
+	TEST_ASSERT(map0.try_emplace("0", 0).second);
+	TEST_ASSERT(map0.try_emplace("1", 1).second);
+	TEST_ASSERT(map0.contains("0"));
+	TEST_ASSERT(map0.contains("1"));
+	TEST_ASSERT(map0.size() == 2);
+
+	auto map1 = map_t{};
+
+	TEST_ASSERT(map1.size() == 0);
+	TEST_ASSERT(map1.try_emplace("0", 0).second);
+	TEST_ASSERT(map1.contains("0"));
+	TEST_ASSERT(map1.size() == 1);
+
+	map1.merge(map0);
+
+	TEST_ASSERT(map0.contains("0"));
+	TEST_ASSERT(!map0.contains("1"));
+	TEST_ASSERT(map0.size() == 1);
+	TEST_ASSERT(map1.contains("0"));
+	TEST_ASSERT(map1.contains("1"));
+	TEST_ASSERT(map1.size() == 2);
+
+	TEST_ASSERT(map0.try_emplace("2", 2).second);
+	TEST_ASSERT(map0.contains("2"));
+	TEST_ASSERT(map0.size() == 2);
+
+	TEST_ASSERT(map1.insert(map0.extract("2")).inserted);
+
+	TEST_ASSERT(!map0.contains("2"));
+	TEST_ASSERT(map0.size() == 1);
+	TEST_ASSERT(map1.contains("2"));
+	TEST_ASSERT(map1.size() == 3);
+
+	auto node = map0.extract("0");
+	TEST_ASSERT(!node.empty());
+	node.mapped() = 10;
+
+	TEST_ASSERT(map1.at("0") == 0);
+
+	auto result = map1.insert(std::move(node));
+	TEST_ASSERT(!result.inserted);
+	TEST_ASSERT(!result.node.empty());
+	TEST_ASSERT(map1.at("0") == 0);
+
+	TEST_ASSERT(!map1.insert_or_assign(std::move(result.node)).second);
+	TEST_ASSERT(map1.at("0") == 10);
+}

@@ -316,14 +316,8 @@ namespace tpp::detail
 		public:
 			constexpr extracted_type() noexcept = default;
 
-			extracted_type(extracted_type &&other) noexcept : alloc_base(std::move(other)), m_ptr(std::exchange(other.m_ptr, nullptr))
-			{
-				assert_alloc(other);
-			}
-			extracted_type(allocator_type &alloc, extracted_type &&other) noexcept : alloc_base(alloc), m_ptr(std::exchange(other.m_ptr, nullptr))
-			{
-				assert_alloc(other);
-			}
+			extracted_type(extracted_type &&other) noexcept : alloc_base(std::move(other)), m_ptr(std::exchange(other.m_ptr, nullptr)) { assert_alloc(other); }
+			extracted_type(allocator_type &&alloc, stable_node &&other) noexcept : alloc_base(std::move(alloc)), m_ptr(std::exchange(other.m_ptr, nullptr)) {}
 
 			extracted_type &operator=(extracted_type &&other) noexcept
 			{
@@ -345,7 +339,7 @@ namespace tpp::detail
 			[[nodiscard]] constexpr bool empty() const noexcept { return m_ptr == nullptr; }
 			[[nodiscard]] constexpr operator bool() const noexcept { return !empty(); }
 
-			[[nodiscard]] allocator_type get_allocator() const { return alloc(); }
+			[[nodiscard]] A get_allocator() const { return A{alloc()}; }
 
 			[[nodiscard]] constexpr auto &value() const noexcept { return *m_ptr; }
 			[[nodiscard]] constexpr auto &key() const noexcept { return Traits::get_key(value()); }
@@ -600,8 +594,7 @@ namespace tpp::detail
 	{
 		// @formatter:off
 		template<typename, typename, typename>
-		friend
-		class table_iterator;
+		friend class table_iterator;
 		friend struct random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>;
 		// @formatter:on
 
@@ -621,7 +614,7 @@ namespace tpp::detail
 
 	public:
 		constexpr table_iterator() noexcept = default;
-		template<typename U, typename J, typename = std::enable_if_t<!std::is_same_v<I, J> && std::is_constructible_v<I, std::add_const_t<J> &>>>
+		template<typename U, typename J, typename = std::enable_if_t<!std::is_same_v<U, V> && std::is_convertible_v<J, I>>>
 		constexpr table_iterator(const table_iterator<U, Traits, J> &other) noexcept : m_iter(other.m_iter) {}
 
 		constexpr explicit table_iterator(I iter) noexcept : m_iter(iter) {}
