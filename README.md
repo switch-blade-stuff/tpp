@@ -10,30 +10,30 @@ Here is a brief list of the features of this library:
 
 * Open addressing (SwissHash) containers
     * Packed (elements are stored in a buffer, references are invalidated on resize)
-        - [ ] `tpp::sparse_set`
-        - [ ] `tpp::sparse_map`
-        - [ ] `tpp::ordered_sparse_set`
-        - [ ] `tpp::ordered_sparse_map`
+        - `tpp::sparse_set`
+        - `tpp::sparse_map`
+        - `tpp::ordered_sparse_set`
+        - `tpp::ordered_sparse_map`
     * Stable (elements are stored on the heap individually, references are stable)
-        - [ ] `tpp::stable_set`
-        - [ ] `tpp::stable_map`
-        - [ ] `tpp::ordered_stable_set`
-        - [ ] `tpp::ordered_stable_map`
+        - `tpp::stable_set`
+        - `tpp::stable_map`
+        - `tpp::ordered_stable_set`
+        - `tpp::ordered_stable_map`
 * Closed addressing (sparse & dense array) containers
-    - [x] `tpp::dense_set`
-    - [x] `tpp::dense_map`
-    - [x] `tpp::ordered_dense_set`
-    - [x] `tpp::ordered_dense_map`
-    - [x] `tpp::dense_multiset`
-    - [x] `tpp::dense_multimap`
+    - `tpp::dense_set`
+    - `tpp::dense_map`
+    - `tpp::ordered_dense_set`
+    - `tpp::ordered_dense_map`
+    - `tpp::dense_multiset`
+    - `tpp::dense_multimap`
 * Utilities & hash functions
-    - [x] `tpp::hash_combine`
-    - [x] `tpp::seahash_builder`
-    - [x] `tpp::seahash`
-    - [x] `tpp::fnv1a`
-    - [x] `tpp::sdbm`
-    - [x] `tpp::crc32`
-    - [x] `tpp::md5`
+    - `tpp::hash_combine`
+    - `tpp::seahash_builder`
+    - `tpp::seahash`
+    - `tpp::fnv1a`
+    - `tpp::sdbm`
+    - `tpp::crc32`
+    - `tpp::md5`
 
 ## Build
 

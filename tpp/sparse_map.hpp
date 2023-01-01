@@ -10,15 +10,14 @@ namespace tpp
 {
 	/** @brief Hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, sparse map stores it's elements in an open-addressing element and metadata buffers.
+	 * Internally, sparse map stores it's elements in open-addressing element and metadata buffers.
 	 * Insert and erase operations on a sparse map may invalidate references to it's elements due to the table being rehashed.
 	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
-	 * Sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
-	 * This is required as the internal storage of sparse map elements can be reordered, and as such elements are
-	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
-	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
-	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
-	 * `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
+	 * Sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do. This is required
+	 * as the internal storage of sparse map elements can be reordered, and as such elements are stored as `std::pair<Key, Mapped>`
+	 * instead of `std::pair<const Key, Mapped>` to enable move-assignment and avoid copies. Because of this, elements must be converted
+	 * to the const-qualified representation later on. Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted
+	 * to a reference to `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
 	 *
 	 * @tparam Key Key type stored by the map.
 	 * @tparam Mapped Mapped type associated with map keys.
@@ -539,19 +538,10 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns the bucket index of the specified element. */
-		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
-		/** @copydoc bucket
-		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] size_type bucket(const K &key) const { return m_table.bucket(key); }
-
 		/** Returns the current amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_table.bucket_count(); }
 		/** Returns the maximum amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_table.max_bucket_count(); }
-		/** Returns the amount of elements within the specified bucket. */
-		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return m_table.bucket_size(n); }
 
 		/** Reserves space for at least `n` elements. */
 		void reserve(size_type n) { m_table.reserve(n); }
@@ -615,15 +605,14 @@ namespace tpp
 
 	/** @brief Ordered hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, ordered sparse map stores it's elements in an open-addressing element and metadata buffers.
-	 * Insert and erase operations on an ordered sparse map may invalidate references to it's elements due to the table being rehashed.
-	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
-	 * Ordered sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
-	 * This is required as the internal storage of ordered sparse map elements can be reordered, and as such elements are
-	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
-	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
-	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
-	 * `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
+	 * Internally, ordered sparse map stores it's elements in open-addressing element and metadata buffers with additional ordering
+	 * links between elements. Insert and erase operations on an ordered sparse map may invalidate references to it's elements due
+	 * to the table being rehashed. Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
+	 * Ordered sparse map iterators return a pair of references, as opposed to reference to a pair like STL maps do. This is required
+	 * as the internal storage of ordered sparse map elements can be reordered, and as such elements are stored as `std::pair<Key, Mapped>`
+	 * instead of `std::pair<const Key, Mapped>` to enable move-assignment and avoid copies. Because of this, elements must be converted
+	 * to the const-qualified representation later on. Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted
+	 * to a reference to `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
 	 *
 	 * @tparam Key Key type stored by the map.
 	 * @tparam Mapped Mapped type associated with map keys.
@@ -669,9 +658,9 @@ namespace tpp
 		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Forward iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
-		/** Forward iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
 
 		using size_type = typename table_t::size_type;
@@ -1140,19 +1129,10 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns the bucket index of the specified element. */
-		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
-		/** @copydoc bucket
-		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] size_type bucket(const K &key) const { return m_table.bucket(key); }
-
 		/** Returns the current amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_table.bucket_count(); }
 		/** Returns the maximum amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_table.max_bucket_count(); }
-		/** Returns the amount of elements within the specified bucket. */
-		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return m_table.bucket_size(n); }
 
 		/** Reserves space for at least `n` elements. */
 		void reserve(size_type n) { m_table.reserve(n); }

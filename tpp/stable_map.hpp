@@ -11,9 +11,8 @@ namespace tpp
 {
 	/** @brief Hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, stable map stores it's elements in an open-addressing element and metadata buffers.
+	 * Internally, stable map stores it's elements in open-addressing element and metadata buffers.
 	 * Insert and erase operations on a stable map may invalidate iterators to it's elements due to the table being rehashed.
-	 * References to table elements are invalidated only when the element is destroyed.
 	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
 	 * Stable maps store their elements in independently-allocated nodes, and as such can guarantee
 	 * pointer stability and enable node-based extraction & insertion API.
@@ -224,7 +223,7 @@ namespace tpp
 		 * @return Instance of `insert_return_type` where `position` is an iterator to the inserted or existing element,
 		 * `inserted` is a boolean indicating whether insertion took place (`true` if element was inserted, `false` otherwise),
 		 * and `node` is either an empty instance of `node_type` if the insertion took place, or a move-constructed instance
-		 * of `node` if insertion has failed. */
+		 * of \a node if insertion has failed. */
 		insert_return_type insert(node_type &&node) { return m_table.insert_node(std::move(node)); }
 		/** @copybrief insert
 		 * @param node Node containing the element to insert.
@@ -524,9 +523,10 @@ namespace tpp
 
 		/** @brief Splices elements from the other map into this.
 		 *
-		 * For every element from `other`, if the element is not present within this map,
+		 * For every element from \a other, if the element is not present within this map,
 		 * transfers ownership of the corresponding node to this map. If the element is already
-		 * present within this map, that element is skipped. */
+		 * present within this map, that element is skipped.
+		 * @param other Map to transfer elements from. */
 		template<typename Kh2, typename Kc2>
 		void merge(stable_map<Key, Mapped, Kh2, Kc2, Alloc> &other) { return m_table.merge(other.m_table); }
 		/** @copydoc merge */
@@ -585,19 +585,10 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns the bucket index of the specified element. */
-		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
-		/** @copydoc bucket
-		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] size_type bucket(const K &key) const { return m_table.bucket(key); }
-
 		/** Returns the current amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_table.bucket_count(); }
 		/** Returns the maximum amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_table.max_bucket_count(); }
-		/** Returns the amount of elements within the specified bucket. */
-		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return m_table.bucket_size(n); }
 
 		/** Reserves space for at least `n` elements. */
 		void reserve(size_type n) { m_table.reserve(n); }
@@ -661,15 +652,11 @@ namespace tpp
 
 	/** @brief Ordered hash map based on SwissHash open addressing hash table.
 	 *
-	 * Internally, ordered stable map stores it's elements in an open-addressing element and metadata buffers.
-	 * Insert and erase operations on an ordered stable map may invalidate references to it's elements due to the table being rehashed.
-	 * Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
-	 * Ordered stable map iterators return a pair of references, as opposed to reference to a pair like STL maps do.
-	 * This is required as the internal storage of ordered stable map elements can be reordered, and as such elements are
-	 * stored as `std::pair<Key, Mapped>` instead of `std::pair<const Key, Mapped>` to enable move-assignment and
-	 * avoid copies. Because of this, elements must be converted to the const-qualified representation later on.
-	 * Since a reference to `std::pair<T0, T1>` cannot be implicitly (and safely) converted to a reference to
-	 * `std::pair<const T0, T1>`, this conversion is preformed element-wise, and a pair of references is returned instead.
+	 * Internally, ordered stable map stores it's elements in open-addressing element and metadata buffers with additional ordering
+	 * links between elements. Insert and erase operations on an ordered stable map may invalidate references to it's elements due
+	 * to the table being rehashed. Reference implementation details can be found at <a href="https://abseil.io/about/design/swisstables">https://abseil.io/about/design/swisstables</a>.<br><br>
+	 * Ordered stable maps store their elements in independently-allocated nodes, and as such can guarantee pointer stability and
+	 * enable node-based extraction & insertion API.
 	 *
 	 * @tparam Key Key type stored by the map.
 	 * @tparam Mapped Mapped type associated with map keys.
@@ -706,9 +693,9 @@ namespace tpp
 		/** Fancy pointer to elements of the map, who's `operator->` returns `const_reference *`, and `operator*` returns `const_reference`. */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Forward iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `pointer`, and `operator*` returns `reference`. */
 		using iterator = typename table_t::iterator;
-		/** Forward iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
+		/** Bidirectional iterator to elements of the map, who's `operator->` returns `const_pointer`, and `operator*` returns `const_reference`. */
 		using const_iterator = typename table_t::const_iterator;
 
 		using size_type = typename table_t::size_type;
@@ -873,7 +860,7 @@ namespace tpp
 		 * @return Instance of `insert_return_type` where `position` is an iterator to the inserted or existing element,
 		 * `inserted` is a boolean indicating whether insertion took place (`true` if element was inserted, `false` otherwise),
 		 * and `node` is either an empty instance of `node_type` if the insertion took place, or a move-constructed instance
-		 * of `node` if insertion has failed. */
+		 * of \a node if insertion has failed. */
 		insert_return_type insert(node_type &&node) { return m_table.insert_node(std::move(node)); }
 		/** @copybrief insert
 		 * @param hint New position of the inserted element.
@@ -1173,9 +1160,10 @@ namespace tpp
 
 		/** @brief Splices elements from the other map into this.
 		 *
-		 * For every element from `other`, if the element is not present within this map,
+		 * For every element from \a other, if the element is not present within this map,
 		 * transfers ownership of the corresponding node to this map. If the element is already
-		 * present within this map, that element is skipped. */
+		 * present within this map, that element is skipped.
+		 * @param other Map to transfer elements from. */
 		template<typename Kh2, typename Kc2>
 		void merge(ordered_stable_map<Key, Mapped, Kh2, Kc2, Alloc> &other) { return m_table.merge(other.m_table); }
 		/** @copydoc merge */
@@ -1234,19 +1222,10 @@ namespace tpp
 		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
-		/** Returns the bucket index of the specified element. */
-		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
-		/** @copydoc bucket
-		 * @note This overload is available only if the hash & compare functors are transparent. */
-		template<typename K, typename = std::enable_if_t<table_t::is_transparent::value && std::is_invocable_v<hasher, K>>>
-		[[nodiscard]] size_type bucket(const K &key) const { return m_table.bucket(key); }
-
 		/** Returns the current amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_table.bucket_count(); }
 		/** Returns the maximum amount of buckets of the map. */
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return m_table.max_bucket_count(); }
-		/** Returns the amount of elements within the specified bucket. */
-		[[nodiscard]] constexpr size_type bucket_size(size_type n) const noexcept { return m_table.bucket_size(n); }
 
 		/** Reserves space for at least `n` elements. */
 		void reserve(size_type n) { m_table.reserve(n); }

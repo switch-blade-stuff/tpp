@@ -273,6 +273,7 @@ static void test_node_map() noexcept
 	TEST_ASSERT(map1.size() == 3);
 
 	auto node = map0.extract("0");
+	TEST_ASSERT(!map0.contains("0"));
 	TEST_ASSERT(!node.empty());
 	node.mapped() = 10;
 
@@ -285,4 +286,17 @@ static void test_node_map() noexcept
 
 	TEST_ASSERT(!map1.insert_or_assign(std::move(result.node)).second);
 	TEST_ASSERT(map1.at("0") == 10);
+
+	TEST_ASSERT(map0.try_emplace("4", 4).second);
+	TEST_ASSERT(map0.contains("4"));
+
+	node = map0.extract("4");
+	TEST_ASSERT(!map0.contains("4"));
+	TEST_ASSERT(!node.empty());
+
+	result = map1.insert(std::move(node));
+	TEST_ASSERT(result.inserted);
+	TEST_ASSERT(result.node.empty());
+	TEST_ASSERT(map1.contains("4"));
+	TEST_ASSERT(map1.at("4") == 4);
 }

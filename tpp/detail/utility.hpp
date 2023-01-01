@@ -26,6 +26,7 @@
 #include <iterator>
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 #include <array>
 
 #endif
@@ -305,6 +306,31 @@ namespace tpp::detail
 	template<std::size_t Size, typename T>
 	[[nodiscard]] inline std::array<T, Size> make_array(const T &value) noexcept { return make_array(std::make_index_sequence<Size>{}, value); }
 
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
+	template<typename P>
+	[[nodiscard]] inline decltype(auto) to_address(const P &p) noexcept { return std::to_address(p); }
+#else
+	template<typename>
+	struct true_helper : std::true_type {};
+	template<typename P>
+	inline static auto has_to_address_impl(int) -> true_helper<decltype(std::pointer_traits<P>::to_address(std::declval<P>()))>;
+	template<typename>
+	inline static auto has_to_address_impl(long) -> std::false_type;
+	template<typename P>
+	using has_to_address = decltype(has_to_address_impl<P>(0));
+
+	template<typename T>
+	[[nodiscard]] inline T *to_address(T *p) noexcept { return p; }
+	template<typename P>
+	[[nodiscard]] inline decltype(auto) to_address(const P &p) noexcept
+	{
+		if constexpr (has_to_address<P>::value)
+			return std::pointer_traits<P>::to_address(p);
+		else
+			return to_address(p.operator->());
+	}
+#endif
+
 	template<typename Iter, typename Size>
 	[[nodiscard]] inline Size max_distance_or_n(const Iter &first, const Iter &last, Size n) noexcept
 	{
@@ -325,20 +351,20 @@ namespace tpp::detail
 	template<typename Alloc>
 	[[nodiscard]] inline auto allocator_copy(const Alloc &alloc) { return std::allocator_traits<Alloc>::select_on_container_copy_construction(alloc); }
 
-	template<typename A, typename T>
-	inline void relocate(A &alloc_src, T *src, A &alloc_dst, T *dst)
+	template<typename A, typename PtrT = typename std::allocator_traits<A>::pointer>
+	inline void relocate(A &alloc_src, PtrT src, A &alloc_dst, PtrT dst)
 	{
 		std::allocator_traits<A>::construct(alloc_dst, dst, std::move(*src));
 		std::allocator_traits<A>::destroy(alloc_src, src);
 	}
-	template<typename A, typename T, typename F>
-	inline void relocate(A &alloc_src, T *src_first, T *src_last, A &alloc_dst, T *dst_first, F rel = relocate<A, T>)
+	template<typename A, typename F, typename PtrT = typename std::allocator_traits<A>::pointer>
+	inline void relocate(A &alloc_src, PtrT src_first, PtrT src_last, A &alloc_dst, PtrT dst_first, F rel = relocate<A, PtrT>)
 	{
 		while (src_first != src_last) rel(alloc_src, src_first++, alloc_dst, dst_first++);
 	}
 
-	template<typename A, typename T, typename SizeT = typename std::allocator_traits<A>::size_type>
-	inline std::pair<T *, SizeT> realloc_buffer(A &alloc, std::pair<T *, SizeT> buff, SizeT new_size)
+	template<typename A, typename PtrT = typename std::allocator_traits<A>::pointer, typename SizeT = typename std::allocator_traits<A>::size_type>
+	inline std::pair<PtrT, SizeT> realloc_buffer(A &alloc, std::pair<PtrT, SizeT> buff, SizeT new_size)
 	{
 		if (buff.second < new_size)
 		{
@@ -347,10 +373,10 @@ namespace tpp::detail
 		}
 		return buff;
 	}
-	template<typename A, typename T, typename SizeT = typename std::allocator_traits<A>::size_type>
-	inline void realloc_buffer(A &alloc, T *&buff, SizeT &size, SizeT new_size)
+	template<typename A, typename PtrT = typename std::allocator_traits<A>::pointer, typename SizeT = typename std::allocator_traits<A>::size_type>
+	inline void realloc_buffer(A &alloc, PtrT &buff, SizeT &size, SizeT new_size)
 	{
-		const auto new_buff = realloc_buffer(alloc, std::pair<T *, SizeT>{buff, size}, new_size);
+		const auto new_buff = realloc_buffer(alloc, std::pair<PtrT, SizeT>{buff, size}, new_size);
 		buff = new_buff.first;
 		size = new_buff.second;
 	}

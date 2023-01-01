@@ -54,6 +54,13 @@ namespace tpp::detail
 				next = other.next;
 			}
 
+			template<typename U>
+			void relocate(U &alloc_dst, U &alloc_src, bucket_node &src)
+			{
+				packed_node<I, Alloc, ValueTraits>::relocate(alloc_dst, alloc_src, src);
+				next = src.next;
+			}
+
 			bucket_pos next;
 		};
 
@@ -95,8 +102,11 @@ namespace tpp::detail
 		using bucket_node = typename traits_t::bucket_node;
 		using bucket_hash = typename traits_t::bucket_hash;
 		using bucket_link = typename traits_t::bucket_link;
+
 		using sparse_allocator = typename traits_t::sparse_allocator;
 		using dense_allocator = typename traits_t::dense_allocator;
+		using sparse_ptr = typename std::allocator_traits<sparse_allocator>::pointer;
+		using dense_ptr = typename std::allocator_traits<dense_allocator>::pointer;
 
 		using bucket_pos = typename traits_t::bucket_pos;
 		using chain_slice = std::array<size_type *, key_size>;
@@ -107,9 +117,7 @@ namespace tpp::detail
 		using sparse_alloc_base = ebo_container<sparse_allocator>;
 		using dense_alloc_base = ebo_container<dense_allocator>;
 
-		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node, traits_t>, bucket_node *>;
-		using const_node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<const bucket_node, traits_t>, const bucket_node *>;
-		using hint_t = const_node_iterator;
+		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node, dense_allocator>, dense_ptr>;
 
 		template<typename N>
 		class bucket_iterator
@@ -121,6 +129,7 @@ namespace tpp::detail
 
 			using value_pointer = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer>;
 			using value_reference = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_reference, typename ValueTraits::reference>;
+			using node_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<N>::pointer;
 
 		public:
 			using value_type = V;
@@ -161,10 +170,10 @@ namespace tpp::detail
 
 		public:
 			constexpr bucket_iterator() noexcept = default;
-			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<N *, U *>>>
+			template<typename U, typename = std::enable_if_t<!std::is_same_v<N, U> && std::is_constructible_v<node_ptr, typename bucket_iterator<U>::node_ptr>>>
 			constexpr bucket_iterator(const bucket_iterator<U> &other) noexcept : m_base(other.m_base), m_pos(other.m_pos) {}
 
-			constexpr explicit bucket_iterator(N *base, bucket_pos pos) noexcept : m_base(base), m_pos(pos) {}
+			constexpr explicit bucket_iterator(node_ptr base, bucket_pos pos) noexcept : m_base(base), m_pos(pos) {}
 
 			constexpr bucket_iterator operator++(int) noexcept
 			{
@@ -187,18 +196,18 @@ namespace tpp::detail
 #endif
 
 		private:
-			[[nodiscard]] constexpr N *node() const noexcept { return m_base + m_pos; }
+			[[nodiscard]] constexpr node_ptr node() const noexcept { return m_base + m_pos; }
 
 			template<std::size_t... Is>
 			constexpr void increment(std::index_sequence<Is...>) noexcept { ((m_pos[Is] = node()->next[Is]), ...); }
 
-			N *m_base = nullptr;
+			node_ptr m_base = {};
 			bucket_pos m_pos = 0;
 		};
 
 	public:
 		using iterator = table_iterator<value_type, ValueTraits, node_iterator>;
-		using const_iterator = table_iterator<const value_type, ValueTraits, const_node_iterator>;
+		using const_iterator = table_iterator<const value_type, ValueTraits, node_iterator>;
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 		using local_iterator = bucket_iterator<bucket_node>;
@@ -286,12 +295,12 @@ namespace tpp::detail
 
 				if constexpr (std::allocator_traits<sparse_allocator>::propagate_on_container_copy_assignment::value)
 				{
-					std::allocator_traits<sparse_allocator>::deallocate(sparse_alloc(), std::exchange(m_sparse, nullptr), std::exchange(m_sparse_size, 0));
+					std::allocator_traits<sparse_allocator>::deallocate(sparse_alloc(), std::exchange(m_sparse, sparse_ptr{}), std::exchange(m_sparse_size, 0));
 					sparse_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<dense_allocator>::propagate_on_container_copy_assignment::value)
 				{
-					std::allocator_traits<dense_allocator>::deallocate(dense_alloc(), std::exchange(m_dense, nullptr), std::exchange(m_dense_capacity, 0));
+					std::allocator_traits<dense_allocator>::deallocate(dense_alloc(), std::exchange(m_dense, dense_ptr{}), std::exchange(m_dense_capacity, 0));
 					dense_alloc_base::operator=(other);
 				}
 
@@ -316,12 +325,12 @@ namespace tpp::detail
 
 				if constexpr (std::allocator_traits<sparse_allocator>::propagate_on_container_move_assignment::value)
 				{
-					std::allocator_traits<sparse_allocator>::deallocate(sparse_alloc(), std::exchange(m_sparse, nullptr), std::exchange(m_sparse_size, 0));
+					std::allocator_traits<sparse_allocator>::deallocate(sparse_alloc(), std::exchange(m_sparse, sparse_ptr{}), std::exchange(m_sparse_size, 0));
 					sparse_alloc_base::operator=(std::move(other));
 				}
 				if constexpr (std::allocator_traits<dense_allocator>::propagate_on_container_move_assignment::value)
 				{
-					std::allocator_traits<dense_allocator>::deallocate(dense_alloc(), std::exchange(m_dense, nullptr), std::exchange(m_dense_capacity, 0));
+					std::allocator_traits<dense_allocator>::deallocate(dense_alloc(), std::exchange(m_dense, dense_ptr{}), std::exchange(m_dense_capacity, 0));
 					dense_alloc_base::operator=(std::move(other));
 				}
 
@@ -505,8 +514,8 @@ namespace tpp::detail
 		constexpr void max_load_factor(float f) noexcept { m_max_load_factor = f; }
 
 		[[nodiscard]] auto &get_allocator() const { return dense_alloc(); }
-		[[nodiscard]] auto &get_hash() const noexcept { return hash_base::value(); }
-		[[nodiscard]] auto &get_cmp() const noexcept { return cmp_base::value(); }
+		[[nodiscard]] const Kh &get_hash() const noexcept { return hash_base::value(); }
+		[[nodiscard]] const Kc &get_cmp() const noexcept { return cmp_base::value(); }
 
 		void swap(dense_table &other)
 		noexcept(std::is_nothrow_swappable_v<sparse_allocator> &&
@@ -555,7 +564,7 @@ namespace tpp::detail
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link()->off(header_base::next));
 			else
-				return m_dense;
+				return to_address(m_dense);
 		}
 		[[nodiscard]] constexpr auto *front_node() const noexcept { return begin_node(); }
 		[[nodiscard]] constexpr auto *back_node() const noexcept
@@ -563,18 +572,18 @@ namespace tpp::detail
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link()->off(header_base::prev));
 			else
-				return m_dense + (size() - 1);
+				return to_address(m_dense + (size() - 1));
 		}
 		[[nodiscard]] constexpr auto *end_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link());
 			else
-				return m_dense + size();
+				return to_address(m_dense + size());
 		}
 
 		[[nodiscard]] constexpr auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
-		[[nodiscard]] constexpr auto to_iter(const bucket_node *node) const noexcept { return const_iterator{const_node_iterator{node}}; }
+		[[nodiscard]] constexpr auto to_iter(bucket_node *node) const noexcept { return const_iterator{node_iterator{node}}; }
 
 		template<std::size_t J>
 		[[nodiscard]] constexpr size_type *get_chain(std::size_t h) const noexcept
@@ -635,7 +644,7 @@ namespace tpp::detail
 		}
 
 		template<std::size_t... Is>
-		iterator commit_node(hint_t hint, size_type pos, chain_slice slice, bucket_hash hashes, bucket_node *node)
+		iterator commit_node(node_iterator hint, size_type pos, chain_slice slice, bucket_hash hashes, bucket_node *node)
 		{
 			/* Create the bucket and insertion order links. */
 			if constexpr (is_ordered::value) node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
@@ -645,7 +654,7 @@ namespace tpp::detail
 			return to_iter(node);
 		}
 		template<std::size_t... Is, typename... Args>
-		iterator emplace_node(hint_t hint, chain_slice slice, bucket_hash hashes, Args &&...args)
+		iterator emplace_node(node_iterator hint, chain_slice slice, bucket_hash hashes, Args &&...args)
 		{
 			const auto [pos, node] = push_node(std::forward<Args>(args)...);
 			return commit_node<Is...>(hint, pos, slice, hashes, node);
@@ -677,7 +686,7 @@ namespace tpp::detail
 		}
 
 		template<typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, hint_t hint, Args &&...args)
+		std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, node_iterator hint, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -697,14 +706,14 @@ namespace tpp::detail
 			return {commit_node<Is...>(hint, pos, {node_list[Is].second...}, hs, tmp), true};
 		}
 		template<typename... Args>
-		std::pair<iterator, bool> emplace_impl(hint_t hint, Args &&...args)
+		std::pair<iterator, bool> emplace_impl(node_iterator hint, Args &&...args)
 		{
 			return emplace_impl(std::make_index_sequence<key_size>{}, hint, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only for containers where `value_type` is a pair. */
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, hint_t hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -723,13 +732,13 @@ namespace tpp::detail
 			                            std::forward_as_tuple(std::forward<Args>(args)...)), true};
 		}
 		template<typename... Ks, typename... Args>
-		std::pair<iterator, bool> try_emplace_impl(hint_t hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> try_emplace_impl(node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
 		{
 			return try_emplace_impl(std::make_index_sequence<key_size>{}, hint, std::move(ks), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
 			maybe_rehash();
 
@@ -747,14 +756,14 @@ namespace tpp::detail
 			return {emplace_node<Is...>(hint, {node_list[Is].second...}, hs, std::forward<Args>(args)...), true};
 		}
 		template<typename... Ks, typename... Args>
-		std::pair<iterator, bool> insert_impl(hint_t hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> insert_impl(node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
 			return insert_impl(std::make_index_sequence<key_size>{}, hint, ks, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only if there is a single key. Otherwise, we cannot assign conflicting entries. */
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_or_assign_impl(hint_t hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> insert_or_assign_impl(node_iterator hint, T &&key, Args &&...args)
 		{
 			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
 
@@ -797,7 +806,7 @@ namespace tpp::detail
 			for (auto *chain_idx = get_chain<J>(h); *chain_idx != npos;)
 			{
 				const auto pos = *chain_idx;
-				auto *node = m_dense + pos;
+				auto node = m_dense + pos;
 				if (node->template hash<J>() == h && cmp(key, node->template key<J>()))
 				{
 					/* Grab other bucket indices that point to `pos`. */
@@ -840,7 +849,7 @@ namespace tpp::detail
 		void resize_data(size_type capacity)
 		{
 			auto &alloc = dense_alloc();
-			auto *new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
+			auto new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
 			relocate(alloc, m_dense, m_dense + m_dense_size, alloc, new_dense, relocate_node{});
 
 			if (m_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
@@ -882,7 +891,7 @@ namespace tpp::detail
 				{
 					const auto front_off = other.front_node() - other.m_dense;
 					const auto back_off = other.back_node() - other.m_dense;
-					header_base::link(m_dense + front_off, m_dense + back_off);
+					header_base::link(to_address(m_dense + front_off), to_address(m_dense + back_off));
 				}
 		}
 		template<std::size_t... Is>
@@ -909,7 +918,7 @@ namespace tpp::detail
 			{
 				auto &from = other.m_dense[m_dense_size];
 				auto &to = m_dense[m_dense_size];
-				relocate_node{}(alloc, &from, alloc, &to);
+				to.relocate(alloc, alloc, from);
 				(insert_node<Is>(to, m_dense_size), ...);
 			}
 			other.m_dense_size = 0;
@@ -919,11 +928,12 @@ namespace tpp::detail
 		void move_data(dense_table &other) { move_data(std::make_index_sequence<key_size>{}, other); }
 		void swap_buffers(dense_table &other)
 		{
-			std::swap(m_dense_size, other.m_dense_size);
-			std::swap(m_dense_capacity, other.m_dense_capacity);
-			std::swap(m_sparse_size, other.m_sparse_size);
-			std::swap(m_sparse, other.m_sparse);
-			std::swap(m_dense, other.m_dense);
+			using std::swap;
+			swap(m_dense_size, other.m_dense_size);
+			swap(m_dense_capacity, other.m_dense_capacity);
+			swap(m_sparse_size, other.m_sparse_size);
+			swap(m_sparse, other.m_sparse);
+			swap(m_dense, other.m_dense);
 		}
 		void clear_data()
 		{
@@ -943,8 +953,8 @@ namespace tpp::detail
 		size_type m_dense_capacity = 0; /* Capacity of the dense buffer. */
 		size_type m_sparse_size = 0;    /* Total amount of bucket chains in the bucket buffer. */
 
-		bucket_pos *m_sparse = nullptr;
-		bucket_node *m_dense = nullptr;
+		sparse_ptr m_sparse = {};
+		dense_ptr m_dense = {};
 
 		float m_max_load_factor = initial_load_factor;
 	};

@@ -243,3 +243,63 @@ static void test_multiset() noexcept
 		TEST_ASSERT(set1.template find<0>(str) == set1.template find<1>(i));
 	}
 }
+
+template<template<typename...> typename T, typename set_t = T<std::string>>
+static void test_node_set() noexcept
+{
+	auto set0 = set_t{};
+
+	TEST_ASSERT(set0.size() == 0);
+	TEST_ASSERT(set0.emplace("0").second);
+	TEST_ASSERT(set0.emplace("1").second);
+	TEST_ASSERT(set0.contains("0"));
+	TEST_ASSERT(set0.contains("1"));
+	TEST_ASSERT(set0.size() == 2);
+
+	auto set1 = set_t{};
+
+	TEST_ASSERT(set1.size() == 0);
+	TEST_ASSERT(set1.emplace("0").second);
+	TEST_ASSERT(set1.contains("0"));
+	TEST_ASSERT(set1.size() == 1);
+
+	set1.merge(set0);
+
+	TEST_ASSERT(set0.contains("0"));
+	TEST_ASSERT(!set0.contains("1"));
+	TEST_ASSERT(set0.size() == 1);
+	TEST_ASSERT(set1.contains("0"));
+	TEST_ASSERT(set1.contains("1"));
+	TEST_ASSERT(set1.size() == 2);
+
+	TEST_ASSERT(set0.emplace("2").second);
+	TEST_ASSERT(set0.contains("2"));
+	TEST_ASSERT(set0.size() == 2);
+
+	TEST_ASSERT(set1.insert(set0.extract("2")).inserted);
+
+	TEST_ASSERT(!set0.contains("2"));
+	TEST_ASSERT(set0.size() == 1);
+	TEST_ASSERT(set1.contains("2"));
+	TEST_ASSERT(set1.size() == 3);
+
+	auto node = set0.extract("0");
+	TEST_ASSERT(!set0.contains("0"));
+	TEST_ASSERT(!node.empty());
+
+	auto result = set1.insert(std::move(node));
+	TEST_ASSERT(!result.inserted);
+	TEST_ASSERT(!result.node.empty());
+
+	TEST_ASSERT(set0.emplace("4").second);
+	TEST_ASSERT(set0.contains("4"));
+
+	node = set0.extract("4");
+	TEST_ASSERT(!set0.contains("4"));
+	TEST_ASSERT(!node.empty());
+
+	result = set1.insert(std::move(node));
+	TEST_ASSERT(result.inserted);
+	TEST_ASSERT(result.node.empty());
+	TEST_ASSERT(set1.contains("4"));
+}

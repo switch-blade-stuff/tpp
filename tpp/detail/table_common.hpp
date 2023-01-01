@@ -264,6 +264,19 @@ namespace tpp::detail
 		}
 		void destroy(A &alloc) { std::allocator_traits<allocator_type>::destroy(alloc, &value()); }
 
+		template<typename U>
+		void relocate(U &alloc_dst, U &alloc_src, packed_node &src)
+		{
+			auto conv_alloc_dst = allocator_type{alloc_dst};
+			auto conv_alloc_src = allocator_type{alloc_src};
+			relocate(conv_alloc_dst, conv_alloc_src, src);
+		}
+		void relocate(allocator_type &alloc_dst, allocator_type &alloc_src, packed_node &src)
+		{
+			construct(alloc_dst, std::move(src));
+			src.destroy(alloc_src);
+		}
+
 		[[nodiscard]] constexpr auto &hash() noexcept { return m_storage.hash; }
 		[[nodiscard]] constexpr auto &hash() const noexcept { return m_storage.hash; }
 
@@ -307,6 +320,10 @@ namespace tpp::detail
 		using allocator_type = typename std::allocator_traits<A>::template rebind_alloc<V>;
 		using is_extractable = std::true_type;
 
+	private:
+		using value_ptr = typename std::allocator_traits<allocator_type>::pointer;
+
+	public:
 		class extracted_type : ebo_container<allocator_type>
 		{
 			friend class stable_node;
@@ -316,8 +333,8 @@ namespace tpp::detail
 		public:
 			constexpr extracted_type() noexcept = default;
 
-			extracted_type(extracted_type &&other) noexcept : alloc_base(std::move(other)), m_ptr(std::exchange(other.m_ptr, nullptr)) { assert_alloc(other); }
-			extracted_type(allocator_type &&alloc, stable_node &&other) noexcept : alloc_base(std::move(alloc)), m_ptr(std::exchange(other.m_ptr, nullptr)) {}
+			extracted_type(extracted_type &&other) noexcept : alloc_base(std::move(other)), m_ptr(std::exchange(other.m_ptr, {})) { assert_alloc(other); }
+			extracted_type(allocator_type &&alloc, stable_node &&other) noexcept : alloc_base(std::move(alloc)), m_ptr(std::exchange(other.m_ptr, {})) {}
 
 			extracted_type &operator=(extracted_type &&other) noexcept
 			{
@@ -328,7 +345,7 @@ namespace tpp::detail
 					if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value)
 						alloc_base::operator=(std::move(other));
 
-					m_ptr = std::exchange(other.m_ptr, nullptr);
+					m_ptr = std::exchange(other.m_ptr, value_ptr{});
 					assert_alloc(other);
 				}
 				return *this;
@@ -336,8 +353,8 @@ namespace tpp::detail
 
 			~extracted_type() { destroy_impl(); }
 
-			[[nodiscard]] constexpr bool empty() const noexcept { return m_ptr == nullptr; }
-			[[nodiscard]] constexpr operator bool() const noexcept { return !empty(); }
+			[[nodiscard]] constexpr bool empty() const noexcept { return !m_ptr; }
+			[[nodiscard]] constexpr operator bool() const noexcept { return m_ptr; }
 
 			[[nodiscard]] A get_allocator() const { return A{alloc()}; }
 
@@ -366,20 +383,35 @@ namespace tpp::detail
 			}
 			void destroy_impl()
 			{
-				if (!empty())
+				if (m_ptr)
 				{
 					std::allocator_traits<allocator_type>::destroy(alloc(), m_ptr);
 					std::allocator_traits<allocator_type>::deallocate(alloc(), m_ptr, 1);
 				}
 			}
 
-			V *m_ptr = nullptr;
+			value_ptr m_ptr = {};
 		};
 
 		/* NOTE: Template signature is defined by the standard. */
 		template<typename Iter, typename NodeType>
 		struct insert_return
 		{
+			constexpr insert_return() = default;
+			constexpr insert_return(const insert_return &) = default;
+			constexpr insert_return &operator=(const insert_return &) = default;
+			constexpr insert_return(insert_return &&) = default;
+			constexpr insert_return &operator=(insert_return &&) = default;
+
+			constexpr insert_return(const Iter &pos, bool ins) : position(pos), inserted(ins), node() {}
+			constexpr insert_return(Iter &&pos, bool ins) : position(std::move(pos)), inserted(ins), node() {}
+
+			constexpr insert_return(const Iter &pos, bool ins, const NodeType &node) : position(pos), inserted(ins), node(node) {}
+			constexpr insert_return(Iter &&pos, bool ins, NodeType &&node) : position(std::move(pos)), inserted(ins), node(std::move(node)) {}
+
+			template<typename I, typename = std::enable_if_t<std::is_constructible_v<Iter, I &&>>>
+			constexpr insert_return(insert_return<I, NodeType> &&other) : insert_return(std::move(other.position), other.inserted, std::move(other.node)) {}
+
 			Iter position = {};
 			bool inserted = false;
 			NodeType node = {};
@@ -395,14 +427,26 @@ namespace tpp::detail
 			m_hash = other.m_hash;
 		}
 		void construct(allocator_type &, stable_node &&other) { move_from(other); }
+		void construct(allocator_type &alloc, extracted_type &&other)
+		{
+			using std::swap;
+			if (allocator_eq(alloc, other.alloc()))
+				m_ptr = std::exchange(other.m_ptr, value_ptr{});
+			else
+			{
+				construct(alloc, std::move(other.value()));
+				other.destroy_impl();
+			}
+		}
 		void move_from(stable_node &other)
 		{
 			link_base::operator=(std::move(other));
-			m_ptr = std::exchange(other.m_ptr, nullptr);
+			m_ptr = std::exchange(other.m_ptr, value_ptr{});
 			m_hash = other.m_hash;
 		}
 
-		void construct(allocator_type &, extracted_type &&other) { m_ptr = std::exchange(other.m_ptr, nullptr); }
+		template<typename U>
+		void relocate(U &, U &, stable_node &other) { move_from(other); }
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
 		void construct(allocator_type &alloc, Args &&...args)
@@ -428,7 +472,7 @@ namespace tpp::detail
 			{
 				std::allocator_traits<allocator_type>::destroy(alloc, m_ptr);
 				std::allocator_traits<allocator_type>::deallocate(alloc, m_ptr, 1);
-				m_ptr = nullptr;
+				m_ptr = value_ptr{};
 			}
 		}
 
@@ -452,27 +496,22 @@ namespace tpp::detail
 
 		constexpr friend void swap(stable_node &a, stable_node &b) noexcept
 		{
+			using std::swap;
 			a.link_base::swap(b);
-			std::swap(a.m_ptr, b.m_ptr);
-			std::swap(a.m_hash, b.m_hash);
+			swap(a.m_ptr, b.m_ptr);
+			swap(a.m_hash, b.m_hash);
 		}
 
 	private:
-		V *m_ptr = nullptr;
+		value_ptr m_ptr = {};
 		hash_type m_hash = 0;
 	};
 
 	/* Need a special relocate functor for packed_node & stable_node since they require an injected value allocator. */
 	struct relocate_node
 	{
-		template<typename A, typename N, typename Alloc = typename N::allocator_type>
-		void operator()(A &alloc_src, N *src, A &alloc_dst, N *dst) const
-		{
-			auto value_alloc_src = Alloc{alloc_src};
-			auto value_alloc_dst = Alloc{alloc_dst};
-			dst->construct(value_alloc_dst, std::move(*src));
-			src->destroy(value_alloc_src);
-		}
+		template<typename A, typename Ptr>
+		void operator()(A &alloc_src, Ptr src, A &alloc_dst, Ptr dst) const { dst->relocate(alloc_dst, alloc_src, *src); }
 	};
 
 	/* Helper used to check if a node is extractable. */
@@ -481,27 +520,30 @@ namespace tpp::detail
 	template<typename T>
 	struct is_extractable<T, std::void_t<typename T::is_extractable>> : std::true_type {};
 
-	template<typename N, typename Traits>
+	template<typename N, typename A>
 	struct ordered_iterator
 	{
 		using link_t = std::conditional_t<std::is_const_v<N>, std::add_const_t<ordered_link>, ordered_link>;
 
+		using link_ptr = typename std::allocator_traits<A>::template rebind_traits<link_t>::pointer;
+		using node_ptr = typename std::allocator_traits<A>::template rebind_traits<N>::pointer;
+
 		using value_type = N;
 		using reference = N &;
-		using pointer = N *;
+		using pointer = node_ptr;
 
-		using size_type = typename Traits::size_type;
-		using difference_type = typename Traits::difference_type;
+		using size_type = typename std::allocator_traits<A>::size_type;
+		using difference_type = typename std::allocator_traits<A>::difference_type;
 		using iterator_category = std::bidirectional_iterator_tag;
 
 		constexpr ordered_iterator() noexcept = default;
 
 		/** Implicit conversion from a const iterator. */
 		template<typename U, typename = std::enable_if_t<!std::is_same_v<U, N>>>
-		constexpr ordered_iterator(const ordered_iterator<U, Traits> &other) noexcept : link(other.link) {}
+		constexpr ordered_iterator(const ordered_iterator<U, A> &other) noexcept : link(other.link) {}
 
-		constexpr explicit ordered_iterator(link_t *link) noexcept : link(link) {}
-		constexpr explicit ordered_iterator(N *node) noexcept : ordered_iterator(static_cast<link_t *>(node)) {}
+		constexpr explicit ordered_iterator(link_ptr link) noexcept : link(link) {}
+		constexpr explicit ordered_iterator(node_ptr node) noexcept : ordered_iterator(link_ptr{node}) {}
 
 		constexpr ordered_iterator operator++(int) noexcept
 		{
@@ -526,7 +568,7 @@ namespace tpp::detail
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return static_cast<pointer>(link); }
+		[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{static_cast<N *>(to_address(link))}; }
 		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
@@ -541,7 +583,7 @@ namespace tpp::detail
 		[[nodiscard]] constexpr bool operator>(const ordered_iterator &other) const noexcept { return link > other.link; }
 #endif
 
-		link_t *link = nullptr;
+		link_ptr link = {};
 	};
 
 	template<typename>
@@ -701,7 +743,7 @@ namespace tpp::detail
 		using pointer = const reference *;
 
 	public:
-		constexpr packed_map_ptr() noexcept : packed_map_ptr(nullptr, nullptr) {}
+		constexpr packed_map_ptr() noexcept : packed_map_ptr({}, {}) {}
 		template<typename U, typename = std::enable_if_t<!std::is_same_v<U, M> && std::is_convertible_v<U &, M &>>>
 		constexpr explicit packed_map_ptr(const packed_map_ptr<K, U> other) noexcept : packed_map_ptr(other.m_ref.first, other.m_ref.second) {}
 

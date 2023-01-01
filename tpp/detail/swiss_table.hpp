@@ -410,17 +410,17 @@ namespace tpp::detail
 		using insert_return_type = typename stable_node<V, A, T>::template insert_return<Iter, node_type>;
 	};
 
-	template<typename Node, typename Traits, bool = true>
-	class swiss_node_iterator : public ordered_iterator<Node, Traits>
+	template<typename Node, typename Alloc, bool = true>
+	class swiss_node_iterator : public ordered_iterator<Node, Alloc>
 	{
-		using ordered_iterator<Node, Traits>::ordered_iterator;
-		using ordered_iterator<Node, Traits>::operator=;
+		using ordered_iterator<Node, Alloc>::ordered_iterator;
+		using ordered_iterator<Node, Alloc>::operator=;
 	};
-	template<typename Node, typename Traits>
-	class swiss_node_iterator<Node, Traits, false>
+	template<typename Node, typename Alloc>
+	class swiss_node_iterator<Node, Alloc, false>
 	{
-		using meta_ptr = const meta_word *;
-		using node_ptr = Node *;
+		using meta_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<const meta_word>::pointer;
+		using node_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<Node>::pointer;
 
 		// @formatter:off
 		template<typename, typename, typename, typename, typename, typename, typename>
@@ -431,11 +431,11 @@ namespace tpp::detail
 
 	public:
 		using value_type = Node;
-		using pointer = Node *;
 		using reference = Node &;
+		using pointer = node_ptr;
 
-		using size_type = typename Traits::size_type;
-		using difference_type = typename Traits::difference_type;
+		using size_type = typename std::allocator_traits<Alloc>::size_type;
+		using difference_type = typename std::allocator_traits<Alloc>::difference_type;
 		using iterator_category = std::forward_iterator_tag;
 
 	private:
@@ -444,7 +444,7 @@ namespace tpp::detail
 	public:
 		constexpr swiss_node_iterator() noexcept = default;
 		template<typename U, typename = std::enable_if_t<!std::is_same_v<Node, U> && std::is_convertible_v<U *, node_ptr>>>
-		constexpr swiss_node_iterator(const swiss_node_iterator<U, Traits, false> &other) noexcept : m_meta(other.m_meta), m_node(other.m_node) {}
+		constexpr swiss_node_iterator(const swiss_node_iterator<U, Alloc, false> &other) noexcept : m_meta(other.m_meta), m_node(other.m_node) {}
 
 		swiss_node_iterator operator++(int) noexcept
 		{
@@ -473,14 +473,14 @@ namespace tpp::detail
 		{
 			while (m_meta->is_available())
 			{
-				const auto off = meta_block{m_meta}.count_available();
+				const auto off = meta_block{to_address(m_meta)}.count_available();
 				m_meta += off;
 				m_node += off;
 			}
 		}
 
-		meta_ptr m_meta = nullptr;
-		node_ptr m_node = nullptr;
+		meta_ptr m_meta = {};
+		node_ptr m_node = {};
 	};
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
@@ -516,6 +516,9 @@ namespace tpp::detail
 			using meta_alloc_base = ebo_container<meta_allocator>;
 			using node_alloc_base = ebo_container<node_allocator>;
 
+			using meta_ptr = typename std::allocator_traits<meta_allocator>::pointer;
+			using node_ptr = typename std::allocator_traits<node_allocator>::pointer;
+
 		public:
 			constexpr buffer_type() noexcept = default;
 
@@ -526,17 +529,18 @@ namespace tpp::detail
 			{
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_copy_assignment::value)
 				{
-					std::allocator_traits<meta_allocator>::deallocate(meta_alloc(), std::exchange(m_metadata, nullptr), capacity + sizeof(meta_block));
+					std::allocator_traits<meta_allocator>::deallocate(meta_alloc(), std::exchange(m_metadata, meta_ptr{}), capacity + sizeof(meta_block));
 					meta_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_copy_assignment::value)
 				{
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), std::exchange(m_nodes, nullptr), capacity);
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), std::exchange(m_nodes, node_ptr{}), capacity);
 					node_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_copy_assignment::value ||
 							  std::allocator_traits<node_allocator>::propagate_on_container_copy_assignment::value)
 					capacity = 0;
+				return *this;
 			}
 			buffer_type &operator=(buffer_type &&other)
 			noexcept(std::is_nothrow_move_assignable_v<meta_allocator> &&
@@ -544,29 +548,30 @@ namespace tpp::detail
 			{
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_move_assignment::value)
 				{
-					std::allocator_traits<meta_allocator>::deallocate(meta_alloc(), std::exchange(m_metadata, nullptr), capacity + sizeof(meta_block));
+					std::allocator_traits<meta_allocator>::deallocate(meta_alloc(), std::exchange(m_metadata, meta_ptr{}), capacity + sizeof(meta_block));
 					meta_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_move_assignment::value)
 				{
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), std::exchange(m_nodes, nullptr), capacity);
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), std::exchange(m_nodes, node_ptr{}), capacity);
 					node_alloc_base::operator=(other);
 				}
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_move_assignment::value ||
 							  std::allocator_traits<node_allocator>::propagate_on_container_move_assignment::value)
 					capacity = 0;
+				return *this;
 			}
 
 			buffer_type(const allocator_type &alloc) : meta_alloc_base(alloc), node_alloc_base(alloc) {}
 			buffer_type(size_type capacity, const allocator_type &alloc) : meta_alloc_base(alloc), node_alloc_base(alloc)
 			{
-				m_buffer.allocate(capacity);
-				m_buffer.fill_empty();
+				allocate(capacity);
+				fill_empty();
 			}
 
-			[[nodiscard]] meta_word *metadata() const noexcept { return m_metadata; }
-			[[nodiscard]] meta_word *tail() const noexcept { return m_metadata + capacity + 1; }
-			[[nodiscard]] bucket_node *nodes() const noexcept { return m_nodes; }
+			[[nodiscard]] meta_word *metadata() const noexcept { return to_address(m_metadata); }
+			[[nodiscard]] meta_word *tail() const noexcept { return metadata() + capacity + 1; }
+			[[nodiscard]] bucket_node *nodes() const noexcept { return to_address(m_nodes); }
 
 			void fill_empty() noexcept
 			{
@@ -576,8 +581,8 @@ namespace tpp::detail
 			template<typename F>
 			void resize(size_type n, F &&relocate)
 			{
-				auto *old_metadata = std::exchange(m_metadata, std::allocator_traits<meta_allocator>::allocate(meta_alloc(), n + sizeof(meta_block)));
-				auto *old_nodes = std::exchange(m_nodes, std::allocator_traits<node_allocator>::allocate(node_alloc(), n));
+				auto old_metadata = std::exchange(m_metadata, std::allocator_traits<meta_allocator>::allocate(meta_alloc(), n + sizeof(meta_block)));
+				auto old_nodes = std::exchange(m_nodes, std::allocator_traits<node_allocator>::allocate(node_alloc(), n));
 				const auto old_capacity = std::exchange(capacity, n);
 				fill_empty();
 
@@ -613,8 +618,8 @@ namespace tpp::detail
 			{
 				std::allocator_traits<meta_allocator>::deallocate(meta_alloc(), m_metadata, capacity + sizeof(meta_block));
 				std::allocator_traits<node_allocator>::deallocate(node_alloc(), m_nodes, capacity);
-				m_metadata = nullptr;
-				m_nodes = nullptr;
+				m_metadata = {};
+				m_nodes = {};
 				capacity = 0;
 			}
 
@@ -626,15 +631,18 @@ namespace tpp::detail
 			}
 			void swap(buffer_type &other) noexcept(std::is_nothrow_swappable_v<meta_allocator> && std::is_nothrow_swappable_v<node_allocator>)
 			{
-				using std::swap;
 				if constexpr (std::allocator_traits<meta_allocator>::propagate_on_container_swap::value)
 					swap(meta_alloc(), other.meta_alloc());
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_swap::value)
 					swap(node_alloc(), other.node_alloc());
-
+				swap_data(other);
+			}
+			void swap_data(buffer_type &other) noexcept
+			{
 				TPP_ASSERT(allocator_eq(meta_alloc(), other.meta_alloc()) && allocator_eq(node_alloc(), other.node_alloc()),
 						   "Swapped allocators must be equal");
 
+				using std::swap;
 				swap(capacity, other.capacity);
 				swap(m_metadata, other.m_metadata);
 				swap(m_nodes, other.m_nodes);
@@ -648,13 +656,14 @@ namespace tpp::detail
 			[[nodiscard]] constexpr auto &node_alloc() noexcept { return node_alloc_base::value(); }
 			[[nodiscard]] constexpr auto &node_alloc() const noexcept { return node_alloc_base::value(); }
 
-			meta_word *m_metadata = nullptr;
-			bucket_node *m_nodes = nullptr;
+			meta_ptr m_metadata = {};
+			node_ptr m_nodes = {};
 		};
 #else
 		class buffer_type : ebo_container<node_allocator>
 		{
 			using alloc_base = ebo_container<node_allocator>;
+			using data_ptr = typename std::allocator_traits<node_allocator>::pointer;
 
 			[[nodiscard]] static constexpr size_type nodes_offset(size_type n) noexcept
 			{
@@ -678,28 +687,30 @@ namespace tpp::detail
 			{
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_copy_assignment::value)
 				{
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(m_data), capacity);
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), m_data, capacity);
 					alloc_base::operator=(other);
-					m_data = nullptr;
 					capacity = 0;
+					m_data = {};
 				}
+				return *this;
 			}
 			buffer_type &operator=(buffer_type &&other) noexcept(std::is_nothrow_move_assignable_v<node_allocator>)
 			{
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_move_assignment::value)
 				{
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(m_data), capacity);
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), m_data, capacity);
 					alloc_base::operator=(other);
-					m_data = nullptr;
 					capacity = 0;
+					m_data = {};
 				}
+				return *this;
 			}
 
 			buffer_type(const allocator_type &alloc) : alloc_base(alloc) {}
 			buffer_type(size_type capacity, const allocator_type &alloc) : alloc_base(alloc)
 			{
-				m_buffer.allocate(capacity);
-				m_buffer.fill_empty();
+				allocate(capacity);
+				fill_empty();
 			}
 
 			[[nodiscard]] meta_word *metadata() const noexcept { return reinterpret_cast<meta_word *>(bytes()); }
@@ -714,39 +725,40 @@ namespace tpp::detail
 			template<typename F>
 			void resize(size_type n, F &&relocate)
 			{
-				auto *old_data = std::exchange(m_data, static_cast<void *>(std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n))));
+				auto old_data = std::exchange(m_data, std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n)));
 				const auto old_capacity = std::exchange(capacity, n);
 				fill_empty();
 
-				if (old_data != nullptr)
+				if (old_data)
 				{
-					auto *old_nodes = reinterpret_cast<bucket_node *>(static_cast<std::uint8_t *>(old_data) + nodes_offset(old_capacity));
-					auto *old_metadata = static_cast<meta_word *>(old_data);
+					auto *old_bytes = reinterpret_cast<std::uint8_t *>(to_address(old_data));
+					auto *old_nodes = reinterpret_cast<bucket_node *>(old_bytes + nodes_offset(old_capacity));
+					auto *old_metadata = reinterpret_cast<meta_word *>(old_bytes);
 
 					relocate(old_metadata, old_nodes, old_capacity);
-					std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(old_data), buffer_size(n));
+					std::allocator_traits<node_allocator>::deallocate(node_alloc(), old_data, buffer_size(n));
 				}
 			}
 
 			void allocate(size_type n)
 			{
-				m_data = static_cast<void *>(std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n)));
+				m_data = std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n));
 				capacity = n;
 			}
 			void reallocate(size_type n)
 			{
 				if (capacity < n)
 				{
-					if (capacity) std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(m_data), buffer_size(capacity));
-					m_data = static_cast<void *>(std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n)));
+					if (capacity) std::allocator_traits<node_allocator>::deallocate(node_alloc(), m_data, buffer_size(capacity));
+					m_data = std::allocator_traits<node_allocator>::allocate(node_alloc(), buffer_size(n));
 					capacity = n;
 				}
 			}
 			void deallocate()
 			{
-				std::allocator_traits<node_allocator>::deallocate(node_alloc(), static_cast<bucket_node *>(m_data), buffer_size(capacity));
-				m_data = nullptr;
+				std::allocator_traits<node_allocator>::deallocate(node_alloc(), m_data, buffer_size(capacity));
 				capacity = 0;
+				m_data = {};
 			}
 
 			[[nodiscard]] auto &get_allocator() const noexcept { return alloc_base::value(); }
@@ -754,12 +766,15 @@ namespace tpp::detail
 			bool can_swap(const buffer_type &other) const { return allocator_eq(node_alloc(), other.node_alloc()); }
 			void swap(buffer_type &other) noexcept(std::is_nothrow_swappable_v<node_allocator>)
 			{
-				using std::swap;
 				if constexpr (std::allocator_traits<node_allocator>::propagate_on_container_swap::value)
 					swap(node_alloc(), other.node_alloc());
-
+				swap_data(other);
+			}
+			void swap_data(buffer_type &other) noexcept
+			{
 				TPP_ASSERT(allocator_eq(node_alloc(), other.node_alloc()), "Swapped allocators must be equal");
 
+				using std::swap;
 				swap(capacity, other.capacity);
 				swap(m_data, other.m_data);
 			}
@@ -770,16 +785,14 @@ namespace tpp::detail
 			[[nodiscard]] constexpr auto &node_alloc() noexcept { return alloc_base::value(); }
 			[[nodiscard]] constexpr auto &node_alloc() const noexcept { return alloc_base::value(); }
 
-			[[nodiscard]] constexpr auto *bytes() const noexcept { return static_cast<std::uint8_t *>(m_data); }
+			[[nodiscard]] constexpr auto *bytes() const noexcept { return reinterpret_cast<std::uint8_t *>(to_address(m_data)); }
 
 			/* Combined node & metadata buffers. */
-			void *m_data = nullptr;
+			data_ptr m_data = {};
 		};
 #endif
 
-		using node_iterator = swiss_node_iterator<bucket_node, traits_t, is_ordered::value>;
-		using const_node_iterator = swiss_node_iterator<const bucket_node, traits_t, is_ordered::value>;
-		using hint_t = const_node_iterator;
+		using node_iterator = swiss_node_iterator<bucket_node, node_allocator, is_ordered::value>;
 
 		struct bucket_probe
 		{
@@ -803,7 +816,7 @@ namespace tpp::detail
 
 	public:
 		using iterator = table_iterator<value_type, ValueTraits, node_iterator>;
-		using const_iterator = table_iterator<const value_type, ValueTraits, const_node_iterator>;
+		using const_iterator = table_iterator<const value_type, ValueTraits, node_iterator>;
 
 		using reference = typename iterator::reference;
 		using const_reference = typename const_iterator::reference;
@@ -1044,12 +1057,14 @@ namespace tpp::detail
 			else
 			{
 				auto alloc = value_allocator{get_allocator()};
-				m_buffer.nodes()[target_pos].construct(alloc, std::forward<N>(node));
+				auto &target = m_buffer.nodes()[target_pos];
+				target.destroy(alloc);
+				target.construct(alloc, std::forward<N>(node));
 				return {to_iter(target_pos), false};
 			}
 		}
 		template<typename N>
-		iterator insert_or_assign_node(hint_t hint, N &&node)
+		iterator insert_or_assign_node(node_iterator hint, N &&node)
 		{
 			const auto h = hash(node.key());
 			if (auto target_pos = find_node(node.key(), h); target_pos == m_buffer.capacity)
@@ -1057,7 +1072,9 @@ namespace tpp::detail
 			else
 			{
 				auto alloc = value_allocator{get_allocator()};
-				m_buffer.nodes()[target_pos].construct(alloc, std::forward<N>(node));
+				auto &target = m_buffer.nodes()[target_pos];
+				target.destroy(alloc);
+				target.construct(alloc, std::forward<N>(node));
 				return to_iter(target_pos);
 			}
 		}
@@ -1183,9 +1200,9 @@ namespace tpp::detail
 		/* SwissHash uses a fixed maximum load factor. See https://github.com/abseil/abseil-cpp/blob/189d55a57f57731d335fd84999d5dccf771b8e6b/absl/container/internal/raw_hash_set.h#L479 */
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return 7.0f / 8.0f; }
 
-		[[nodiscard]] constexpr auto &get_allocator() const noexcept { return m_buffer.get_allocator(); }
-		[[nodiscard]] constexpr auto &get_hash() const noexcept { return hash_base::value(); }
-		[[nodiscard]] constexpr auto &get_cmp() const noexcept { return cmp_base::value(); }
+		[[nodiscard]] auto &get_allocator() const noexcept { return m_buffer.get_allocator(); }
+		[[nodiscard]] const Kh &get_hash() const noexcept { return hash_base::value(); }
+		[[nodiscard]] const Kc &get_cmp() const noexcept { return cmp_base::value(); }
 
 		void swap(swiss_table &other)
 		noexcept(std::is_nothrow_swappable_v<buffer_type> &&
@@ -1245,9 +1262,9 @@ namespace tpp::detail
 		[[nodiscard]] constexpr auto to_iter(size_type pos) const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return const_iterator{const_node_iterator{pos < m_buffer.capacity ? m_buffer.nodes() + pos : end_node()}};
+				return const_iterator{node_iterator{pos < m_buffer.capacity ? m_buffer.nodes() + pos : end_node()}};
 			else
-				return const_iterator{const_node_iterator{m_buffer.metadata() + pos, m_buffer.nodes() + pos}};
+				return const_iterator{node_iterator{m_buffer.metadata() + pos, m_buffer.nodes() + pos}};
 		}
 		[[nodiscard]] constexpr auto to_iter(bucket_node *node) noexcept
 		{
@@ -1256,12 +1273,12 @@ namespace tpp::detail
 			else
 				return iterator{node_iterator{node}};
 		}
-		[[nodiscard]] constexpr auto to_iter(const bucket_node *node) const noexcept
+		[[nodiscard]] constexpr auto to_iter(bucket_node *node) const noexcept
 		{
 			if constexpr (!is_ordered::value)
-				return const_iterator{const_node_iterator{m_buffer.metadata() + (node - begin_node()), node}};
+				return const_iterator{node_iterator{m_buffer.metadata() + (node - begin_node()), node}};
 			else
-				return const_iterator{const_node_iterator{node}};
+				return const_iterator{node_iterator{node}};
 		}
 
 		void assert_probe(bucket_probe probe) const noexcept
@@ -1314,12 +1331,12 @@ namespace tpp::detail
 			metadata[pos] = value;
 		}
 
-		void insert_link(hint_t hint, bucket_node *node) noexcept
+		void insert_link(node_iterator hint, bucket_node *node) noexcept
 		{
 			if constexpr (is_ordered::value) node->link(hint.link ? const_cast<bucket_link *>(hint.link) : back_node());
 		}
 		template<typename... Args>
-		iterator emplace_node(hint_t hint, std::size_t h, Args &&...args)
+		iterator emplace_node(node_iterator hint, std::size_t h, Args &&...args)
 		{
 			size_type target_pos;
 			TPP_IF_UNLIKELY(m_buffer.capacity == 0)
@@ -1373,7 +1390,7 @@ namespace tpp::detail
 		}
 
 		template<typename... Args>
-		std::pair<iterator, bool> emplace_impl(hint_t hint, Args &&...args)
+		std::pair<iterator, bool> emplace_impl(node_iterator hint, Args &&...args)
 		{
 			auto alloc = value_allocator{get_allocator()};
 			auto tmp = bucket_node{};
@@ -1385,7 +1402,7 @@ namespace tpp::detail
 			return result;
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> try_emplace_impl(hint_t hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> try_emplace_impl(node_iterator hint, T &&key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1394,7 +1411,7 @@ namespace tpp::detail
 				return {to_iter(target_pos), false};
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_impl(hint_t hint, const T &key, Args &&...args)
+		std::pair<iterator, bool> insert_impl(node_iterator hint, const T &key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1403,7 +1420,7 @@ namespace tpp::detail
 				return {to_iter(target_pos), false};
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_or_assign_impl(hint_t hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> insert_or_assign_impl(node_iterator hint, T &&key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1442,7 +1459,7 @@ namespace tpp::detail
 						auto *node = src_nodes + i;
 						const auto h = node->hash();
 						const auto target_pos = find_available(h);
-						relocate_node{}(alloc, node, alloc, m_buffer.nodes() + target_pos);
+						m_buffer.nodes()[target_pos].relocate(alloc, alloc, *node);
 						set_metadata(target_pos, decompose_hash(h).second);
 					}
 			});
@@ -1469,7 +1486,7 @@ namespace tpp::detail
 				{
 					auto *node = nodes + i;
 
-					process_node:
+				process_node:
 					const auto target_pos = find_available(node->hash());
 					const auto [h1, h2] = decompose_hash(node->hash());
 
@@ -1485,7 +1502,7 @@ namespace tpp::detail
 					if (metadata[target_pos] == meta_word::empty)
 					{
 						auto alloc = value_allocator{get_allocator()};
-						relocate_node{}(alloc, node, alloc, nodes + target_pos);
+						nodes[target_pos].relocate(alloc, alloc, *node);
 						set_metadata(i, meta_word::empty);
 						set_metadata(target_pos, h2);
 					}
@@ -1566,8 +1583,7 @@ namespace tpp::detail
 				if (other_metadata[i].is_occupied())
 				{
 					auto *src_node = other_nodes + i, *dst_node = nodes + i;
-					dst_node->construct(alloc, std::move(*src_node));
-					src_node->destroy(other_alloc);
+					dst_node->relocate(alloc, other_alloc, *src_node);
 					set_metadata(i, other_metadata[i]);
 				}
 			m_size = other.m_size;
@@ -1584,12 +1600,13 @@ namespace tpp::detail
 			auto *metadata = m_buffer.metadata();
 			auto *nodes = m_buffer.nodes();
 			for (size_type i = 0; i != m_buffer.capacity; ++i) if (metadata[i].is_occupied()) nodes[i].destroy(alloc);
+			m_size = 0;
 		}
 		void swap_buffers(swiss_table &other)
 		{
 			std::swap(m_size, other.m_size);
 			std::swap(m_num_empty, other.m_num_empty);
-			m_buffer.swap(other.m_buffer);
+			m_buffer.swap_data(other.m_buffer);
 		}
 		void move_from(swiss_table &other)
 		{

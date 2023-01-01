@@ -57,7 +57,7 @@ namespace tpp
 		/** @copydoc pointer */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Random access iterator to elements (of const `value_type`) of the set. */
+		/** Random access iterator to `const value_type`. */
 		using iterator = typename table_t::const_iterator;
 		/** @copydoc const_iterator */
 		using const_iterator = typename table_t::const_iterator;
@@ -415,7 +415,7 @@ namespace tpp
 		/** @copydoc pointer */
 		using const_pointer = typename table_t::const_pointer;
 
-		/** Bidirectional iterator to elements (of const `value_type`) of the set. */
+		/** Bidirectional iterator to `const value_type`. */
 		using iterator = typename table_t::const_iterator;
 		/** @copydoc const_iterator */
 		using const_iterator = typename table_t::const_iterator;
