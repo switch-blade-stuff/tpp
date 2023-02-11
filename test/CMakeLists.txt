@@ -21,8 +21,6 @@ macro(test_target_cxx)
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_${ARGV0})
     endif ()
 
-    get_property(CXX TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD)
-
     # Enable max error reporting
     if (MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)

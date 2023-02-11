@@ -40,7 +40,7 @@ Here is a brief list of the features of this library:
 Since **tables++** is a header-only library, the only thing you need is a C++ compiler with support for C++17.
 Optionally, a `CMakeLists.txt` is also provided if you want to use the library as an `INTERFACE` CMake link target.
 
-## Library& CMake options
+## Library options
 
 <table>
   <tr><th>#define macro</th><th>CMake option</th><th>Default value</th><th>Description</th></tr>

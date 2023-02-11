@@ -31,28 +31,22 @@
 
 #endif
 
-#if defined(__has_builtin) && !defined(__ibmxl__)
-#if __has_builtin(__builtin_debugtrap)
-#define TPP_DEBUG_TRAP() __builtin_debugtrap()
-#elif __has_builtin(__debugbreak)
-#define TPP_DEBUG_TRAP() __debugbreak()
-#endif
+#if defined(__has_builtin) && !defined(__ibmxl__) && __has_builtin(__builtin_debugtrap)
+#define TPP_DEBUGTRAP() __builtin_debugtrap()
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define TPP_DEBUG_TRAP() __debugbreak()
+#define TPP_DEBUGTRAP() __debugbreak()
 #elif defined(__ARMCC_VERSION)
-#define TPP_DEBUG_TRAP() __breakpoint(42)
+#define TPP_DEBUGTRAP() __breakpoint(42)
 #elif defined(__ibmxl__) || defined(__xlC__)
 #include <builtins.h>
-#define TPP_DEBUG_TRAP() __trap(42)
+#define TPP_DEBUGTRAP() __trap(42)
 #elif defined(__DMC__) && defined(_M_IX86)
-#define TPP_DEBUG_TRAP() (__asm int 3h)
+#define TPP_DEBUGTRAP() (__asm int 3h)
 #elif defined(__i386__) || defined(__x86_64__)
-#define TPP_DEBUG_TRAP() (__asm__ __volatile__("int3"))
+#define TPP_DEBUGTRAP() (__asm__ __volatile__("int3"))
 #elif defined(__STDC_HOSTED__) && (__STDC_HOSTED__ == 0) && defined(__GNUC__)
-#define TPP_DEBUG_TRAP() __builtin_trap()
-#endif
-
-#ifndef TPP_DEBUG_TRAP
+#define TPP_DEBUGTRAP() __builtin_trap()
+#else
 #ifndef TPP_USE_IMPORT
 
 #ifndef TPP_USE_IMPORT
@@ -63,9 +57,9 @@
 
 #endif
 #if defined(SIGTRAP)
-#define TPP_DEBUG_TRAP() raise(SIGTRAP)
+#define TPP_DEBUGTRAP() raise(SIGTRAP)
 #else
-#define TPP_DEBUG_TRAP() raise(SIGABRT)
+#define TPP_DEBUGTRAP() raise(SIGABRT)
 #endif
 #endif
 
@@ -73,6 +67,8 @@
 #define TPP_PRETTY_FUNC __FUNCSIG__
 #elif defined(__clang__) || defined(__GNUC__)
 #define TPP_PRETTY_FUNC __PRETTY_FUNCTION__
+#else
+#define TPP_PRETTY_FUNC __func__
 #endif
 
 #endif
@@ -133,8 +129,7 @@ namespace tpp::detail
 	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 2, T> read_unaligned(const void *data) noexcept
 	{
 		const auto *bytes = static_cast<const std::uint8_t *>(data);
-		return (static_cast<T>(bytes[1]) << 8) |
-			   (static_cast<T>(bytes[0]));
+		return (static_cast<T>(bytes[1]) << 8) | (static_cast<T>(bytes[0]));
 	}
 #else
 	template<typename T>
@@ -163,8 +158,7 @@ namespace tpp::detail
 	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 2, T> read_unaligned(const void *data) noexcept
 	{
 		const auto *bytes = static_cast<const std::uint8_t *>(data);
-		return (static_cast<T>(bytes[0]) << 8) |
-			   (static_cast<T>(bytes[1]));
+		return (static_cast<T>(bytes[0]) << 8) | (static_cast<T>(bytes[1]));
 	}
 #endif
 #endif
@@ -286,16 +280,22 @@ namespace tpp::detail
 #endif
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
-	[[maybe_unused]] inline void assert_msg(bool cnd, const char *cstr, const char *file, std::size_t line, const char *func, const char *msg) noexcept
+	[[maybe_unused]] inline void assert_msg(const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 	{
-		if (!cnd)
-		{
-			printf("Assertion (%s) failed at '%s:%zu' in '%s'", cstr, file, line, func);
-			if (msg) printf("%s", msg);
-			TPP_DEBUG_TRAP();
-			std::abort();
-		}
+		fprintf(stderr, "%s:%zu: %s: Assertion `%s` failed", file, line, func, cstr);
+		if (msg)
+			fprintf(stderr, " - %s", msg);
+		else
+			fputc('.', stderr);
 	}
+
+#define TPP_ASSERT(cnd, msg)                                                                \
+    do { TPP_IF_UNLIKELY(!(cnd)) {                                                          \
+        tpp::detail::assert_msg((__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (#cnd), (msg));  \
+        TPP_DEBUGTRAP();                                                                    \
+    }} while(false)
+#else
+#define TPP_ASSERT(cnd, msg) TPP_ASSUME(cnd)
 #endif
 
 	template<std::size_t, typename T>
@@ -381,9 +381,3 @@ namespace tpp::detail
 		size = new_buff.second;
 	}
 }
-
-#if defined(TPP_DEBUG) || !defined(NDEBUG)
-#define TPP_ASSERT(cnd, msg) tpp::detail::assert_msg(cnd, (#cnd), (__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (msg))
-#else
-#define TPP_ASSERT(cnd, msg) TPP_ASSUME(cnd)
-#endif
