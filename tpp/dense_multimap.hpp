@@ -9,8 +9,7 @@
 
 namespace tpp
 {
-	template<typename Mk, typename Mapped, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>,
-	         typename = detail::multikey_alloc_t<Mk, Mapped>>
+	template<typename Mk, typename Mapped, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk, Mapped>>
 	class dense_multimap;
 
 	/** @brief Hash multimap based on dense hash table.
@@ -99,59 +98,45 @@ namespace tpp
 		/** Move-constructs the multimap. */
 		dense_multimap(dense_multimap &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the multimap using the specified allocator. */
-		dense_multimap(dense_multimap &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		dense_multimap(dense_multimap &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the multimap with the specified bucket count, hasher, comparator and allocator. */
-		explicit dense_multimap(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                        const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit dense_multimap(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multimap with the specified bucket count, hasher and allocator. */
-		dense_multimap(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_multimap(bucket_count, hash, key_equal{}, alloc) {}
+		dense_multimap(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_multimap(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the multimap with the specified bucket count and allocator. */
-		dense_multimap(size_type bucket_count, const allocator_type &alloc)
-				: dense_multimap(bucket_count, hasher{}, alloc) {}
+		dense_multimap(size_type bucket_count, const allocator_type &alloc) : dense_multimap(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the multimap with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		               const allocator_type &alloc = allocator_type{})
+		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_multimap(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_multimap */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_multimap(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		               const allocator_type &alloc = allocator_type{})
+		dense_multimap(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_multimap(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the multimap with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_multimap(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_multimap(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc dense_multimap */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_multimap(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_multimap(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_multimap(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_multimap(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the multimap with an initializer list of elements and the specified bucket count and allocator. */
-		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_multimap(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_multimap(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : dense_multimap(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc dense_multimap */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_multimap(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_multimap(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_multimap(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : dense_multimap(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the multimap with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_multimap(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		               const allocator_type &alloc = allocator_type{})
+		dense_multimap(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the multimap with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		dense_multimap(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_multimap(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		dense_multimap(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_multimap(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the multimap with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		dense_multimap(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: dense_multimap(first, last, bucket_count, hasher{}, alloc) {}
+		dense_multimap(I first, I last, size_type bucket_count, const allocator_type &alloc) : dense_multimap(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the multimap. */
 		dense_multimap &operator=(const dense_multimap &) = default;

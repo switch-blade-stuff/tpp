@@ -25,8 +25,7 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the map.
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
-	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-			typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class dense_map
 	{
 	public:
@@ -105,59 +104,45 @@ namespace tpp
 		/** Move-constructs the map. */
 		dense_map(dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		dense_map(dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		dense_map(dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
-		explicit dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
-		dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(bucket_count, hash, key_equal{}, alloc) {}
+		dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_map(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with the specified bucket count and allocator. */
-		dense_map(size_type bucket_count, const allocator_type &alloc)
-				: dense_map(bucket_count, hasher{}, alloc) {}
+		dense_map(size_type bucket_count, const allocator_type &alloc) : dense_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_map(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc dense_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_map(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count and allocator. */
-		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc dense_map */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_map(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_map(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: dense_map(first, last, bucket_count, hasher{}, alloc) {}
+		dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc) : dense_map(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the map. */
 		dense_map &operator=(const dense_map &) = default;
@@ -658,6 +643,27 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
 
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	dense_map(I, I, Alloc) -> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_map<K, M, Hash, Cmp, Alloc>;
+	template<typename K, typename M, typename Hash, typename Alloc>
+	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename M, typename Alloc>
+	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename M, typename Alloc>
+	dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+
 	/** @brief Ordered hash map based on dense hash table.
 	 *
 	 * Internally, ordered dense map stores it's elements in a contiguous vector with additional ordering
@@ -675,8 +681,7 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the map.
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
-	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>,
-			typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class ordered_dense_map
 	{
 	public:
@@ -755,44 +760,33 @@ namespace tpp
 		/** Move-constructs the map. */
 		ordered_dense_map(ordered_dense_map &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the map using the specified allocator. */
-		ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		ordered_dense_map(ordered_dense_map &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the map with the specified bucket count, hasher, comparator and allocator. */
-		explicit ordered_dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                           const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit ordered_dense_map(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with the specified bucket count, hasher and allocator. */
-		ordered_dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_map(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_map(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with the specified bucket count and allocator. */
-		ordered_dense_map(size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(bucket_count, hasher{}, alloc) {}
+		ordered_dense_map(size_type bucket_count, const allocator_type &alloc) : ordered_dense_map(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_map(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with an initializer list of elements and the specified bucket count and allocator. */
-		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_dense_map(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : ordered_dense_map(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the map with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_dense_map(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_map(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_map(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the map with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		ordered_dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_map(first, last, bucket_count, hasher{}, alloc) {}
+		ordered_dense_map(I first, I last, size_type bucket_count, const allocator_type &alloc) : ordered_dense_map(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the map. */
 		ordered_dense_map &operator=(const ordered_dense_map &) = default;
@@ -1300,6 +1294,26 @@ namespace tpp
 	}
 
 	template<typename K, typename M, typename H, typename C, typename A>
-	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
+	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
+
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_dense_map(I, I, Alloc) -> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_map<K, M, Hash, Cmp, Alloc>;
+	template<typename K, typename M, typename Hash, typename Alloc>
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename M, typename Alloc>
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename M, typename Alloc>
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
 }

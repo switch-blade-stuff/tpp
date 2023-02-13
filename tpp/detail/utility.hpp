@@ -380,4 +380,31 @@ namespace tpp::detail
 		buff = new_buff.first;
 		size = new_buff.second;
 	}
+
+	template<typename T>
+	using iter_key_t = typename std::iterator_traits<T>::value_type::first_type;
+	template<typename T>
+	using iter_mapped_t = typename std::iterator_traits<T>::value_type::second_type;
+	template<typename T>
+	using map_value_t = std::pair<std::add_const_t<iter_key_t<T>>, iter_mapped_t<T>>;
+
+	template<typename, typename = void>
+	struct has_key : std::false_type {};
+	template<typename T>
+	struct has_key<T, std::void_t<iter_key_t<T>>> : std::true_type {};
+	template<typename T>
+	inline constexpr auto has_key_v = has_key<T>::value;
+
+	template<typename, typename = void>
+	struct has_mapped : std::false_type {};
+	template<typename T>
+	struct has_mapped<T, std::void_t<iter_mapped_t<T>>> : std::true_type {};
+	template<typename T>
+	inline constexpr auto has_mapped_v = has_mapped<T>::value;
+
+	//	template<typename Key, typename Mapped, typename KeyHash, typename KeyCmp, typename Alloc>
+	template<template<typename K, typename Kh, typename Kc, typename A> typename Set, typename I, typename H, typename C, typename A>
+	using deduce_set_t = Set<iter_key_t<I>, H, C, A>;
+	template<template<typename K, typename M, typename Kh, typename Kc, typename A> typename Map, typename I, typename H, typename C, typename A>
+	using deduce_map_t = Map<iter_key_t<I>, iter_mapped_t<I>, H, C, A>;
 }

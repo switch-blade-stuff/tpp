@@ -70,59 +70,45 @@ namespace tpp
 		/** Move-constructs the set. */
 		stable_set(stable_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		stable_set(stable_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		stable_set(stable_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
-		explicit stable_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                    const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit stable_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
-		stable_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: stable_set(bucket_count, hash, key_equal{}, alloc) {}
+		stable_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : stable_set(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with the specified bucket count and allocator. */
-		stable_set(size_type bucket_count, const allocator_type &alloc)
-				: stable_set(bucket_count, hasher{}, alloc) {}
+		stable_set(size_type bucket_count, const allocator_type &alloc) : stable_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		stable_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		           const allocator_type &alloc = allocator_type{})
+		stable_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: stable_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		stable_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		           const allocator_type &alloc = allocator_type{})
+		stable_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: stable_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		stable_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		stable_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		stable_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		stable_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
-		stable_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		stable_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		stable_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		stable_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		stable_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		           const allocator_type &alloc = allocator_type{})
+		stable_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		stable_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: stable_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		stable_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : stable_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		stable_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: stable_set(first, last, bucket_count, hasher{}, alloc) {}
+		stable_set(I first, I last, size_type bucket_count, const allocator_type &alloc) : stable_set(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the set. */
 		stable_set &operator=(const stable_set &) = default;
@@ -352,6 +338,27 @@ namespace tpp
 	template<typename K, typename H, typename C, typename A>
 	inline void swap(stable_set<K, H, C, A> &a, stable_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<stable_set<K, H, C, A>>) { a.swap(b); }
 
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
+	stable_set(I, I, typename detail::deduce_set_t<stable_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> stable_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	stable_set(I, I, typename detail::deduce_set_t<stable_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> stable_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	stable_set(I, I, typename detail::deduce_set_t<stable_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> stable_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	stable_set(I, I, Alloc) -> stable_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	stable_set(std::initializer_list<K>, typename stable_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> stable_set<K, Hash, Cmp, Alloc>;
+	template<typename K, typename Hash, typename Alloc>
+	stable_set(std::initializer_list<K>, typename stable_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> stable_set<K, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	stable_set(std::initializer_list<K>, typename stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	stable_set(std::initializer_list<K>, Alloc) -> stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+
 	/** @brief Ordered hash set based on SwissHash open addressing hash table.
 	 *
 	 * Internally, ordered stable set stores it's elements in open-addressing element and metadata buffers with additional ordering
@@ -414,60 +421,45 @@ namespace tpp
 		/** Move-constructs the set. */
 		ordered_stable_set(ordered_stable_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		ordered_stable_set(ordered_stable_set &&other,
-		                   const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		ordered_stable_set(ordered_stable_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
-		explicit ordered_stable_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                            const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit ordered_stable_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
-		ordered_stable_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_stable_set(bucket_count, hash, key_equal{}, alloc) {}
+		ordered_stable_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_stable_set(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with the specified bucket count and allocator. */
-		ordered_stable_set(size_type bucket_count, const allocator_type &alloc)
-				: ordered_stable_set(bucket_count, hasher{}, alloc) {}
+		ordered_stable_set(size_type bucket_count, const allocator_type &alloc) : ordered_stable_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
+		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_stable_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
+		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_stable_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_stable_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
-		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_stable_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : ordered_stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc stable_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_stable_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : ordered_stable_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_stable_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
+		ordered_stable_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		ordered_stable_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_stable_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		ordered_stable_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_stable_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		ordered_stable_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: ordered_stable_set(first, last, bucket_count, hasher{}, alloc) {}
+		ordered_stable_set(I first, I last, size_type bucket_count, const allocator_type &alloc) : ordered_stable_set(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the set. */
 		ordered_stable_set &operator=(const ordered_stable_set &) = default;
@@ -600,7 +592,6 @@ namespace tpp
 		 * @return Iterator to the element following the erased range, or `end()`. */
 		iterator erase(const_iterator first, const_iterator last) { return m_table.erase(first, last); }
 
-
 		/** @brief Extracts the specified element's node from the set.
 		 * @param key Key of the element to search for.
 		 * @return Node containing the extracted element, or an empty node. */
@@ -699,6 +690,26 @@ namespace tpp
 	}
 
 	template<typename K, typename H, typename C, typename A>
-	inline void swap(ordered_stable_set<K, H, C, A> &a, ordered_stable_set<K, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_stable_set<K, H, C, A>>) { a.swap(b); }
+	inline void swap(ordered_stable_set<K, H, C, A> &a, ordered_stable_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_stable_set<K, H, C, A>>) { a.swap(b); }
+
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
+	ordered_stable_set(I, I, typename detail::deduce_set_t<ordered_stable_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> ordered_stable_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	ordered_stable_set(I, I, typename detail::deduce_set_t<ordered_stable_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> ordered_stable_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_stable_set(I, I, typename detail::deduce_set_t<ordered_stable_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> ordered_stable_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_stable_set(I, I, Alloc) -> ordered_stable_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	ordered_stable_set(std::initializer_list<K>, typename ordered_stable_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_stable_set<K, Hash, Cmp, Alloc>;
+	template<typename K, typename Hash, typename Alloc>
+	ordered_stable_set(std::initializer_list<K>, typename ordered_stable_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_stable_set<K, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	ordered_stable_set(std::initializer_list<K>, typename ordered_stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	ordered_stable_set(std::initializer_list<K>, Alloc) -> ordered_stable_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
 }

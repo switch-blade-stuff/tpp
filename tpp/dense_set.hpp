@@ -93,59 +93,45 @@ namespace tpp
 		/** Move-constructs the set. */
 		dense_set(dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		dense_set(dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		dense_set(dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
-		explicit dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                   const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
-		dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_set(bucket_count, hash, key_equal{}, alloc) {}
+		dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_set(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with the specified bucket count and allocator. */
-		dense_set(size_type bucket_count, const allocator_type &alloc)
-				: dense_set(bucket_count, hasher{}, alloc) {}
+		dense_set(size_type bucket_count, const allocator_type &alloc) : dense_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
-		dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		          const allocator_type &alloc = allocator_type{})
+		dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: dense_set(first, last, bucket_count, hasher{}, alloc) {}
+		dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc) : dense_set(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the set. */
 		dense_set &operator=(const dense_set &) = default;
@@ -366,6 +352,27 @@ namespace tpp
 	template<typename K, typename H, typename C, typename A>
 	inline void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
 
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
+	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> dense_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> dense_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	dense_set(I, I, Alloc) -> dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	dense_set(std::initializer_list<K>, typename dense_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_set<K, Hash, Cmp, Alloc>;
+	template<typename K, typename Hash, typename Alloc>
+	dense_set(std::initializer_list<K>, typename dense_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> dense_set<K, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	dense_set(std::initializer_list<K>, typename dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	dense_set(std::initializer_list<K>, Alloc) -> dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+
 	/** @brief Ordered hash set based on dense hash table.
 	 *
 	 * Internally, ordered dense set stores it's elements in a contiguous vector with additional ordering
@@ -451,59 +458,45 @@ namespace tpp
 		/** Move-constructs the set. */
 		ordered_dense_set(ordered_dense_set &&other) noexcept(std::is_nothrow_move_constructible_v<table_t>) = default;
 		/** Move-constructs the set using the specified allocator. */
-		ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>)
-				: m_table(std::move(other.m_table), alloc) {}
+		ordered_dense_set(ordered_dense_set &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<table_t, table_t &&, allocator_type>) : m_table(std::move(other.m_table), alloc) {}
 
 		/** Initializes the set with the specified bucket count, hasher, comparator and allocator. */
-		explicit ordered_dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                           const allocator_type &alloc = allocator_type{})
-				: m_table(bucket_count, hash, cmp, alloc) {}
+		explicit ordered_dense_set(size_type bucket_count, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{}) : m_table(bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with the specified bucket count, hasher and allocator. */
-		ordered_dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_set(bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_set(size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_set(bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with the specified bucket count and allocator. */
-		ordered_dense_set(size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_set(bucket_count, hasher{}, alloc) {}
+		ordered_dense_set(size_type bucket_count, const allocator_type &alloc) : ordered_dense_set(bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher, comparator and allocator. */
-		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, cmp, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count, hasher and allocator. */
-		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_set(il.begin(), il.end(), bucket_count, hash, key_equal{}, alloc) {}
 
 		/** Initializes the set with an initializer list of elements and the specified bucket count and allocator. */
-		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_dense_set(std::initializer_list<value_type> il, size_type bucket_count, const allocator_type &alloc) : ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 		/** @copydoc dense_set */
 		template<typename T, typename = std::enable_if_t<std::is_constructible_v<value_type, const T &>>>
-		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
+		ordered_dense_set(std::initializer_list<T> il, size_type bucket_count, const allocator_type &alloc) : ordered_dense_set(il.begin(), il.end(), bucket_count, hasher{}, alloc) {}
 
 		/** Initializes the set with a range of elements and the specified bucket count, hasher, comparator and allocator. */
 		template<typename I>
-		ordered_dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{},
-		                  const allocator_type &alloc = allocator_type{})
+		ordered_dense_set(I first, I last, size_type bucket_count = 0, const hasher &hash = hasher{}, const key_equal &cmp = key_equal{}, const allocator_type &alloc = allocator_type{})
 				: m_table(first, last, bucket_count, hash, cmp, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count, hasher and allocator. */
 		template<typename I>
-		ordered_dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc)
-				: ordered_dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
+		ordered_dense_set(I first, I last, size_type bucket_count, const hasher &hash, const allocator_type &alloc) : ordered_dense_set(first, last, bucket_count, hash, key_equal{}, alloc) {}
 		/** Initializes the set with a range of elements and the specified bucket count and allocator. */
 		template<typename I>
-		ordered_dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc)
-				: ordered_dense_set(first, last, bucket_count, hasher{}, alloc) {}
+		ordered_dense_set(I first, I last, size_type bucket_count, const allocator_type &alloc) : ordered_dense_set(first, last, bucket_count, hasher{}, alloc) {}
 
 		/** Copy-assigns the set. */
 		ordered_dense_set &operator=(const ordered_dense_set &) = default;
@@ -721,6 +714,26 @@ namespace tpp
 	}
 
 	template<typename K, typename H, typename C, typename A>
-	inline void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b)
-	noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
+	inline void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
+
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
+	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
+	-> ordered_dense_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
+	template<typename I, typename Hash, typename Alloc>
+	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
+	-> ordered_dense_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
+	-> ordered_dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Alloc>
+	ordered_dense_set(I, I, Alloc) -> ordered_dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+
+	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_set<K, Hash, Cmp, Alloc>;
+	template<typename K, typename Hash, typename Alloc>
+	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_set<K, Hash, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	template<typename K, typename Alloc>
+	ordered_dense_set(std::initializer_list<K>, Alloc) -> ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
 }

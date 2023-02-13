@@ -13,7 +13,7 @@ macro(test_target_cxx)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
 
-    # On MSVC, use c++latest instead of c++20 for experimental module support on MSVC
+    # On MSVC, use c++latest instead of c++20 for experimental module support
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND TPP_USE_MODULES AND ${ARGV0} EQUAL 20)
         set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 23)
         target_compile_options(${PROJECT_NAME} PRIVATE /experimental:module)
