@@ -588,7 +588,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(sparse_map<K, M, H, C, A> &a, sparse_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<sparse_map<K, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	sparse_map(I, I, typename detail::deduce_map_t<sparse_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> sparse_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -600,7 +600,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	sparse_map(I, I, Alloc) -> sparse_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	sparse_map(std::initializer_list<std::pair<K, M>>, typename sparse_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> sparse_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	sparse_map(std::initializer_list<std::pair<K, M>>, typename sparse_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> sparse_map<K, M, Hash, std::equal_to<K>, Alloc>;
@@ -1186,7 +1186,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(ordered_sparse_map<K, M, H, C, A> &a, ordered_sparse_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_sparse_map<K, M, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	ordered_sparse_map(I, I, typename detail::deduce_map_t<ordered_sparse_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> ordered_sparse_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -1198,7 +1198,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	ordered_sparse_map(I, I, Alloc) -> ordered_sparse_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	ordered_sparse_map(std::initializer_list<std::pair<K, M>>, typename ordered_sparse_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_sparse_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	ordered_sparse_map(std::initializer_list<std::pair<K, M>>, typename ordered_sparse_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_sparse_map<K, M, Hash, std::equal_to<K>, Alloc>;

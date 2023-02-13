@@ -386,21 +386,7 @@ namespace tpp::detail
 	template<typename T>
 	using iter_mapped_t = typename std::iterator_traits<T>::value_type::second_type;
 	template<typename T>
-	using map_value_t = std::pair<std::add_const_t<iter_key_t<T>>, iter_mapped_t<T>>;
-
-	template<typename, typename = void>
-	struct has_key : std::false_type {};
-	template<typename T>
-	struct has_key<T, std::void_t<iter_key_t<T>>> : std::true_type {};
-	template<typename T>
-	inline constexpr auto has_key_v = has_key<T>::value;
-
-	template<typename, typename = void>
-	struct has_mapped : std::false_type {};
-	template<typename T>
-	struct has_mapped<T, std::void_t<iter_mapped_t<T>>> : std::true_type {};
-	template<typename T>
-	inline constexpr auto has_mapped_v = has_mapped<T>::value;
+	using map_value_t = std::pair<iter_key_t<T>, iter_mapped_t<T>>;
 
 	//	template<typename Key, typename Mapped, typename KeyHash, typename KeyCmp, typename Alloc>
 	template<template<typename K, typename Kh, typename Kc, typename A> typename Set, typename I, typename H, typename C, typename A>

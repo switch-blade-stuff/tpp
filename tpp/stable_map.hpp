@@ -635,7 +635,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(stable_map<K, M, H, C, A> &a, stable_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<stable_map<K, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<const detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	stable_map(I, I, typename detail::deduce_map_t<stable_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> stable_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -647,7 +647,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	stable_map(I, I, Alloc) -> stable_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<const K, M>>>
 	stable_map(std::initializer_list<std::pair<K, M>>, typename stable_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> stable_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	stable_map(std::initializer_list<std::pair<K, M>>, typename stable_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> stable_map<K, M, Hash, std::equal_to<K>, Alloc>;
@@ -1280,7 +1280,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(ordered_stable_map<K, M, H, C, A> &a, ordered_stable_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_stable_map<K, M, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<const detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	ordered_stable_map(I, I, typename detail::deduce_map_t<ordered_stable_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> ordered_stable_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -1292,7 +1292,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	ordered_stable_map(I, I, Alloc) -> ordered_stable_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<const K, M>>>
 	ordered_stable_map(std::initializer_list<std::pair<K, M>>, typename ordered_stable_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_stable_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	ordered_stable_map(std::initializer_list<std::pair<K, M>>, typename ordered_stable_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_stable_map<K, M, Hash, std::equal_to<K>, Alloc>;

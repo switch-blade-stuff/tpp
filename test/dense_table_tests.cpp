@@ -19,6 +19,11 @@
 #include <tpp/dense_multiset.hpp>
 #include <tpp/dense_multimap.hpp>
 
+static_assert(std::is_same_v<decltype(tpp::dense_set{std::declval<std::string>()}), tpp::dense_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_dense_set{std::declval<std::string>()}), tpp::ordered_dense_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::dense_map{std::declval<std::pair<std::string, int>>()}), tpp::dense_map<std::string, int>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_dense_map{std::declval<std::pair<std::string, int>>()}), tpp::ordered_dense_map<std::string, int>>);
+
 void test_dense_set() noexcept { test_set<tpp::dense_set>(); }
 void test_dense_map() noexcept { test_map<tpp::dense_map>(); }
 

@@ -17,6 +17,11 @@
 #include <tpp/sparse_set.hpp>
 #include <tpp/sparse_map.hpp>
 
+static_assert(std::is_same_v<decltype(tpp::sparse_set{std::declval<std::string>()}), tpp::sparse_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_sparse_set{std::declval<std::string>()}), tpp::ordered_sparse_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::sparse_map{std::declval<std::pair<std::string, int>>()}), tpp::sparse_map<std::string, int>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_sparse_map{std::declval<std::pair<std::string, int>>()}), tpp::ordered_sparse_map<std::string, int>>);
+
 void test_sparse_set() noexcept { test_set<tpp::sparse_set>(); }
 void test_sparse_map() noexcept { test_map<tpp::sparse_map>(); }
 void test_ordered_sparse_set() noexcept
@@ -32,6 +37,11 @@ void test_ordered_sparse_map() noexcept
 
 #include <tpp/stable_set.hpp>
 #include <tpp/stable_map.hpp>
+
+static_assert(std::is_same_v<decltype(tpp::stable_set{std::declval<std::string>()}), tpp::stable_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_stable_set{std::declval<std::string>()}), tpp::ordered_stable_set<std::string>>);
+static_assert(std::is_same_v<decltype(tpp::stable_map{std::declval<std::pair<std::string, int>>()}), tpp::stable_map<std::string, int>>);
+static_assert(std::is_same_v<decltype(tpp::ordered_stable_map{std::declval<std::pair<std::string, int>>()}), tpp::ordered_stable_map<std::string, int>>);
 
 void test_stable_set() noexcept
 {

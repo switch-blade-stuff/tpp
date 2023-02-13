@@ -643,7 +643,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -655,7 +655,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	dense_map(I, I, Alloc) -> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
@@ -1296,7 +1296,7 @@ namespace tpp
 	template<typename K, typename M, typename H, typename C, typename A>
 	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::map_value_t<I>>>
+	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
 	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
 	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
 	template<typename I, typename Hash, typename Alloc>
@@ -1308,7 +1308,7 @@ namespace tpp
 	template<typename I, typename Alloc>
 	ordered_dense_map(I, I, Alloc) -> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
 
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<std::add_const_t<K>, M>>>
+	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
