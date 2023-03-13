@@ -11,6 +11,7 @@
 #include <vector>
 #include <limits>
 #include <tuple>
+#include <new>
 
 #endif
 
@@ -713,9 +714,9 @@ namespace tpp::detail
 				fill_empty();
 			}
 
-			[[nodiscard]] meta_word *metadata() const noexcept { return reinterpret_cast<meta_word *>(bytes()); }
+			[[nodiscard]] meta_word *metadata() const noexcept { return std::launder(reinterpret_cast<meta_word *>(bytes())); }
 			[[nodiscard]] meta_word *tail() const noexcept { return metadata() + capacity + 1; }
-			[[nodiscard]] bucket_node *nodes() const noexcept { return m_data ? reinterpret_cast<bucket_node *>(bytes() + nodes_offset(capacity)) : nullptr; }
+			[[nodiscard]] bucket_node *nodes() const noexcept { return m_data ? std::launder(reinterpret_cast<bucket_node *>(bytes() + nodes_offset(capacity))) : nullptr; }
 
 			void fill_empty() noexcept
 			{

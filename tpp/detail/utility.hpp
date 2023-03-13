@@ -41,9 +41,9 @@
 #include <builtins.h>
 #define TPP_DEBUGTRAP() __trap(42)
 #elif defined(__DMC__) && defined(_M_IX86)
-#define TPP_DEBUGTRAP() (__asm int 3h)
+#define TPP_DEBUGTRAP() do { __asm int 3h; } while (false)
 #elif defined(__i386__) || defined(__x86_64__)
-#define TPP_DEBUGTRAP() (__asm__ __volatile__("int3"))
+#define TPP_DEBUGTRAP() do { __asm__ __volatile__("int3"); } while (false)
 #elif defined(__STDC_HOSTED__) && (__STDC_HOSTED__ == 0) && defined(__GNUC__)
 #define TPP_DEBUGTRAP() __builtin_trap()
 #else
