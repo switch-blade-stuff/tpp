@@ -108,12 +108,12 @@ add_library(${PROJECT_NAME} INTERFACE
         ${TPP_SOURCE_DIR}/dense_multimap.hpp
 
         # Swiss table containers
+        ${TPP_SOURCE_DIR}/detail/stable_traits.hpp
         ${TPP_SOURCE_DIR}/detail/swiss_table.hpp
         ${TPP_SOURCE_DIR}/sparse_set.hpp
         ${TPP_SOURCE_DIR}/sparse_map.hpp
         ${TPP_SOURCE_DIR}/stable_set.hpp
-        ${TPP_SOURCE_DIR}/stable_map.hpp
-        tpp/stable_map.hpp tpp/detail/stable_traits.hpp)
+        ${TPP_SOURCE_DIR}/stable_map.hpp)
 
 # Unit tests
 option(TPP_TESTS "Enable unit tests" OFF)
