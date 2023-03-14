@@ -9,6 +9,7 @@
 #ifndef TPP_USE_IMPORT
 
 #include <cstring>
+#include <array>
 
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
 
@@ -27,7 +28,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
-#include <array>
 
 #endif
 
