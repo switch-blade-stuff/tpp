@@ -330,7 +330,7 @@ namespace tpp
 		/** Writes a scalar value to the resulting hash.
 		 * @param value Scalar value to be added to the resulting hash.
 		 * @return Reference to this hash builder.
-		 * @note This overload is available only if `T` is a scalar type. */
+		 * @note This overload is available only if \a T is a scalar type. */
 		template<typename T, typename  = std::enable_if_t<std::is_scalar_v<std::decay_t<T>>>>
 		seahash_builder &write(const T &value) noexcept
 		{
@@ -522,7 +522,7 @@ namespace tpp
 		return static_cast<std::size_t>(builder.write(data, n).finish());
 	}
 
-	/** @brief Generic hash functor used to hash a value of type `T` using the specified byte hash algorithm. */
+	/** @brief Generic hash functor used to hash a value of type \a T using the specified byte hash algorithm. */
 	template<typename T, std::size_t (*Algo)(const void *, std::size_t)>
 	struct hash;
 	/** @brief Hasher that uses the SeaHash algorithm. */
