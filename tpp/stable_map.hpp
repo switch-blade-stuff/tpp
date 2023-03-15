@@ -384,7 +384,7 @@ namespace tpp
 			return emplace_or_replace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
-		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
+		/** Attempts to emplace piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
 		 * @param key Key of the element to insert.
 		 * @param args Arguments passed to constructor of `mapped_type`.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
@@ -1029,7 +1029,7 @@ namespace tpp
 			return emplace_or_replace(const_iterator{hint}, std::forward<K>(key), std::forward<Args>(args)...);
 		}
 
-		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
+		/** Attempts to emplace piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
 		 * @param key Key of the element to insert.
 		 * @param args Arguments passed to constructor of `mapped_type`.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean

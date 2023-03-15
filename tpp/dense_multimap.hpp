@@ -248,7 +248,7 @@ namespace tpp
 		template<typename... Args>
 		iterator emplace_hint(const_iterator hint, Args &&...args) { return m_table.emplace_hint(hint, std::forward<Args>(args)...); }
 
-		/** Attempts a piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
+		/** Attempts to emplace piecewise constructed element (of `value_type`) at the specified key into the map  if it does not exist yet.
 		 * @param key Key of the element to insert.
 		 * @param args Arguments passed to constructor of `mapped_type`.
 		 * @return Pair where `first` is the iterator to the inserted or existing element, and `second` is a boolean
