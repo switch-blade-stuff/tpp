@@ -54,7 +54,7 @@ import std;
 #define TPP_ASSUME(x) [[assume(x)]]
 #elif defined(_MSC_VER)
 #define TPP_ASSUME(x) __assume(x)
-#elif defined(__clang__)
+#elif defined(__clang__) && 0 /* CLang complains about side effects when __builtin_assume is used */
 #define TPP_ASSUME(x) __builtin_assume(x)
 #elif defined(__GNUC__)
 #define TPP_ASSUME(x) if (!(x)) __builtin_unreachable()
