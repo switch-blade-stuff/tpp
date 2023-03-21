@@ -78,6 +78,12 @@ import std;
 #define TPP_FORCEINLINE
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define TPP_PURE __attribute__((pure))
+#else
+#define TPP_PURE
+#endif
+
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
 
 #define TPP_IF_LIKELY(x) if (x) [[likely]]
