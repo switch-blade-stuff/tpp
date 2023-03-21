@@ -341,7 +341,7 @@ namespace tpp::detail
 	}
 
 	template<typename Alloc>
-	[[nodiscard]] inline bool allocator_eq(const Alloc &a, const Alloc &b)
+	[[nodiscard]] TPP_PURE inline bool allocator_eq(const Alloc &a, const Alloc &b)
 	{
 		if constexpr (!std::allocator_traits<Alloc>::is_always_equal::value)
 			return a == b;
