@@ -107,8 +107,8 @@ namespace tpp::detail
 		}
 
 		[[nodiscard]] constexpr bool empty() const noexcept { return m_value == 0; }
-		[[nodiscard]] std::size_t lsb_index() const noexcept;
-		[[nodiscard]] std::size_t msb_index() const noexcept;
+		[[nodiscard]] inline std::size_t lsb_index() const noexcept;
+		[[nodiscard]] inline std::size_t msb_index() const noexcept;
 
 		[[nodiscard]] constexpr bool operator==(const basic_index_mask &other) const noexcept { return m_value == other.m_value; }
 #if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
