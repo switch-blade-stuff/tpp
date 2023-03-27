@@ -198,14 +198,14 @@ namespace tpp::detail
 		{
 			unsigned long result = 0;
 			_BitScanReverse(&result, static_cast<unsigned long>(value));
-			return static_cast<std::size_t>(result) - (sizeof(unsigned long) - sizeof(T));
+			return std::numeric_limits<T>::digits - static_cast<std::size_t>(result);
 		}
 #ifdef _WIN64
 			else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
 			{
 				unsigned long result = 0;
 				_BitScanReverse64(&result, static_cast<unsigned __int64>(value));
-				return static_cast<std::size_t>(result) - (sizeof(unsigned __int64) - sizeof(T));
+				return std::numeric_limits<T>::digits - static_cast<std::size_t>(result);
 			}
 #endif
 		else
@@ -420,7 +420,7 @@ namespace tpp::detail
 	template<typename Node, typename Alloc>
 	class swiss_node_iterator<Node, Alloc, false>
 	{
-		using meta_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<const meta_word>::pointer;
+		using meta_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<meta_word>::pointer;
 		using node_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<Node>::pointer;
 
 		// @formatter:off
@@ -517,6 +517,7 @@ namespace tpp::detail
 			using meta_alloc_base = ebo_container<meta_allocator>;
 			using node_alloc_base = ebo_container<node_allocator>;
 
+			using size_type = std::common_type_t<typename std::allocator_traits<meta_allocator>::size_type, typename std::allocator_traits<node_allocator>::size_type>;
 			using meta_ptr = typename std::allocator_traits<meta_allocator>::pointer;
 			using node_ptr = typename std::allocator_traits<node_allocator>::pointer;
 
