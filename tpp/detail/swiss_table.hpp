@@ -53,9 +53,9 @@ namespace tpp::detail
 
 	struct meta_word
 	{
-		static const meta_word empty;
-		static const meta_word deleted;
-		static const meta_word sentinel;
+		[[nodiscard]] constexpr static meta_word empty();
+		[[nodiscard]] constexpr static meta_word deleted();
+		[[nodiscard]] constexpr static meta_word sentinel();
 
 		[[nodiscard]] constexpr operator std::int8_t() const noexcept { return value; }
 
@@ -76,12 +76,12 @@ namespace tpp::detail
 		std::int8_t value = 0;
 	};
 
-	constexpr meta_word meta_word::empty = meta_word{static_cast<std::int8_t>(0b1000'0000)};
-	constexpr meta_word meta_word::deleted = meta_word{static_cast<std::int8_t>(0b1111'1110)};
-	constexpr meta_word meta_word::sentinel = meta_word{static_cast<std::int8_t>(0b1111'1111)};
+	constexpr meta_word meta_word::empty() { return meta_word{static_cast<std::int8_t>(0b1000'0000)}; };
+	constexpr meta_word meta_word::deleted() { return meta_word{static_cast<std::int8_t>(0b1111'1110)}; };
+	constexpr meta_word meta_word::sentinel() { return meta_word{static_cast<std::int8_t>(0b1111'1111)}; };
 
-	constexpr bool meta_word::is_occupied() const noexcept { return value > sentinel.value; }
-	constexpr bool meta_word::is_available() const noexcept { return value < sentinel.value; }
+	constexpr bool meta_word::is_occupied() const noexcept { return value > sentinel().value; }
+	constexpr bool meta_word::is_available() const noexcept { return value < sentinel().value; }
 
 	template<typename T, std::size_t P>
 	class basic_index_mask
@@ -198,14 +198,14 @@ namespace tpp::detail
 		{
 			unsigned long result = 0;
 			_BitScanReverse(&result, static_cast<unsigned long>(value));
-			return static_cast<std::size_t>(result) - (sizeof(unsigned long) - sizeof(T));
+			return std::numeric_limits<T>::digits - static_cast<std::size_t>(result);
 		}
 #ifdef _WIN64
 			else if constexpr (sizeof(T) <= sizeof(unsigned __int64))
 			{
 				unsigned long result = 0;
 				_BitScanReverse64(&result, static_cast<unsigned __int64>(value));
-				return static_cast<std::size_t>(result) - (sizeof(unsigned __int64) - sizeof(T));
+				return std::numeric_limits<T>::digits - static_cast<std::size_t>(result);
 			}
 #endif
 		else
@@ -282,12 +282,12 @@ namespace tpp::detail
 #ifdef TPP_HAS_SSSE3
 		return index_mask{static_cast<std::uint16_t>(_mm_movemask_epi8(_mm_sign_epi8(value, value)))};
 #else
-		return match_eq(meta_word::empty);
+		return match_eq(meta_word::empty());
 #endif
 	}
 	index_mask meta_block::match_available() const noexcept
 	{
-		return index_mask{static_cast<std::uint16_t>(_mm_movemask_epi8(x86_cmpgt_epi8(_mm_set1_epi8(meta_word::sentinel), value)))};
+		return index_mask{static_cast<std::uint16_t>(_mm_movemask_epi8(x86_cmpgt_epi8(_mm_set1_epi8(meta_word::sentinel()), value)))};
 	}
 	index_mask meta_block::match_eq(meta_word b) const noexcept
 	{
@@ -296,14 +296,14 @@ namespace tpp::detail
 
 	std::size_t meta_block::count_available() const noexcept
 	{
-		return ctz(_mm_movemask_epi8(x86_cmpgt_epi8(_mm_set1_epi8(meta_word::sentinel), value)) + 1);
+		return ctz(_mm_movemask_epi8(x86_cmpgt_epi8(_mm_set1_epi8(meta_word::sentinel()), value)) + 1);
 	}
 	meta_block meta_block::reset_occupied() const noexcept
 	{
 		/* Mask all occupied. */
-		const auto mask = x86_cmpgt_epi8(value, _mm_set1_epi8(meta_word::sentinel));
-		const auto deleted = _mm_set1_epi8(meta_word::deleted);
-		const auto empty = _mm_set1_epi8(meta_word::empty);
+		const auto mask = x86_cmpgt_epi8(value, _mm_set1_epi8(meta_word::sentinel()));
+		const auto deleted = _mm_set1_epi8(meta_word::deleted());
+		const auto empty = _mm_set1_epi8(meta_word::empty());
 
 		/* (deleted & mask) | (empty & ~mask) */
 		return _mm_or_si128(_mm_and_si128(mask, deleted), _mm_andnot_si128(mask, empty));
@@ -313,11 +313,11 @@ namespace tpp::detail
 
 	index_mask meta_block::match_empty() const noexcept
 	{
-		return index_mask{vget_lane_u64(vreinterpret_u64_u8(vceq_s8(vdup_n_s8(meta_word::empty), vreinterpret_s8_u8(value))), 0)};
+		return index_mask{vget_lane_u64(vreinterpret_u64_u8(vceq_s8(vdup_n_s8(meta_word::empty()), vreinterpret_s8_u8(value))), 0)};
 	}
 	index_mask meta_block::match_available() const noexcept
 	{
-		return index_mask{vget_lane_u64(vreinterpret_u64_u8(vcgt_s8(vdup_n_s8(meta_word::sentinel), vreinterpret_s8_u8(value))), 0)};
+		return index_mask{vget_lane_u64(vreinterpret_u64_u8(vcgt_s8(vdup_n_s8(meta_word::sentinel()), vreinterpret_s8_u8(value))), 0)};
 	}
 	index_mask meta_block::match_eq(meta_word b) const noexcept
 	{
@@ -328,14 +328,14 @@ namespace tpp::detail
 
 	std::size_t meta_block::count_available() const noexcept
 	{
-		return ctz(vget_lane_u64(vreinterpret_u64_u8(vcle_s8(vdup_n_s8(meta_word::sentinel), vreinterpret_s8_u8(value))), 0)) >> 3;
+		return ctz(vget_lane_u64(vreinterpret_u64_u8(vcle_s8(vdup_n_s8(meta_word::sentinel()), vreinterpret_s8_u8(value))), 0)) >> 3;
 	}
 	meta_block meta_block::reset_occupied() const noexcept
 	{
 		/* Mask all occupied. */
-		const auto mask = vreinterpret_u64_u8(vcgt_s8(vreinterpret_s8_u8(value), vdup_n_s8(meta_word::sentinel)));
-		const auto deleted = vreinterpret_u8_s8(vdup_n_s8(meta_word::deleted));
-		const auto empty = vreinterpret_u8_s8(vdup_n_s8(meta_word::empty));
+		const auto mask = vreinterpret_u64_u8(vcgt_s8(vreinterpret_s8_u8(value), vdup_n_s8(meta_word::sentinel())));
+		const auto deleted = vreinterpret_u8_s8(vdup_n_s8(meta_word::deleted()));
+		const auto empty = vreinterpret_u8_s8(vdup_n_s8(meta_word::empty()));
 
 		/* mask ? deleted : empty */
 		return vbsl_u8(mask, deleted, empty);
@@ -420,7 +420,7 @@ namespace tpp::detail
 	template<typename Node, typename Alloc>
 	class swiss_node_iterator<Node, Alloc, false>
 	{
-		using meta_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<const meta_word>::pointer;
+		using meta_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<meta_word>::pointer;
 		using node_ptr = typename std::allocator_traits<Alloc>::template rebind_traits<Node>::pointer;
 
 		// @formatter:off
@@ -517,6 +517,7 @@ namespace tpp::detail
 			using meta_alloc_base = ebo_container<meta_allocator>;
 			using node_alloc_base = ebo_container<node_allocator>;
 
+			using size_type = std::common_type_t<typename std::allocator_traits<meta_allocator>::size_type, typename std::allocator_traits<node_allocator>::size_type>;
 			using meta_ptr = typename std::allocator_traits<meta_allocator>::pointer;
 			using node_ptr = typename std::allocator_traits<node_allocator>::pointer;
 
@@ -576,8 +577,8 @@ namespace tpp::detail
 
 			void fill_empty() noexcept
 			{
-				std::fill_n(metadata(), capacity + sizeof(meta_block), meta_word::empty);
-				metadata()[capacity] = meta_word::sentinel;
+				std::fill_n(metadata(), capacity + sizeof(meta_block), meta_word::empty());
+				metadata()[capacity] = meta_word::sentinel();
 			}
 			template<typename F>
 			void resize(size_type n, F &&relocate)
@@ -720,8 +721,8 @@ namespace tpp::detail
 
 			void fill_empty() noexcept
 			{
-				std::fill_n(metadata(), capacity + sizeof(meta_block), meta_word::empty);
-				metadata()[capacity] = meta_word::sentinel;
+				std::fill_n(metadata(), capacity + sizeof(meta_block), meta_word::empty());
+				metadata()[capacity] = meta_word::sentinel();
 			}
 			template<typename F>
 			void resize(size_type n, F &&relocate)
@@ -1347,7 +1348,7 @@ namespace tpp::detail
 			} else
 			{
 				target_pos = find_available(h);
-				TPP_IF_UNLIKELY(!m_num_empty && m_buffer.metadata()[target_pos] != meta_word::deleted)
+				TPP_IF_UNLIKELY(!m_num_empty && m_buffer.metadata()[target_pos] != meta_word::deleted())
 				{
 					/* Do an in-place rehash by reclaiming deleted entries. Choice of coefficients is outlined by the reference implementation at
 					 * https://github.com/abseil/abseil-cpp/blob/f7affaf32a6a396465507dd10520a3fe183d4e40/absl/container/internal/raw_hash_set.cc#L97
@@ -1367,7 +1368,7 @@ namespace tpp::detail
 			insert_link(hint, target);
 			target->hash() = h;
 
-			m_num_empty -= m_buffer.metadata()[target_pos] == meta_word::empty;
+			m_num_empty -= m_buffer.metadata()[target_pos] == meta_word::empty();
 			set_metadata(target_pos, decompose_hash(h).second);
 			++m_size;
 
@@ -1385,7 +1386,7 @@ namespace tpp::detail
 				next = static_cast<bucket_node *>(link->off(link->next));
 				link->unlink();
 			}
-			set_metadata(pos, meta_word::deleted);
+			set_metadata(pos, meta_word::deleted());
 			--m_size;
 			return to_iter(next);
 		}
@@ -1479,11 +1480,11 @@ namespace tpp::detail
 				std::memcpy(old_block, reinterpret_cast<const meta_word *>(&new_block), sizeof(meta_block));
 			}
 			std::memcpy(tail, metadata, sizeof(meta_block) - 1);
-			metadata[m_buffer.capacity] = meta_word::sentinel;
+			metadata[m_buffer.capacity] = meta_word::sentinel();
 
 			/* Relocation algorithm as described by the reference implementation at https://github.com/abseil/abseil-cpp/blob/f7affaf32a6a396465507dd10520a3fe183d4e40/absl/container/internal/raw_hash_set.cc#L97 */
 			for (size_type i = 0; i < m_buffer.capacity; ++i)
-				if (metadata[i] == meta_word::deleted)
+				if (metadata[i] == meta_word::deleted())
 				{
 					auto *node = nodes + i;
 
@@ -1500,11 +1501,11 @@ namespace tpp::detail
 					}
 
 					/* If the target is in a different block and is empty, relocate the node. Otherwise, swap with the other element. */
-					if (metadata[target_pos] == meta_word::empty)
+					if (metadata[target_pos] == meta_word::empty())
 					{
 						auto alloc = value_allocator{get_allocator()};
 						nodes[target_pos].relocate(alloc, alloc, *node);
-						set_metadata(i, meta_word::empty);
+						set_metadata(i, meta_word::empty());
 						set_metadata(target_pos, h2);
 					}
 					else

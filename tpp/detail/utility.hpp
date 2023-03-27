@@ -31,10 +31,10 @@
 
 #endif
 
-#if defined(__has_builtin) && !defined(__ibmxl__) && __has_builtin(__builtin_debugtrap)
-#define TPP_DEBUGTRAP() __builtin_debugtrap()
-#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define TPP_DEBUGTRAP() __debugbreak()
+#elif defined(__has_builtin) && !defined(__ibmxl__) && __has_builtin(__builtin_debugtrap)
+#define TPP_DEBUGTRAP() __builtin_debugtrap()
 #elif defined(__ARMCC_VERSION)
 #define TPP_DEBUGTRAP() __breakpoint(42)
 #elif defined(__ibmxl__) || defined(__xlC__)
@@ -78,9 +78,9 @@ namespace tpp::detail
 #if defined(__cpp_lib_bit_cast) && __cpp_lib_bit_cast >= 201806L
 	template<typename To, typename From>
 	[[nodiscard]] constexpr TPP_FORCEINLINE To bit_cast(const From &from) noexcept { return std::bit_cast<To>(from); }
-#elif defined(__has_builtin) && __has_builtin(__builtin_bit_cast)
-	template<typename To, typename From>
-	[[nodiscard]] constexpr TPP_FORCEINLINE To bit_cast(const From &from) noexcept { return __builtin_bit_cast(To, from); }
+//#elif defined(__has_builtin) && __has_builtin(__builtin_bit_cast)
+//	template<typename To, typename From>
+//	[[nodiscard]] constexpr TPP_FORCEINLINE To bit_cast(const From &from) noexcept { return __builtin_bit_cast(To, from); }
 #else
 	template<typename To, typename From>
 	[[nodiscard]] inline TPP_FORCEINLINE To bit_cast(const From &from) noexcept
