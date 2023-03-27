@@ -733,13 +733,80 @@ namespace tpp::detail
 	using remove_index_t = typename remove_index<I, Is>::type;
 
 	template<typename K, typename M>
+	struct packed_map_ref
+	{
+		template<typename U, typename V>
+		constexpr packed_map_ref &operator=(packed_map_ref<U, V> &&other)
+		{
+			first = std::move(other.first);
+			second = std::move(other.second);
+			return *this;
+		}
+		template<typename U, typename V>
+		constexpr packed_map_ref &operator=(const packed_map_ref<U, V> &other)
+		{
+			first = other.first;
+			second = other.second;
+			return *this;
+		}
+
+		template<typename U, typename V>
+		constexpr packed_map_ref(U &first, V &second) noexcept : first(first), second(second) {}
+		template<typename U, typename V>
+		constexpr packed_map_ref(std::pair<U &, V &> ref) noexcept : packed_map_ref(ref.first, ref.second) {}
+
+		template<typename U, typename V>
+		constexpr packed_map_ref(std::pair<U, V> &ref) noexcept : packed_map_ref(ref.first, ref.second) {}
+		template<typename U, typename V>
+		constexpr packed_map_ref(const std::pair<U, V> &ref) noexcept : packed_map_ref(ref.first, ref.second) {}
+
+		[[nodiscard]] constexpr operator std::pair<K &, M &>() const noexcept { return {first, second}; }
+
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator==(const packed_map_ref<U, V> &other) const
+		{
+			return first == other.first && second == other.second;
+		}
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator>=(const packed_map_ref<U, V> &other) const
+		{
+			return first >= other.first && second >= other.second;
+		}
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator<=(const packed_map_ref<U, V> &other) const
+		{
+			return first <= other.first && second <= other.second;
+		}
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator>(const packed_map_ref<U, V> &other) const
+		{
+			return first > other.first && second > other.second;
+		}
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator<(const packed_map_ref<U, V> &other) const
+		{
+			return first < other.first && second < other.second;
+		}
+
+#if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator!=(const packed_map_ref<U, V> &other) const
+		{
+			return first != other.first || second != other.second;
+		}
+#endif
+
+		K &first;
+		M &second;
+	};
+	template<typename K, typename M>
 	class packed_map_ptr
 	{
 		friend class dense_map_iterator;
 
 	public:
 		using element_type = std::pair<K, M>;
-		using reference = std::pair<K &, M &>;
+		using reference = packed_map_ref<K, M>;
 		using pointer = const reference *;
 
 	public:
