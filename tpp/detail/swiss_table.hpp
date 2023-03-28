@@ -1408,7 +1408,7 @@ namespace tpp::detail
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
-				return {emplace_node(hint, h, std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(std::forward<Args>(args))...), true};
+				return {emplace_node(hint, h, std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(std::forward<Args>(args)...)), true};
 			else
 				return {to_iter(target_pos), false};
 		}
@@ -1426,7 +1426,7 @@ namespace tpp::detail
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
-				return {emplace_node(hint, h, std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(std::forward<Args>(args))...), true};
+				return {emplace_node(hint, h, std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(std::forward<Args>(args)...)), true};
 			else
 			{
 				m_buffer.nodes()[target_pos].replace(std::forward<Args>(args)...);
