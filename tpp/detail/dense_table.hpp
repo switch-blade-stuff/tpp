@@ -592,7 +592,7 @@ namespace tpp::detail
 			return m_sparse ? const_cast<size_type *>(m_sparse[h % bucket_count()].data() + J) : nullptr;
 		}
 		template<std::size_t J>
-		[[nodiscard]]  constexpr size_type *find_chain_ptr(size_type *bucket, size_type pos) const noexcept
+		[[nodiscard]] constexpr size_type *find_chain_ptr(size_type *bucket, size_type pos) const noexcept
 		{
 			while (*bucket != npos && *bucket != pos) bucket = &m_dense[*bucket].next[J];
 			return bucket;
@@ -615,8 +615,6 @@ namespace tpp::detail
 		template<typename... Args>
 		auto push_node(Args &&...args) -> std::pair<size_type, bucket_node *>
 		{
-			if (m_dense_capacity == m_dense_size) resize_data(m_dense_capacity ? m_dense_capacity * 2 : 1);
-
 			const auto pos = m_dense_size++;
 			auto alloc = allocator_type{dense_alloc()};
 			m_dense[pos].construct(alloc, std::forward<Args>(args)...);
@@ -688,6 +686,7 @@ namespace tpp::detail
 		template<typename... Args, std::size_t... Is>
 		std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, node_iterator hint, Args &&...args)
 		{
+			maybe_resize(hint);
 			maybe_rehash();
 
 			/* Create a temporary object to check if it already exists within the table. */
@@ -715,6 +714,7 @@ namespace tpp::detail
 		template<typename... Ks, typename... Args, std::size_t... Is>
 		std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
 		{
+			maybe_resize(hint);
 			maybe_rehash();
 
 			/* If a candidate was found, do nothing. Otherwise, emplace a new entry. */
@@ -740,6 +740,7 @@ namespace tpp::detail
 		template<typename... Ks, typename... Args, std::size_t... Is>
 		std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
+			maybe_resize(hint);
 			maybe_rehash();
 
 			/* If a candidate was found, do nothing. Otherwise, emplace a new entry. */
@@ -767,6 +768,7 @@ namespace tpp::detail
 		{
 			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
 
+			maybe_resize(hint);
 			maybe_rehash();
 
 			/* If a candidate was found, replace the entry. Otherwise, emplace a new entry. */
@@ -838,12 +840,10 @@ namespace tpp::detail
 		void rehash_impl(size_type new_cap) { rehash_impl(std::make_index_sequence<key_size>{}, new_cap); }
 		void maybe_rehash()
 		{
-			// @formatter:off
 			TPP_IF_UNLIKELY(bucket_count() == 0)
 				rehash(8);
 			else if (load_factor() >= m_max_load_factor)
 				rehash(bucket_count() * 2);
-			// @formatter:on
 		}
 
 		void resize_data(size_type capacity)
@@ -855,6 +855,26 @@ namespace tpp::detail
 			if (m_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
 			m_dense_capacity = capacity;
 			m_dense = new_dense;
+		}
+		void maybe_resize(node_iterator &hint)
+		{
+			if (m_dense_capacity == m_dense_size)
+			{
+				const auto old_dense = m_dense;
+				resize_data(m_dense_capacity ? m_dense_capacity * 2 : 1);
+
+				const auto off_bytes = (m_dense - old_dense) * sizeof(*m_dense);
+				if constexpr (is_ordered::value)
+				{
+					if (!hint.link) return;
+					hint.link += off_bytes / sizeof(bucket_link);
+				}
+				else
+				{
+					if (!hint) return;
+					hint += off_bytes / sizeof(*m_dense);
+				}
+			}
 		}
 
 		template<std::size_t... Is>
