@@ -826,4 +826,28 @@ namespace tpp::detail
 	private:
 		reference m_ref;
 	};
+
+	template<std::size_t I, typename K, typename M>
+	[[nodiscard]] constexpr decltype(auto) get(tpp::detail::packed_map_ref<K, M> &ref) noexcept
+	{
+		static_assert(I < 2);
+		if constexpr (I == 0)
+			return ref.first;
+		else
+			return ref.second;
+	}
+	template<std::size_t I, typename K, typename M>
+	[[nodiscard]] constexpr decltype(auto) get(const tpp::detail::packed_map_ref<K, M> &ref) noexcept
+	{
+		static_assert(I < 2);
+		if constexpr (I == 0)
+			return ref.first;
+		else
+			return ref.second;
+	}
 }
+
+template<typename K, typename M>
+struct std::tuple_size<tpp::detail::packed_map_ref<K, M>> : std::integral_constant<std::size_t, 2> {};
+template<std::size_t I, typename K, typename M>
+struct std::tuple_element<I, tpp::detail::packed_map_ref<K, M>> { using type = std::conditional_t<I == 0, K, M>; };
