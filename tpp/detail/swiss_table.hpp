@@ -1601,7 +1601,8 @@ namespace tpp::detail
 			auto alloc = value_allocator{get_allocator()};
 			auto *metadata = m_buffer.metadata();
 			auto *nodes = m_buffer.nodes();
-			for (size_type i = 0; i != m_buffer.capacity; ++i) if (metadata[i].is_occupied()) nodes[i].destroy(alloc);
+			for (size_type i = 0; i != m_buffer.capacity; ++i)
+				if (metadata[i].is_occupied()) nodes[i].destroy(alloc);
 			m_size = 0;
 		}
 		void swap_buffers(swiss_table &other)
