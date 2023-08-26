@@ -1003,15 +1003,9 @@ namespace tpp::_detail
 		}
 
 		template<typename T, typename U>
-		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
-		{
-			return do_insert_or_assign({}, key, std::forward<U>(value));
-		}
+		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>)) { return do_insert_or_assign({}, key, std::forward<U>(value)); }
 		template<typename T, typename U>
-		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
-		{
-			return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first;
-		}
+		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>)) { return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first; }
 
 		template<typename N>
 		std::pair<iterator, bool> insert_or_assign_node(N &&node)
@@ -1045,15 +1039,9 @@ namespace tpp::_detail
 		}
 
 		template<typename... Args>
-		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
-		{
-			return do_emplace({}, std::forward<Args>(args)...);
-		}
+		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>)) { return do_emplace({}, std::forward<Args>(args)...); }
 		template<typename... Args>
-		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
-		{
-			return do_emplace(to_underlying(hint), std::forward<Args>(args)...);
-		}
+		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>)) { return do_emplace(to_underlying(hint), std::forward<Args>(args)...); }
 
 		template<typename U, typename... Args>
 		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))

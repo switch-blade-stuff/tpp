@@ -70,13 +70,12 @@ namespace tpp::_detail
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
 	class dense_table :
-			ValueTraits::link_type,
 			empty_base<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::sparse_allocator>,
 			empty_base<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::dense_allocator>,
-			empty_base<Kh>,
-			empty_base<Kc>
+			empty_base<Kh>, empty_base<Kc>, empty_base<typename ValueTraits::link_type>
 	{
 		using traits_t = dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>;
+		using link_base = empty_base<typename ValueTraits::link_type>;
 
 	public:
 		using insert_type = typename traits_t::insert_type;
@@ -111,7 +110,6 @@ namespace tpp::_detail
 		using bucket_pos = typename traits_t::bucket_pos;
 		using chain_slice = std::array<size_type *, key_size>;
 
-		using header_base = bucket_link;
 		using hash_base = empty_base<hasher>;
 		using cmp_base = empty_base<key_equal>;
 		using sparse_alloc_base = empty_base<sparse_allocator>;
@@ -122,10 +120,8 @@ namespace tpp::_detail
 		template<typename N>
 		class bucket_iterator
 		{
-			// @formatter:off
 			template<typename>
 			friend class bucket_iterator;
-			// @formatter:on
 
 			using value_pointer = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_pointer, typename ValueTraits::pointer>;
 			using value_reference = std::conditional_t<std::is_const_v<N>, typename ValueTraits::const_reference, typename ValueTraits::reference>;
@@ -222,8 +218,7 @@ namespace tpp::_detail
 		dense_table() {}
 
 		dense_table(const allocator_type &alloc) : sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}) {}
-		dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
-				: sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(hash), cmp_base(cmp)
+		dense_table(size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc) : sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(hash), cmp_base(cmp)
 		{
 			TPP_IF_LIKELY(bucket_count != 0)
 			{
@@ -234,50 +229,24 @@ namespace tpp::_detail
 		}
 
 		template<typename Iter>
-		dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
-				: dense_table(distance_or_n(first, last, bucket_count), hash, cmp, alloc) { insert(first, last); }
+		dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc) : dense_table(distance_or_n(first, last, bucket_count), hash, cmp, alloc) { insert(first, last); }
 
-		dense_table(const dense_table &other)
-				: header_base(other),
-				  sparse_alloc_base(allocator_copy(other.sparse_alloc())),
-				  dense_alloc_base(allocator_copy(other.dense_alloc())),
-				  hash_base(other), cmp_base(other),
-				  m_max_load_factor(other.m_max_load_factor)
+		dense_table(const dense_table &other) : sparse_alloc_base(allocator_copy(other.sparse_alloc())), dense_alloc_base(allocator_copy(other.dense_alloc())), hash_base(other), cmp_base(other), link_base(other), m_max_load_factor(other.m_max_load_factor)
 		{
 			copy_data(other);
 		}
-		dense_table(const dense_table &other, const allocator_type &alloc)
-				: header_base(other),
-				  sparse_alloc_base(alloc),
-				  dense_alloc_base(alloc),
-				  hash_base(other),
-				  cmp_base(other),
-				  m_max_load_factor(other.m_max_load_factor)
+		dense_table(const dense_table &other, const allocator_type &alloc) : sparse_alloc_base(alloc), dense_alloc_base(alloc), hash_base(other), cmp_base(other), link_base(other), m_max_load_factor(other.m_max_load_factor)
 		{
 			copy_data(other);
 		}
 
-		dense_table(dense_table &&other)
-		noexcept(std::is_nothrow_move_constructible_v<sparse_allocator> &&
-		         std::is_nothrow_move_constructible_v<dense_allocator> &&
-		         std::is_nothrow_move_constructible_v<hasher> &&
-		         std::is_nothrow_move_constructible_v<key_equal>)
-				: header_base(std::move(other)),
-				  sparse_alloc_base(std::move(other)), dense_alloc_base(std::move(other)),
-				  hash_base(std::move(other)), cmp_base(std::move(other)),
-				  m_max_load_factor(other.m_max_load_factor)
+		dense_table(dense_table &&other) noexcept(std::is_nothrow_move_constructible_v<sparse_allocator> && std::is_nothrow_move_constructible_v<dense_allocator> && std::is_nothrow_move_constructible_v<hasher> && std::is_nothrow_move_constructible_v<key_equal>)
+				: sparse_alloc_base(std::move(other)), dense_alloc_base(std::move(other)), hash_base(std::move(other)), cmp_base(std::move(other)), link_base(std::move(other)), m_max_load_factor(other.m_max_load_factor)
 		{
 			move_from(other);
 		}
-		dense_table(dense_table &&other, const allocator_type &alloc)
-		noexcept(std::is_nothrow_constructible_v<sparse_allocator, sparse_allocator> &&
-		         std::is_nothrow_constructible_v<dense_allocator, dense_allocator> &&
-		         std::is_nothrow_move_constructible_v<hasher> &&
-		         std::is_nothrow_move_constructible_v<key_equal>)
-				: header_base(std::move(other)),
-				  sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}),
-				  hash_base(std::move(other)), cmp_base(std::move(other)),
-				  m_max_load_factor(other.m_max_load_factor)
+		dense_table(dense_table &&other, const allocator_type &alloc) noexcept(std::is_nothrow_constructible_v<sparse_allocator, sparse_allocator> && std::is_nothrow_constructible_v<dense_allocator, dense_allocator> && std::is_nothrow_move_constructible_v<hasher> && std::is_nothrow_move_constructible_v<key_equal>)
+				: sparse_alloc_base(sparse_allocator{alloc}), dense_alloc_base(dense_allocator{alloc}), hash_base(std::move(other)), cmp_base(std::move(other)), link_base(std::move(other)), m_max_load_factor(other.m_max_load_factor)
 		{
 			move_from(other);
 		}
@@ -286,7 +255,7 @@ namespace tpp::_detail
 		{
 			if (this != &other)
 			{
-				header_base::operator=(other);
+				link_base::operator=(other);
 				hash_base::operator=(other);
 				cmp_base::operator=(other);
 
@@ -308,15 +277,11 @@ namespace tpp::_detail
 			}
 			return *this;
 		}
-		dense_table &operator=(dense_table &&other)
-		noexcept(std::is_nothrow_move_assignable_v<sparse_allocator> &&
-		         std::is_nothrow_move_assignable_v<dense_allocator> &&
-		         std::is_nothrow_move_assignable_v<hasher> &&
-		         std::is_nothrow_move_assignable_v<key_equal>)
+		dense_table &operator=(dense_table &&other) noexcept(std::is_nothrow_move_assignable_v<sparse_allocator> && std::is_nothrow_move_assignable_v<dense_allocator> && std::is_nothrow_move_assignable_v<hasher> && std::is_nothrow_move_assignable_v<key_equal>)
 		{
 			if (this != &other)
 			{
-				header_base::operator=(std::move(other));
+				link_base::operator=(std::move(other));
 				hash_base::operator=(std::move(other));
 				cmp_base::operator=(std::move(other));
 
@@ -420,15 +385,9 @@ namespace tpp::_detail
 		}
 
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
-		std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
-		{
-			return do_emplace({}, std::forward<T>(value));
-		}
+		std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>)) { return do_emplace({}, std::forward<T>(value)); }
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
-		iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
-		{
-			return do_emplace(to_underlying(hint), std::forward<T>(value)).first;
-		}
+		iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>)) { return do_emplace(to_underlying(hint), std::forward<T>(value)).first; }
 
 		template<typename Iter>
 		void insert(Iter first, Iter last)
@@ -439,49 +398,33 @@ namespace tpp::_detail
 		}
 
 		template<typename T, typename U>
-		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
-		{
-			return do_insert_or_assign({}, key, std::forward<U>(value));
-		}
+		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>)) { return do_insert_or_assign({}, key, std::forward<U>(value)); }
 		template<typename T, typename U>
-		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
-		{
-			return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first;
-		}
+		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>)) { return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first; }
 
 		template<typename... Args>
-		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
-		{
-			return do_emplace({}, std::forward<Args>(args)...);
-		}
+		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>)) { return do_emplace({}, std::forward<Args>(args)...); }
 		template<typename... Args>
-		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
-		{
-			return do_emplace(to_underlying(hint), std::forward<Args>(args)...);
-		}
+		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>)) { return do_emplace(to_underlying(hint), std::forward<Args>(args)...); }
 
 		template<typename U, typename... Args>
-		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
+		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return do_insert_or_assign({}, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 		template<typename U, typename... Args>
-		iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
+		iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
 			return do_insert_or_assign(hint, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args>
-		std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
+		std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return do_try_emplace({}, std::move(keys), std::forward<Args>(args)...);
 		}
 		template<typename... Ks, typename... Args>
-		iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
-				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
+		iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
 			return do_try_emplace(to_underlying(hint), std::move(keys), std::forward<Args>(args)...).first;
 		}
@@ -503,7 +446,8 @@ namespace tpp::_detail
 		void rehash(size_type n)
 		{
 			/* Skip rehash if table is empty and requested size is 0. */
-			TPP_IF_UNLIKELY(!n && !m_dense_size) return;
+			TPP_IF_UNLIKELY(!n && !m_dense_size)
+				return;
 
 			/* Adjust the capacity to be at least large enough to fit the current size. */
 			const auto new_cap = std::max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), n);
@@ -517,15 +461,11 @@ namespace tpp::_detail
 		[[nodiscard]] const Kh &get_hash() const noexcept { return hash_base::value(); }
 		[[nodiscard]] const Kc &get_cmp() const noexcept { return cmp_base::value(); }
 
-		void swap(dense_table &other)
-		noexcept(std::is_nothrow_swappable_v<sparse_allocator> &&
-		         std::is_nothrow_swappable_v<dense_allocator> &&
-		         std::is_nothrow_swappable_v<hasher> &&
-		         std::is_nothrow_swappable_v<key_equal>)
+		void swap(dense_table &other) noexcept(std::is_nothrow_swappable_v<sparse_allocator> && std::is_nothrow_swappable_v<dense_allocator> && std::is_nothrow_swappable_v<hasher> && std::is_nothrow_swappable_v<key_equal>)
 		{
 			using std::swap;
 
-			header_base::swap(other);
+			link_base::swap(other);
 			hash_base::swap(other);
 			cmp_base::swap(other);
 
@@ -554,15 +494,13 @@ namespace tpp::_detail
 		template<typename T, typename U>
 		[[nodiscard]] bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
 
-		[[nodiscard]] auto *header_link() const noexcept
-		{
-			/* Using `const_cast` here to avoid non-const function duplicates. Pointers will be converted to appropriate const-ness either way. */
-			return const_cast<bucket_link *>(static_cast<const bucket_link *>(this));
-		}
+		/* Using `const_cast` here to avoid non-const function duplicates. Pointers will be converted to appropriate const-ness either way. */
+		[[nodiscard]] bucket_link *header_link() const noexcept { return const_cast<bucket_link *>(&link_base::value()); }
+
 		[[nodiscard]] auto *begin_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->off(header_base::next));
+				return static_cast<bucket_node *>(header_link()->off(header_link()->next));
 			else
 				return to_address(m_dense);
 		}
@@ -570,7 +508,7 @@ namespace tpp::_detail
 		[[nodiscard]] auto *back_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
-				return static_cast<bucket_node *>(header_link()->off(header_base::prev));
+				return static_cast<bucket_node *>(header_link()->off(header_link()->prev));
 			else
 				return to_address(m_dense + (size() - 1));
 		}
@@ -920,7 +858,7 @@ namespace tpp::_detail
 				{
 					const auto front_off = other.front_node() - other.m_dense;
 					const auto back_off = other.back_node() - other.m_dense;
-					header_base::link(to_address(m_dense + front_off), to_address(m_dense + back_off));
+					header_link()->link(to_address(m_dense + front_off), to_address(m_dense + back_off));
 				}
 		}
 		template<std::size_t... Is>
