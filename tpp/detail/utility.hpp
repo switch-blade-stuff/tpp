@@ -197,11 +197,11 @@ namespace tpp::_detail
 	template<typename>
 	struct true_helper : std::true_type {};
 	template<typename P>
-	inline static auto has_to_address_impl(int) -> true_helper<decltype(std::pointer_traits<P>::to_address(std::declval<P>()))>;
+	inline static auto do_has_to_address(int) -> true_helper<decltype(std::pointer_traits<P>::to_address(std::declval<P>()))>;
 	template<typename>
-	inline static auto has_to_address_impl(long) -> std::false_type;
+	inline static auto do_has_to_address(long) -> std::false_type;
 	template<typename P>
-	using has_to_address = decltype(has_to_address_impl<P>(0));
+	using has_to_address = decltype(do_has_to_address<P>(0));
 
 	template<typename T>
 	[[nodiscard]] inline T *to_address(T *p) noexcept { return p; }

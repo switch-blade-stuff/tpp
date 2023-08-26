@@ -346,7 +346,7 @@ namespace tpp::_detail
 			{
 				if (this != &other)
 				{
-					destroy_impl();
+					do_destroy();
 
 					if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value)
 						alloc_base::operator=(std::move(other));
@@ -357,7 +357,7 @@ namespace tpp::_detail
 				return *this;
 			}
 
-			~extracted_type() { destroy_impl(); }
+			~extracted_type() { do_destroy(); }
 
 			[[nodiscard]] constexpr bool empty() const noexcept { return !m_ptr; }
 			[[nodiscard]] constexpr operator bool() const noexcept { return m_ptr; }
@@ -387,7 +387,7 @@ namespace tpp::_detail
 			{
 				TPP_ASSERT(allocator_eq(alloc(), other.alloc()), "Node allocators must compare equal");
 			}
-			void destroy_impl()
+			void do_destroy()
 			{
 				if (m_ptr)
 				{
@@ -441,7 +441,7 @@ namespace tpp::_detail
 			else
 			{
 				construct(alloc, std::move(other.value()));
-				other.destroy_impl();
+				other.do_destroy();
 			}
 		}
 		void move_from(stable_node &other)

@@ -943,7 +943,7 @@ namespace tpp::_detail
 				m_num_empty = capacity_to_max_size(m_buffer.capacity);
 			}
 		}
-		void reserve(size_type n) { if (n > m_size + m_num_empty) rehash_impl(align_capacity(size_to_min_capacity(n))); }
+		void reserve(size_type n) { if (n > m_size + m_num_empty) do_rehash(align_capacity(size_to_min_capacity(n))); }
 
 		template<typename T>
 		[[nodiscard]] bool contains(const T &key) const { return find_node(key, hash(key)) != m_buffer.capacity; }
@@ -953,26 +953,26 @@ namespace tpp::_detail
 		template<typename T>
 		[[nodiscard]] const_iterator find(const T &key) const { return to_iter(find_node(key, hash(key))); }
 
-		std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, ValueTraits::get_key(value), value); }
-		std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, ValueTraits::get_key(value), std::move(value)); }
+		std::pair<iterator, bool> insert(const insert_type &value) { return do_insert({}, ValueTraits::get_key(value), value); }
+		std::pair<iterator, bool> insert(insert_type &&value) { return do_insert({}, ValueTraits::get_key(value), std::move(value)); }
 		iterator insert(const_iterator hint, const insert_type &value)
 		{
-			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), value).first;
+			return do_insert(to_underlying(hint), ValueTraits::get_key(value), value).first;
 		}
 		iterator insert(const_iterator hint, insert_type &&value)
 		{
-			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), std::move(value)).first;
+			return do_insert(to_underlying(hint), ValueTraits::get_key(value), std::move(value)).first;
 		}
 
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
-			return emplace_impl({}, std::forward<T>(value));
+			return do_emplace({}, std::forward<T>(value));
 		}
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
-			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
+			return do_emplace(to_underlying(hint), std::forward<T>(value)).first;
 		}
 
 		template<typename N>
@@ -1005,12 +1005,12 @@ namespace tpp::_detail
 		template<typename T, typename U>
 		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl({}, key, std::forward<U>(value));
+			return do_insert_or_assign({}, key, std::forward<U>(value));
 		}
 		template<typename T, typename U>
 		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
+			return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first;
 		}
 
 		template<typename N>
@@ -1047,41 +1047,41 @@ namespace tpp::_detail
 		template<typename... Args>
 		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_impl({}, std::forward<Args>(args)...);
+			return do_emplace({}, std::forward<Args>(args)...);
 		}
 		template<typename... Args>
 		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
+			return do_emplace(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
 		template<typename U, typename... Args>
 		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return insert_or_assign_impl({}, std::forward<U>(key), std::forward<Args>(args)...);
+			return do_insert_or_assign({}, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 		template<typename U, typename... Args>
 		iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return insert_or_assign_impl(hint, std::forward<U>(key), std::forward<Args>(args)...);
+			return do_insert_or_assign(hint, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 
 		template<typename U, typename... Args>
 		std::pair<iterator, bool> try_emplace(U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<K &&>, std::tuple<Args && ...>>))
 		{
-			return try_emplace_impl({}, std::forward<U>(key), std::forward<Args>(args)...);
+			return do_try_emplace({}, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 		template<typename U, typename... Args>
 		iterator try_emplace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<K &&>, std::tuple<Args && ...>>))
 		{
-			return try_emplace_impl(to_underlying(hint), std::forward<U>(key), std::forward<Args>(args)...).first;
+			return do_try_emplace(to_underlying(hint), std::forward<U>(key), std::forward<Args>(args)...).first;
 		}
 
 		template<typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
 		iterator erase(const T &key)
 		{
 			if (const auto pos = find_node(key, hash(key)); pos != m_buffer.capacity)
-				return erase_impl(pos);
+				return do_erase(pos);
 			else
 				return end();
 		}
@@ -1090,7 +1090,7 @@ namespace tpp::_detail
 			if (where != const_iterator{end()})
 			{
 				const auto pos = &(*to_underlying(where)) - m_buffer.nodes();
-				return erase_impl(pos);
+				return do_erase(pos);
 			}
 			else
 				return end();
@@ -1106,7 +1106,7 @@ namespace tpp::_detail
 		typename stable_node<V, Alloc, ValueTraits>::extracted_type extract(const T &key)
 		{
 			if (const auto pos = find_node(key, hash(key)); pos != m_buffer.capacity)
-				return {value_allocator{get_allocator()}, std::move(extract_impl(pos))};
+				return {value_allocator{get_allocator()}, std::move(do_extract(pos))};
 			else
 				return {};
 		}
@@ -1115,7 +1115,7 @@ namespace tpp::_detail
 			if (where != const_iterator{end()})
 			{
 				const auto pos = &(*to_underlying(where)) - m_buffer.nodes();
-				return {value_allocator{get_allocator()}, std::move(extract_impl(pos))};
+				return {value_allocator{get_allocator()}, std::move(do_extract(pos))};
 			}
 			else
 				return {};
@@ -1155,7 +1155,7 @@ namespace tpp::_detail
 			TPP_IF_UNLIKELY(!n && !m_size) return;
 
 			const auto new_cap = align_capacity(n | size_to_min_capacity(n));
-			if (!n || new_cap > m_buffer.capacity) rehash_impl(new_cap);
+			if (!n || new_cap > m_buffer.capacity) do_rehash(new_cap);
 		}
 
 		/* SwissHash uses a fixed maximum load factor. See https://github.com/abseil/abseil-cpp/blob/189d55a57f57731d335fd84999d5dccf771b8e6b/absl/container/internal/raw_hash_set.h#L479 */
@@ -1295,7 +1295,7 @@ namespace tpp::_detail
 			size_type target_pos;
 			TPP_IF_UNLIKELY(m_buffer.capacity == 0)
 			{
-				rehash_impl(1);
+				do_rehash(1);
 				target_pos = find_available(h);
 			} else
 			{
@@ -1309,7 +1309,7 @@ namespace tpp::_detail
 					if (m_buffer.capacity > sizeof(meta_block) && static_cast<std::uint64_t>(m_size) * 32 <= static_cast<std::uint64_t>(m_buffer.capacity) * 25)
 						rehash_deleted();
 					else
-						rehash_impl((m_buffer.capacity + 1) * 2 - 1);
+						do_rehash((m_buffer.capacity + 1) * 2 - 1);
 					target_pos = find_available(h);
 				}
 			}
@@ -1344,19 +1344,19 @@ namespace tpp::_detail
 		}
 
 		template<typename... Args>
-		std::pair<iterator, bool> emplace_impl(node_iterator hint, Args &&...args)
+		std::pair<iterator, bool> do_emplace(node_iterator hint, Args &&...args)
 		{
 			auto alloc = value_allocator{get_allocator()};
 			auto tmp = bucket_node{};
 
 			tmp.construct(alloc, std::forward<Args>(args)...);
-			auto result = insert_impl(hint, tmp.key(), std::move(tmp));
+			auto result = do_insert(hint, tmp.key(), std::move(tmp));
 			tmp.destroy(alloc);
 
 			return result;
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> try_emplace_impl(node_iterator hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> do_try_emplace(node_iterator hint, T &&key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1365,7 +1365,7 @@ namespace tpp::_detail
 				return {to_iter(target_pos), false};
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_impl(node_iterator hint, const T &key, Args &&...args)
+		std::pair<iterator, bool> do_insert(node_iterator hint, const T &key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1374,7 +1374,7 @@ namespace tpp::_detail
 				return {to_iter(target_pos), false};
 		}
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_or_assign_impl(node_iterator hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> do_insert_or_assign(node_iterator hint, T &&key, Args &&...args)
 		{
 			const auto h = hash(key);
 			if (auto target_pos = find_node(key, h); target_pos == m_buffer.capacity)
@@ -1386,13 +1386,7 @@ namespace tpp::_detail
 			}
 		}
 
-		bucket_node &extract_impl(size_type pos)
-		{
-			auto &node = m_buffer.nodes()[pos];
-			erase_node(pos, &node);
-			return node;
-		}
-		iterator erase_impl(size_type pos)
+		iterator do_erase(size_type pos)
 		{
 			auto alloc = value_allocator{get_allocator()};
 			auto *node = m_buffer.nodes() + pos;
@@ -1400,8 +1394,14 @@ namespace tpp::_detail
 			node->destroy(alloc);
 			return result;
 		}
+		bucket_node &do_extract(size_type pos)
+		{
+			auto &node = m_buffer.nodes()[pos];
+			erase_node(pos, &node);
+			return node;
+		}
 
-		void rehash_impl(size_type capacity)
+		void do_rehash(size_type capacity)
 		{
 			m_buffer.resize(capacity, [&](auto src_meta, auto src_nodes, size_type src_cap)
 			{

@@ -408,26 +408,26 @@ namespace tpp::_detail
 		template<std::size_t J, typename T>
 		[[nodiscard]] const_iterator find(const T &key) const { return to_iter(find_node<J>(key, hash(key)).first); }
 
-		std::pair<iterator, bool> insert(const insert_type &value) { return insert_impl({}, ValueTraits::get_key(value), value); }
-		std::pair<iterator, bool> insert(insert_type &&value) { return insert_impl({}, ValueTraits::get_key(value), std::move(value)); }
+		std::pair<iterator, bool> insert(const insert_type &value) { return do_insert({}, ValueTraits::get_key(value), value); }
+		std::pair<iterator, bool> insert(insert_type &&value) { return do_insert({}, ValueTraits::get_key(value), std::move(value)); }
 		iterator insert(const_iterator hint, const insert_type &value)
 		{
-			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), value).first;
+			return do_insert(to_underlying(hint), ValueTraits::get_key(value), value).first;
 		}
 		iterator insert(const_iterator hint, insert_type &&value)
 		{
-			return insert_impl(to_underlying(hint), ValueTraits::get_key(value), std::move(value)).first;
+			return do_insert(to_underlying(hint), ValueTraits::get_key(value), std::move(value)).first;
 		}
 
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		std::pair<iterator, bool> insert(T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
-			return emplace_impl({}, std::forward<T>(value));
+			return do_emplace({}, std::forward<T>(value));
 		}
 		template<typename T, typename = std::enable_if_t<!(std::is_convertible_v<T &&, insert_type &&> || std::is_convertible_v<T &&, value_type &&>)>>
 		iterator insert(const_iterator hint, T &&value) TPP_REQUIRES((std::is_constructible_v<V, T>))
 		{
-			return emplace_impl(to_underlying(hint), std::forward<T>(value)).first;
+			return do_emplace(to_underlying(hint), std::forward<T>(value)).first;
 		}
 
 		template<typename Iter>
@@ -441,57 +441,57 @@ namespace tpp::_detail
 		template<typename T, typename U>
 		std::pair<iterator, bool> insert_or_assign(const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl({}, key, std::forward<U>(value));
+			return do_insert_or_assign({}, key, std::forward<U>(value));
 		}
 		template<typename T, typename U>
 		iterator insert_or_assign(const_iterator hint, const T &key, U &&value) TPP_REQUIRES((std::is_constructible_v<V, T, U>))
 		{
-			return insert_or_assign_impl(to_underlying(hint), key, std::forward<U>(value)).first;
+			return do_insert_or_assign(to_underlying(hint), key, std::forward<U>(value)).first;
 		}
 
 		template<typename... Args>
 		std::pair<iterator, bool> emplace(Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_impl({}, std::forward<Args>(args)...);
+			return do_emplace({}, std::forward<Args>(args)...);
 		}
 		template<typename... Args>
 		iterator emplace_hint(const_iterator hint, Args &&...args) TPP_REQUIRES((std::is_constructible_v<V, Args...>))
 		{
-			return emplace_impl(to_underlying(hint), std::forward<Args>(args)...);
+			return do_emplace(to_underlying(hint), std::forward<Args>(args)...);
 		}
 
 		template<typename U, typename... Args>
 		std::pair<iterator, bool> emplace_or_replace(U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return insert_or_assign_impl({}, std::forward<U>(key), std::forward<Args>(args)...);
+			return do_insert_or_assign({}, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 		template<typename U, typename... Args>
 		iterator emplace_or_replace(const_iterator hint, U &&key, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<U &&>, std::tuple<Args && ...>>))
 		{
-			return insert_or_assign_impl(hint, std::forward<U>(key), std::forward<Args>(args)...);
+			return do_insert_or_assign(hint, std::forward<U>(key), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args>
 		std::pair<iterator, bool> try_emplace(std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
-			return try_emplace_impl({}, std::move(keys), std::forward<Args>(args)...);
+			return do_try_emplace({}, std::move(keys), std::forward<Args>(args)...);
 		}
 		template<typename... Ks, typename... Args>
 		iterator try_emplace(const_iterator hint, std::tuple<Ks...> keys, Args &&...args) TPP_REQUIRES(
 				(std::is_constructible_v<V, std::piecewise_construct_t, std::tuple<Ks ...>, std::tuple<Args && ...>>))
 		{
-			return try_emplace_impl(to_underlying(hint), std::move(keys), std::forward<Args>(args)...).first;
+			return do_try_emplace(to_underlying(hint), std::move(keys), std::forward<Args>(args)...).first;
 		}
 
 		template<std::size_t J, typename T, typename = std::enable_if_t<!std::is_convertible_v<T, const_iterator>>>
-		iterator erase(const T &key) { return erase_impl<J>(key, hash(key)); }
+		iterator erase(const T &key) { return do_erase<J>(key, hash(key)); }
 		iterator erase(const_iterator where)
 		{
 			const auto pos = &(*to_underlying(where)) - m_dense;
-			return erase_impl(pos, m_dense + pos);
+			return do_erase(pos, m_dense + pos);
 		}
 		iterator erase(const_iterator first, const_iterator last)
 		{
@@ -507,7 +507,7 @@ namespace tpp::_detail
 
 			/* Adjust the capacity to be at least large enough to fit the current size. */
 			const auto new_cap = std::max(static_cast<size_type>(static_cast<float>(size()) / m_max_load_factor), n);
-			if (!n || new_cap != m_sparse_size) rehash_impl(new_cap);
+			if (!n || new_cap != m_sparse_size) do_rehash(new_cap);
 		}
 
 		[[nodiscard]] constexpr float max_load_factor() const noexcept { return m_max_load_factor; }
@@ -684,7 +684,7 @@ namespace tpp::_detail
 		}
 
 		template<typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> emplace_impl(std::index_sequence<Is...>, node_iterator hint, Args &&...args)
+		std::pair<iterator, bool> do_emplace(std::index_sequence<Is...>, node_iterator hint, Args &&...args)
 		{
 			maybe_resize(hint);
 			maybe_rehash();
@@ -705,14 +705,14 @@ namespace tpp::_detail
 			return {commit_node<Is...>(hint, pos, {node_list[Is].second...}, hs, tmp), true};
 		}
 		template<typename... Args>
-		std::pair<iterator, bool> emplace_impl(node_iterator hint, Args &&...args)
+		std::pair<iterator, bool> do_emplace(node_iterator hint, Args &&...args)
 		{
-			return emplace_impl(std::make_index_sequence<key_size>{}, hint, std::forward<Args>(args)...);
+			return do_emplace(std::make_index_sequence<key_size>{}, hint, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only for containers where `value_type` is a pair. */
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> try_emplace_impl(std::index_sequence<Is...>, node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> do_try_emplace(std::index_sequence<Is...>, node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
 		{
 			maybe_resize(hint);
 			maybe_rehash();
@@ -732,13 +732,13 @@ namespace tpp::_detail
 			                            std::forward_as_tuple(std::forward<Args>(args)...)), true};
 		}
 		template<typename... Ks, typename... Args>
-		std::pair<iterator, bool> try_emplace_impl(node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
+		std::pair<iterator, bool> do_try_emplace(node_iterator hint, std::tuple<Ks...> ks, Args &&...args)
 		{
-			return try_emplace_impl(std::make_index_sequence<key_size>{}, hint, std::move(ks), std::forward<Args>(args)...);
+			return do_try_emplace(std::make_index_sequence<key_size>{}, hint, std::move(ks), std::forward<Args>(args)...);
 		}
 
 		template<typename... Ks, typename... Args, std::size_t... Is>
-		std::pair<iterator, bool> insert_impl(std::index_sequence<Is...>, node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> do_insert(std::index_sequence<Is...>, node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
 			maybe_resize(hint);
 			maybe_rehash();
@@ -757,14 +757,14 @@ namespace tpp::_detail
 			return {emplace_node<Is...>(hint, {node_list[Is].second...}, hs, std::forward<Args>(args)...), true};
 		}
 		template<typename... Ks, typename... Args>
-		std::pair<iterator, bool> insert_impl(node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
+		std::pair<iterator, bool> do_insert(node_iterator hint, const std::tuple<Ks...> &ks, Args &&...args)
 		{
-			return insert_impl(std::make_index_sequence<key_size>{}, hint, ks, std::forward<Args>(args)...);
+			return do_insert(std::make_index_sequence<key_size>{}, hint, ks, std::forward<Args>(args)...);
 		}
 
 		/* NOTE: insert_or_assign is available only if there is a single key. Otherwise, we cannot assign conflicting entries. */
 		template<typename T, typename... Args>
-		std::pair<iterator, bool> insert_or_assign_impl(node_iterator hint, T &&key, Args &&...args)
+		std::pair<iterator, bool> do_insert_or_assign(node_iterator hint, T &&key, Args &&...args)
 		{
 			static_assert(key_size == 1, "insert_or_assign is only available for keys of size 1");
 
@@ -789,7 +789,7 @@ namespace tpp::_detail
 		}
 
 		template<std::size_t... Is>
-		iterator erase_impl(std::index_sequence<Is...>, size_type pos, bucket_node *node)
+		iterator do_erase(std::index_sequence<Is...>, size_type pos, bucket_node *node)
 		{
 			if (const auto end = end_node(); node == end)
 				return to_iter(end);
@@ -797,13 +797,13 @@ namespace tpp::_detail
 			const auto slice = chain_slice{find_chain_ptr<Is...>(get_chain<Is>(node->template hash<Is>()), pos)...};
 			return erase_node<Is...>(pos, node, slice);
 		}
-		iterator erase_impl(size_type pos, bucket_node *node)
+		iterator do_erase(size_type pos, bucket_node *node)
 		{
-			return erase_impl(std::make_index_sequence<key_size>{}, pos, node);
+			return do_erase(std::make_index_sequence<key_size>{}, pos, node);
 		}
 
 		template<std::size_t J, typename T, std::size_t... Is>
-		iterator erase_impl(std::index_sequence<Is...>, const T &key, std::size_t h)
+		iterator do_erase(std::index_sequence<Is...>, const T &key, std::size_t h)
 		{
 			for (auto *chain_idx = get_chain<J>(h); *chain_idx != npos;)
 			{
@@ -822,13 +822,13 @@ namespace tpp::_detail
 			return end();
 		}
 		template<std::size_t J, typename T>
-		iterator erase_impl(const T &key, std::size_t h)
+		iterator do_erase(const T &key, std::size_t h)
 		{
-			return erase_impl<J>(remove_index_t<J, std::make_index_sequence<key_size>>{}, key, h);
+			return do_erase<J>(remove_index_t<J, std::make_index_sequence<key_size>>{}, key, h);
 		}
 
 		template<size_type... Is>
-		void rehash_impl(std::index_sequence<Is...>, size_type new_cap)
+		void do_rehash(std::index_sequence<Is...>, size_type new_cap)
 		{
 			/* Reallocate the sparse buffer. */
 			realloc_buffer(sparse_alloc(), m_sparse, m_sparse_size, new_cap);
@@ -837,7 +837,7 @@ namespace tpp::_detail
 			/* Go through each entry & re-insert it. */
 			for (size_type i = 0; i < size(); ++i) (insert_node<Is>(m_dense[i], i), ...);
 		}
-		void rehash_impl(size_type new_cap) { rehash_impl(std::make_index_sequence<key_size>{}, new_cap); }
+		void do_rehash(size_type new_cap) { do_rehash(std::make_index_sequence<key_size>{}, new_cap); }
 		void maybe_rehash()
 		{
 			TPP_IF_UNLIKELY(bucket_count() == 0)
