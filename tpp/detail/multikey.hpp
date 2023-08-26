@@ -4,13 +4,9 @@
 
 #pragma once
 
-#include "../hash.hpp"
-
-#ifndef TPP_USE_IMPORT
-
 #include <tuple>
 
-#endif
+#include "../hash.hpp"
 
 namespace tpp
 {

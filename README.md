@@ -65,13 +65,6 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
 If hash utility functions are enabled, all tables will use the `tpp::seahash_hash` hasher by default,
 otherwise `std::hash` is used.
 
-## Modules
-
-At present, `tpp` has basic support for C++20 modules. If `TPP_USE_MODULES` option is enabled, and modules are supported
-by the compiler, the library will prefer using `import` as opposed to `#include` for standard library headers.
-
-In the future, a module interface may be provided for the library as an alternative to the current header API.
-
 ## API compatibility
 
 While the provided map & set containers are largely API-compatible with `std::unordered_map` and `std::unordered_set`,

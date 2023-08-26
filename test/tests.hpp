@@ -4,11 +4,9 @@
 
 #pragma once
 
-#include "assert.hpp"
-
-#ifndef TPP_USE_MODULES
 #include <string_view>
-#endif
+
+#include "assert.hpp"
 
 void test_dense_set() noexcept;
 void test_dense_map() noexcept;

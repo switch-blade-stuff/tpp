@@ -4,46 +4,30 @@
 
 #pragma once
 
-#include "table_common.hpp"
-
-#ifndef TPP_USE_IMPORT
-
 #include <vector>
 #include <limits>
 #include <tuple>
 #include <new>
 
-#endif
-
-#ifndef TPP_USE_IMPORT
+#include "table_common.hpp"
 
 #if defined(TPP_HAS_SSSE3)
-
 #include <tmmintrin.h>
-
 #elif defined(TPP_HAS_SSE2)
-
 #include <emmintrin.h>
-
 #endif
 
 #ifdef TPP_HAS_NEON
-
 #include <arm_neon.h>
-
 #endif
 
 #ifdef _MSC_VER
-
 #include <intrin.h>
 
 #pragma intrinsic(_BitScanForward, _BitScanReverse)
 #ifdef _WIN64
 #pragma intrinsic(_BitScanForward64, _BitScanReverse64)
 #endif
-
-#endif
-
 #endif
 
 namespace tpp::_detail

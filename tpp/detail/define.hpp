@@ -10,36 +10,13 @@
 #define TPP_DEBUG
 #endif
 
-/* Define TPP_USE_IMPORT only if modules are enabled and supported by the compiler. */
-#if defined(TPP_USE_MODULES) && defined(__cpp_modules)
-#define TPP_USE_IMPORT
-#endif
-
-#ifdef TPP_USE_IMPORT
-
-/* If we are not on MSVC or C++ version at least C++23 use `import std`. Otherwise, use `import std.core`. */
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
-
-import std.core;
-
-#else
-
-import std;
-
-#endif
-
-#else
-
 #include <type_traits>
-
-#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
-#include <version>
-#endif
-
 #include <utility>
 #include <cstdint>
 #include <cstddef>
 
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
+#include <version>
 #endif
 
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))

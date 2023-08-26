@@ -4,12 +4,9 @@
 
 #pragma once
 
-#include "detail/utility.hpp"
-
-#ifndef TPP_USE_IMPORT
-#include <functional>
 #include <limits>
-#endif
+
+#include "detail/utility.hpp"
 
 #ifndef TPP_NO_HASH
 namespace tpp
@@ -85,6 +82,5 @@ namespace tpp
 	{
 		return seed ^ (hash(value) + offset + (seed << 6) + (seed >> 2));
 	}
-
 }
 #endif

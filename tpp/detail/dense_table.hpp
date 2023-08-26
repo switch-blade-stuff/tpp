@@ -4,14 +4,10 @@
 
 #pragma once
 
-#include "table_common.hpp"
-
-#ifndef TPP_USE_IMPORT
-
 #include <limits>
 #include <tuple>
 
-#endif
+#include "table_common.hpp"
 
 namespace tpp::_detail
 {

@@ -4,21 +4,15 @@
 
 #pragma once
 
-#include "define.hpp"
-
-#ifndef TPP_USE_IMPORT
-
 #include <cstring>
 #include <memory>
 #include <array>
 
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
-
 #include <bit>
-
 #endif
 
-#endif
+#include "define.hpp"
 
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
 
@@ -47,15 +41,7 @@
 #elif defined(__STDC_HOSTED__) && (__STDC_HOSTED__ == 0) && defined(__GNUC__)
 #define TPP_DEBUGTRAP() __builtin_trap()
 #else
-#ifndef TPP_USE_IMPORT
-
-#ifndef TPP_USE_IMPORT
-
 #include <csignal>
-
-#endif
-
-#endif
 #if defined(SIGTRAP)
 #define TPP_DEBUGTRAP() raise(SIGTRAP)
 #else

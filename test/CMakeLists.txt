@@ -1,14 +1,10 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.23)
 
 macro(test_target_cxx)
-    project(tpp-tests-cxx${ARGV0})
+    project(tpp-tests-cxx${ARGV0} LANGUAGES CXX)
 
-    add_executable(${PROJECT_NAME}
-            ${CMAKE_CURRENT_LIST_DIR}/main.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
-            ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
-
+    add_executable(${PROJECT_NAME})
+    target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/main.cpp ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
     target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
 
     # On MSVC, use c++latest instead of c++20 for experimental module support
@@ -58,8 +54,6 @@ macro(test_target_cxx)
     add_test(NAME ordered_stable_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_stable_map)
 endmacro()
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
 enable_testing()
-
 test_target_cxx(17) # Test with C++17
 test_target_cxx(20) # Test with C++20

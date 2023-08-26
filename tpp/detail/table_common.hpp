@@ -4,22 +4,10 @@
 
 #pragma once
 
-#include "utility.hpp"
-#include "../hash.hpp"
-
-#ifndef TPP_USE_IMPORT
-
 #include <initializer_list>
 
-#else
-
-#if defined(_MSC_VER) && (__cplusplus <= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG <= 202002L))
-
-import std.memory;
-
-#endif
-
-#endif
+#include "utility.hpp"
+#include "../hash.hpp"
 
 namespace tpp::_detail
 {
