@@ -216,7 +216,7 @@ namespace tpp::_detail
 #endif
 
 	template<typename Iter, typename Size>
-	[[nodiscard]] inline Size max_distance_or_n(const Iter &first, const Iter &last, Size n) noexcept
+	[[nodiscard]] inline Size distance_or_n(const Iter &first, const Iter &last, Size n) noexcept
 	{
 		if constexpr (std::is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>)
 			return std::max(static_cast<Size>(std::distance(first, last)), n);

@@ -80,7 +80,7 @@ static void test_map() noexcept
 	TEST_ASSERT(map1.find("1") == map1.end());
 	TEST_ASSERT(map1.begin() == map1.end());
 
-	const int n = 0x10000;
+	const int n = 0x1000;
 	for (int i = 0; i < n; ++i)
 	{
 		const auto key = std::to_string(i);

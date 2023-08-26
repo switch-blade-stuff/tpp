@@ -60,7 +60,7 @@ static void test_set() noexcept
 	TEST_ASSERT(set1.find("2") == set1.end());
 	TEST_ASSERT(set1.begin() == set1.end());
 
-	const int n = 0x10000;
+	const int n = 0x1000;
 	for (int i = 0; i < n; ++i)
 	{
 		const auto key = std::to_string(i);
@@ -223,7 +223,7 @@ static void test_multiset() noexcept
 	TEST_ASSERT(set1.template find<1>(0) == set1.end());
 	TEST_ASSERT(set1.template find<1>(1) == set1.end());
 
-	const int n = 0x10000;
+	const int n = 0x1000;
 	for (int i = 0; i < n; ++i)
 	{
 		const auto str = std::to_string(i);

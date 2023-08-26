@@ -235,7 +235,7 @@ namespace tpp::_detail
 
 		template<typename Iter>
 		dense_table(Iter first, Iter last, size_type bucket_count, const hasher &hash, const key_equal &cmp, const allocator_type &alloc)
-				: dense_table(max_distance_or_n(first, last, bucket_count), hash, cmp, alloc) { insert(first, last); }
+				: dense_table(distance_or_n(first, last, bucket_count), hash, cmp, alloc) { insert(first, last); }
 
 		dense_table(const dense_table &other)
 				: header_base(other),
