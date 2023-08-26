@@ -9,7 +9,7 @@
 
 namespace tpp
 {
-	template<typename Mk, typename Mapped, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk, Mapped>>
+	template<typename Mk, typename Mapped, typename = _detail::multikey_hash<Mk>, typename = _detail::multikey_eq<Mk>, typename = _detail::multikey_alloc_t<Mk, Mapped>>
 	class dense_multimap;
 
 	/** @brief Hash multimap based on dense hash table.
@@ -42,10 +42,10 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			using link_type = detail::empty_link;
+			using link_type = _detail::empty_link;
 
-			using pointer = detail::packed_map_ptr<const key_type, mapped_type>;
-			using const_pointer = detail::packed_map_ptr<const key_type, const mapped_type>;
+			using pointer = _detail::packed_map_ptr<const key_type, mapped_type>;
+			using const_pointer = _detail::packed_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
@@ -60,7 +60,7 @@ namespace tpp
 			static constexpr std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
-		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using reference = typename table_t::reference;
@@ -153,33 +153,33 @@ namespace tpp
 		/** Returns iterator to the first element of the multimap.
 		 * @note Elements are stored in no particular order. */
 		/** @copydoc begin */
-		[[nodiscard]] constexpr iterator begin() noexcept { return m_table.begin(); }
+		[[nodiscard]] iterator begin() noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the multimap.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr iterator end() noexcept { return m_table.end(); }
+		[[nodiscard]] iterator end() noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the multimap.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
+		[[nodiscard]] reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the multimap.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return m_table.rend(); }
+		[[nodiscard]] reverse_iterator rend() noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns the total number of elements within the multimap. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -388,17 +388,17 @@ namespace tpp
 		[[nodiscard]] const mapped_type &at(const K &key) const { return guard_at(find<I>(key))->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
+		[[nodiscard]] local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
+		[[nodiscard]] local_iterator end(size_type n) noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		template<std::size_t I>
@@ -455,6 +455,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename Mk, typename M, typename H, typename C, typename A>
+	inline void swap(dense_multimap<Mk, M, H, C, A> &a, dense_multimap<Mk, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multimap<Mk, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename Mk, typename M, typename H, typename C, typename A, typename P>
@@ -472,11 +475,5 @@ namespace tpp
 				++i;
 		}
 		return result;
-	}
-
-	template<typename Mk, typename M, typename H, typename C, typename A>
-	inline void swap(dense_multimap<Mk, M, H, C, A> &a, dense_multimap<Mk, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multimap<Mk, H, C, A>>)
-	{
-		a.swap(b);
 	}
 }

@@ -73,7 +73,7 @@
 
 #endif
 
-namespace tpp::detail
+namespace tpp::_detail
 {
 #if defined(__cpp_lib_bit_cast) && __cpp_lib_bit_cast >= 201806L
 	template<typename To, typename From>
@@ -163,122 +163,6 @@ namespace tpp::detail
 #endif
 #endif
 
-#if TPP_BYTE_ORDER == TPP_BYTE_ORDER_LE
-	template<typename T>
-	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8, T> read_buffer(const void *data, std::size_t n) noexcept
-	{
-		switch (const auto *bytes = static_cast<const std::uint8_t *>(data); n)
-		{
-			case 0: return 0;
-			case 1: return static_cast<T>(read_unaligned<std::uint8_t>(bytes));
-			case 2: return static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-			case 3:
-			{
-				const auto h = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 2));
-				const auto l = static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-				return l | (h << 16);
-			}
-			case 4: return static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-			case 5:
-			{
-				const auto h = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 4));
-				const auto l = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return l | (h << 32);
-			}
-			case 6:
-			{
-				const auto h = static_cast<T>(read_unaligned<std::uint16_t>(bytes + 4));
-				const auto l = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return l | (h << 32);
-			}
-			case 7:
-			{
-				const auto a = static_cast<T>(read_unaligned<std::uint16_t>(bytes + 4));
-				const auto b = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 6));
-				const auto c = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return c | (a << 32) | (b << 48);
-			}
-			case 8: return read_unaligned<T>(bytes);
-			default: TPP_UNREACHABLE();
-		}
-	}
-	template<typename T>
-	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 4, T> read_buffer(const void *data, std::size_t n) noexcept
-	{
-		switch (const auto *bytes = static_cast<const std::uint8_t *>(data); n)
-		{
-			case 0: return 0;
-			case 1: return static_cast<T>(read_unaligned<std::uint8_t>(bytes));
-			case 2: return static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-			case 3:
-			{
-				const auto h = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 2));
-				const auto l = static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-				return l | (h << 16);
-			}
-			case 4: return read_unaligned<T>(bytes);
-			default: TPP_UNREACHABLE();
-		}
-	}
-#else
-	template<typename T>
-	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8, T> read_buffer(const void *data, std::size_t n) noexcept
-	{
-		switch (const auto *bytes = static_cast<const std::uint8_t *>(data); n)
-		{
-			case 0: return 0;
-			case 1: return static_cast<T>(read_unaligned<std::uint8_t>(bytes));
-			case 2: return static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-			case 3:
-			{
-				const auto l = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 2));
-				const auto h = static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-				return l | (h << 8);
-			}
-			case 4: return static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-			case 5:
-			{
-				const auto l = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 4));
-				const auto h = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return l | (h << 8);
-			}
-			case 6:
-			{
-				const auto l = static_cast<T>(read_unaligned<std::uint16_t>(bytes + 4));
-				const auto h = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return l | (h << 16);
-			}
-			case 7:
-			{
-				const auto a = static_cast<T>(read_unaligned<std::uint16_t>(bytes + 4));
-				const auto b = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 6));
-				const auto c = static_cast<T>(read_unaligned<std::uint32_t>(bytes));
-				return b | (a << 8) | (c << 24);
-			}
-			case 8: return read_unaligned<T>(data);
-			default: TPP_UNREACHABLE();
-		}
-	}
-	template<typename T>
-	[[nodiscard]] inline TPP_FORCEINLINE std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 4, T> read_buffer(const void *data, std::size_t n) noexcept
-	{
-		switch (const auto *bytes = static_cast<const std::uint8_t *>(data); n)
-		{
-			case 0: return 0;
-			case 1: return static_cast<T>(read_unaligned<std::uint8_t>(bytes));
-			case 2: return static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-			case 3:
-			{
-				const auto l = static_cast<T>(read_unaligned<std::uint8_t>(bytes + 2));
-				const auto h = static_cast<T>(read_unaligned<std::uint16_t>(bytes));
-				return l | (h << 8);
-			}
-			case 4: return read_unaligned<T>(data);
-			default: TPP_UNREACHABLE();
-		}
-	}
-#endif
-
 #if defined(TPP_DEBUG) || !defined(NDEBUG)
 	[[maybe_unused]] inline void assert_msg(const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 	{
@@ -291,7 +175,7 @@ namespace tpp::detail
 
 #define TPP_ASSERT(cnd, msg)                                                                \
     do { TPP_IF_UNLIKELY(!(cnd)) {                                                          \
-        tpp::detail::assert_msg((__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (#cnd), (msg));  \
+        tpp::_detail::assert_msg((__FILE__), (__LINE__), (TPP_PRETTY_FUNC), (#cnd), (msg)); \
         TPP_DEBUGTRAP();                                                                    \
     }} while(false)
 #else
@@ -376,7 +260,7 @@ namespace tpp::detail
 	template<typename A, typename PtrT = typename std::allocator_traits<A>::pointer, typename SizeT = typename std::allocator_traits<A>::size_type>
 	inline void realloc_buffer(A &alloc, PtrT &buff, SizeT &size, SizeT new_size)
 	{
-		const auto new_buff = realloc_buffer(alloc, std::pair<PtrT, SizeT>{buff, size}, new_size);
+		const auto new_buff = realloc_buffer(alloc, std::pair<PtrT, SizeT>(buff, size), new_size);
 		buff = new_buff.first;
 		size = new_buff.second;
 	}
@@ -385,12 +269,27 @@ namespace tpp::detail
 	using iter_key_t = typename std::iterator_traits<T>::value_type::first_type;
 	template<typename T>
 	using iter_mapped_t = typename std::iterator_traits<T>::value_type::second_type;
-	template<typename T>
-	using map_value_t = std::pair<iter_key_t<T>, iter_mapped_t<T>>;
 
-	//	template<typename Key, typename Mapped, typename KeyHash, typename KeyCmp, typename Alloc>
 	template<template<typename K, typename Kh, typename Kc, typename A> typename Set, typename I, typename H, typename C, typename A>
 	using deduce_set_t = Set<iter_key_t<I>, H, C, A>;
 	template<template<typename K, typename M, typename Kh, typename Kc, typename A> typename Map, typename I, typename H, typename C, typename A>
 	using deduce_map_t = Map<iter_key_t<I>, iter_mapped_t<I>, H, C, A>;
+
+#if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
+	template<typename T, typename U> requires std::three_way_comparable_with<T, U>
+	[[nodiscard]] constexpr decltype(auto) synth_three_way(const T &t, const T &u) noexcept(noexcept(t <=> u)) { return t <=> u; }
+	template<typename T, typename U> requires(!std::three_way_comparable_with<T, U> && requires(const T &t, const T &u) { { t < u } -> std::convertible_to<bool>; { u < t } -> std::convertible_to<bool>; })
+	[[nodiscard]] constexpr decltype(auto) synth_three_way(const T &t, const T &u) noexcept(noexcept(t < u) && noexcept(u < t))
+	{
+		if (t < u)
+			return std::weak_ordering::less;
+		else if (u < t)
+			return std::weak_ordering::greater;
+		else
+			return std::weak_ordering::equivalent;
+	}
+
+	template<typename T, typename U>
+	using synth_three_way_result = decltype(synth_three_way(std::declval<T>(), std::declval<U>()));
+#endif
 }

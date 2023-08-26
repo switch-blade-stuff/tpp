@@ -13,7 +13,7 @@
 
 #endif
 
-namespace tpp::detail
+namespace tpp::_detail
 {
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
 	struct dense_table_traits : table_traits<I, V, K, Kh, Kc, Alloc>
@@ -23,8 +23,8 @@ namespace tpp::detail
 		static constexpr size_type key_size = ValueTraits::key_size;
 		static constexpr size_type npos = std::numeric_limits<size_type>::max();
 
-		using is_transparent = std::conjunction<detail::is_transparent<Kh>, detail::is_transparent<Kc>>;
-		using is_ordered = detail::is_ordered<typename ValueTraits::link_type>;
+		using is_transparent = std::conjunction<_detail::is_transparent<Kh>, _detail::is_transparent<Kc>>;
+		using is_ordered = _detail::is_ordered<typename ValueTraits::link_type>;
 
 		using bucket_link = typename ValueTraits::link_type;
 		using bucket_hash = std::array<std::size_t, ValueTraits::key_size>;
@@ -71,10 +71,10 @@ namespace tpp::detail
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename Alloc, typename ValueTraits>
 	class dense_table :
 			ValueTraits::link_type,
-			ebo_container<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::sparse_allocator>,
-			ebo_container<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::dense_allocator>,
-			ebo_container<Kh>,
-			ebo_container<Kc>
+			empty_base<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::sparse_allocator>,
+			empty_base<typename dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>::dense_allocator>,
+			empty_base<Kh>,
+			empty_base<Kc>
 	{
 		using traits_t = dense_table_traits<I, V, K, Kh, Kc, Alloc, ValueTraits>;
 
@@ -112,10 +112,10 @@ namespace tpp::detail
 		using chain_slice = std::array<size_type *, key_size>;
 
 		using header_base = bucket_link;
-		using hash_base = ebo_container<hasher>;
-		using cmp_base = ebo_container<key_equal>;
-		using sparse_alloc_base = ebo_container<sparse_allocator>;
-		using dense_alloc_base = ebo_container<dense_allocator>;
+		using hash_base = empty_base<hasher>;
+		using cmp_base = empty_base<key_equal>;
+		using sparse_alloc_base = empty_base<sparse_allocator>;
+		using dense_alloc_base = empty_base<dense_allocator>;
 
 		using node_iterator = std::conditional_t<is_ordered::value, ordered_iterator<bucket_node, dense_allocator>, dense_ptr>;
 
@@ -149,11 +149,11 @@ namespace tpp::detail
 				constexpr pointer(pointer &&) noexcept = default;
 				constexpr pointer &operator=(pointer &&) noexcept = default;
 
-				[[nodiscard]] constexpr reference operator->() const noexcept { return get(std::make_index_sequence<key_size>{}); }
+				[[nodiscard]] reference operator->() const noexcept { return get(std::make_index_sequence<key_size>{}); }
 
 			private:
 				template<std::size_t J, std::size_t... Js>
-				[[nodiscard]] constexpr reference get(std::index_sequence<J, Js...>) const noexcept
+				[[nodiscard]] reference get(std::index_sequence<J, Js...>) const noexcept
 				{
 					if constexpr (sizeof...(Js) != 0)
 						return reference{*m_ptr[Js]...};
@@ -188,7 +188,7 @@ namespace tpp::detail
 			}
 
 			[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{&node()->value()}; }
-			[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
+			[[nodiscard]] reference operator*() const noexcept { return *operator->(); }
 
 			[[nodiscard]] constexpr bool operator==(const bucket_iterator &other) const noexcept { return m_base == other.m_base && m_pos == other.m_pos; }
 #if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
@@ -354,30 +354,30 @@ namespace tpp::detail
 			insert(first, last);
 		}
 
-		[[nodiscard]] constexpr iterator begin() noexcept { return to_iter(begin_node()); }
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return to_iter(begin_node()); }
-		[[nodiscard]] constexpr iterator end() noexcept { return to_iter(end_node()); }
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return to_iter(end_node()); }
+		[[nodiscard]] iterator begin() noexcept { return to_iter(begin_node()); }
+		[[nodiscard]] const_iterator begin() const noexcept { return to_iter(begin_node()); }
+		[[nodiscard]] iterator end() noexcept { return to_iter(end_node()); }
+		[[nodiscard]] const_iterator end() const noexcept { return to_iter(end_node()); }
 
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return reverse_iterator{end()}; }
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return reverse_iterator{begin()}; }
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
+		[[nodiscard]] reverse_iterator rbegin() noexcept { return reverse_iterator{end()}; }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
+		[[nodiscard]] reverse_iterator rend() noexcept { return reverse_iterator{begin()}; }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
 
-		[[nodiscard]] constexpr reference front() noexcept { return *to_iter(front_node()); }
-		[[nodiscard]] constexpr const_reference front() const noexcept { return *to_iter(front_node()); }
-		[[nodiscard]] constexpr reference back() noexcept { return *to_iter(back_node()); }
-		[[nodiscard]] constexpr const_reference back() const noexcept { return *to_iter(back_node()); }
+		[[nodiscard]] reference front() noexcept { return *to_iter(front_node()); }
+		[[nodiscard]] const_reference front() const noexcept { return *to_iter(front_node()); }
+		[[nodiscard]] reference back() noexcept { return *to_iter(back_node()); }
+		[[nodiscard]] const_reference back() const noexcept { return *to_iter(back_node()); }
 
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_dense_size; }
 		[[nodiscard]] constexpr size_type max_size() const noexcept { return to_load_factor(max_bucket_count()); }
 		[[nodiscard]] constexpr size_type capacity() const noexcept { return to_load_factor(bucket_count()); }
 		[[nodiscard]] constexpr float load_factor() const noexcept { return static_cast<float>(size()) / static_cast<float>(bucket_count()); }
 
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return local_iterator{m_dense, m_sparse[n]}; }
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return const_local_iterator{m_dense, m_sparse[n]}; }
-		[[nodiscard]] constexpr local_iterator end(size_type) noexcept { return local_iterator{}; }
-		[[nodiscard]] constexpr const_local_iterator end(size_type) const noexcept { return const_local_iterator{}; }
+		[[nodiscard]] local_iterator begin(size_type n) noexcept { return local_iterator{m_dense, m_sparse[n]}; }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return const_local_iterator{m_dense, m_sparse[n]}; }
+		[[nodiscard]] local_iterator end(size_type) noexcept { return local_iterator{}; }
+		[[nodiscard]] const_local_iterator end(size_type) const noexcept { return const_local_iterator{}; }
 
 		[[nodiscard]] constexpr size_type bucket_count() const noexcept { return m_sparse_size; }
 		[[nodiscard]] constexpr size_type max_bucket_count() const noexcept { return npos - 1; }
@@ -554,27 +554,27 @@ namespace tpp::detail
 		template<typename T, typename U>
 		[[nodiscard]] bool cmp(const T &a, const U &b) const { return get_cmp()(a, b); }
 
-		[[nodiscard]] constexpr auto *header_link() const noexcept
+		[[nodiscard]] auto *header_link() const noexcept
 		{
 			/* Using `const_cast` here to avoid non-const function duplicates. Pointers will be converted to appropriate const-ness either way. */
 			return const_cast<bucket_link *>(static_cast<const bucket_link *>(this));
 		}
-		[[nodiscard]] constexpr auto *begin_node() const noexcept
+		[[nodiscard]] auto *begin_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link()->off(header_base::next));
 			else
 				return to_address(m_dense);
 		}
-		[[nodiscard]] constexpr auto *front_node() const noexcept { return begin_node(); }
-		[[nodiscard]] constexpr auto *back_node() const noexcept
+		[[nodiscard]] auto *front_node() const noexcept { return begin_node(); }
+		[[nodiscard]] auto *back_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link()->off(header_base::prev));
 			else
 				return to_address(m_dense + (size() - 1));
 		}
-		[[nodiscard]] constexpr auto *end_node() const noexcept
+		[[nodiscard]] auto *end_node() const noexcept
 		{
 			if constexpr (is_ordered::value)
 				return static_cast<bucket_node *>(header_link());
@@ -582,17 +582,17 @@ namespace tpp::detail
 				return to_address(m_dense + size());
 		}
 
-		[[nodiscard]] constexpr auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
-		[[nodiscard]] constexpr auto to_iter(bucket_node *node) const noexcept { return const_iterator{node_iterator{node}}; }
+		[[nodiscard]] auto to_iter(bucket_node *node) noexcept { return iterator{node_iterator{node}}; }
+		[[nodiscard]] auto to_iter(bucket_node *node) const noexcept { return const_iterator{node_iterator{node}}; }
 
 		template<std::size_t J>
-		[[nodiscard]] constexpr size_type *get_chain(std::size_t h) const noexcept
+		[[nodiscard]] size_type *get_chain(std::size_t h) const noexcept
 		{
 			/* Same reason for `const_cast` as with `header_link` above. */
 			return m_sparse ? const_cast<size_type *>(m_sparse[h % bucket_count()].data() + J) : nullptr;
 		}
 		template<std::size_t J>
-		[[nodiscard]] constexpr size_type *find_chain_ptr(size_type *bucket, size_type pos) const noexcept
+		[[nodiscard]] size_type *find_chain_ptr(size_type *bucket, size_type pos) const noexcept
 		{
 			while (*bucket != npos && *bucket != pos) bucket = &m_dense[*bucket].next[J];
 			return bucket;
@@ -627,14 +627,14 @@ namespace tpp::detail
 		}
 
 		template<std::size_t J>
-		constexpr void insert_node(bucket_node &node, size_type pos) noexcept
+		void insert_node(bucket_node &node, size_type pos) noexcept
 		{
 			auto *chain_idx = get_chain<J>(node.template hash<J>());
 			node.next[J] = *chain_idx;
 			*chain_idx = pos;
 		}
 		template<std::size_t J>
-		constexpr void move_chain(size_type from, size_type to) noexcept
+		void move_chain(size_type from, size_type to) noexcept
 		{
 			auto &target = *find_chain_ptr<J>(get_chain<J>(m_dense[from].template hash<J>()), from);
 			TPP_ASSERT(target != npos, "Cannot move to an empty node");
@@ -849,12 +849,21 @@ namespace tpp::detail
 		void resize_data(size_type capacity)
 		{
 			auto &alloc = dense_alloc();
-			auto new_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
-			relocate(alloc, m_dense, m_dense + m_dense_size, alloc, new_dense, relocate_node{});
+			auto tmp_dense = std::allocator_traits<dense_allocator>::allocate(alloc, capacity);
 
-			if (m_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, m_dense, m_dense_capacity);
-			m_dense_capacity = capacity;
-			m_dense = new_dense;
+			try
+			{
+				relocate(alloc, m_dense, m_dense + m_dense_size, alloc, tmp_dense, relocate_node{});
+				std::swap(m_dense_capacity, capacity);
+				std::swap(m_dense, tmp_dense);
+
+				if (tmp_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, std::exchange(tmp_dense, {}), capacity);
+			}
+			catch (...)
+			{
+				if (tmp_dense) std::allocator_traits<dense_allocator>::deallocate(alloc, tmp_dense, capacity);
+				throw;
+			}
 		}
 		void maybe_resize(node_iterator &hint)
 		{

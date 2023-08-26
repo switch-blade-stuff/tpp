@@ -6,10 +6,8 @@ macro(test_target_cxx)
     add_executable(${PROJECT_NAME}
             ${CMAKE_CURRENT_LIST_DIR}/main.cpp
             ${CMAKE_CURRENT_LIST_DIR}/assert.hpp
-            ${CMAKE_CURRENT_LIST_DIR}/hash_tests.cpp
             ${CMAKE_CURRENT_LIST_DIR}/dense_table_tests.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp
-            )
+            ${CMAKE_CURRENT_LIST_DIR}/swiss_table_tests.cpp)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE tpp)
 
@@ -33,7 +31,7 @@ macro(test_target_cxx)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
             target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address /Zi)
-        elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fstack-protector-strong)
             target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined -fsanitize=address)
         endif ()
@@ -58,13 +56,6 @@ macro(test_target_cxx)
     add_test(NAME stable_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> stable_map)
     add_test(NAME ordered_stable_set-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_stable_set)
     add_test(NAME ordered_stable_map-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> ordered_stable_map)
-
-    # Hash function tests
-    add_test(NAME seahash-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> seahash)
-    add_test(NAME crc32-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> crc32)
-    add_test(NAME fnv1a-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> fnv1a)
-    add_test(NAME sdbm-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> sdbm)
-    add_test(NAME md5-cxx${ARGV0} COMMAND $<TARGET_FILE:${PROJECT_NAME}> md5)
 endmacro()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/..)

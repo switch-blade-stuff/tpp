@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../stl_hash.hpp"
+#include "../hash.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -18,7 +18,7 @@ namespace tpp
 	template<typename... Ks>
 	struct multikey { static_assert(sizeof...(Ks) != 0, "Multikey must have at least one key type"); };
 
-	namespace detail
+	namespace _detail
 	{
 		template<typename, typename = void>
 		struct multikey_alloc;
@@ -47,7 +47,7 @@ namespace tpp
 		struct multikey_hash<multikey<Ks...>>
 		{
 			template<typename T, typename = std::enable_if_t<is_pack_element<T, Ks...>::value>>
-			[[nodiscard]] constexpr auto operator()(const T &key) const { return default_hash<T>{}(key); }
+			[[nodiscard]] constexpr auto operator()(const T &key) const { return std::hash<T>{}(key); }
 		};
 		template<typename... Ks>
 		struct multikey_eq<multikey<Ks...>>

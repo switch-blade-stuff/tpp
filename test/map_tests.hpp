@@ -114,7 +114,7 @@ static void test_map() noexcept
 template<template<typename...> typename T, typename map_t = T<std::string, int>>
 static void test_ordered_map() noexcept
 {
-	auto map0 = map_t{};
+	auto map0 = map_t();
 	TEST_ASSERT(map0.size() == 0);
 
 	TEST_ASSERT(map0.try_emplace("0", 0).second);

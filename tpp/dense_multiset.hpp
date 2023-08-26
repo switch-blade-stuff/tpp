@@ -9,7 +9,7 @@
 
 namespace tpp
 {
-	template<typename Mk, typename = detail::multikey_hash<Mk>, typename = detail::multikey_eq<Mk>, typename = detail::multikey_alloc_t<Mk>>
+	template<typename Mk, typename = _detail::multikey_hash<Mk>, typename = _detail::multikey_eq<Mk>, typename = _detail::multikey_alloc_t<Mk>>
 	class dense_multiset;
 
 	/** @brief Hash multiset based on dense hash table.
@@ -31,7 +31,7 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			using link_type = detail::empty_link;
+			using link_type = _detail::empty_link;
 
 			using pointer = const key_type *;
 			using const_pointer = const key_type *;
@@ -46,7 +46,7 @@ namespace tpp
 			static constexpr std::size_t key_size = std::tuple_size_v<key_type>;
 		};
 
-		using table_t = detail::dense_table<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<key_type, key_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -148,25 +148,25 @@ namespace tpp
 
 		/** Returns iterator to the first element of the multiset.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the multiset.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the multiset.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the multiset.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns the total number of elements within the multiset. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -275,13 +275,13 @@ namespace tpp
 		[[nodiscard]] bool contains(const K &key) const { return m_table.template contains<I>(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		template<std::size_t I>
@@ -329,6 +329,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename Mk, typename H, typename C, typename A>
+	inline void swap(dense_multiset<Mk, H, C, A> &a, dense_multiset<Mk, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multiset<Mk, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename Mk, typename H, typename C, typename A, typename P>
@@ -346,11 +349,5 @@ namespace tpp
 				++i;
 		}
 		return result;
-	}
-
-	template<typename Mk, typename H, typename C, typename A>
-	inline void swap(dense_multiset<Mk, H, C, A> &a, dense_multiset<Mk, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_multiset<Mk, H, C, A>>)
-	{
-		a.swap(b);
 	}
 }

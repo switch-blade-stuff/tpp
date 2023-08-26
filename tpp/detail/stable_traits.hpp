@@ -6,7 +6,7 @@
 
 #include "table_common.hpp"
 
-namespace tpp::detail
+namespace tpp::_detail
 {
 	template<typename, typename = void, typename = void>
 	struct pair_traits

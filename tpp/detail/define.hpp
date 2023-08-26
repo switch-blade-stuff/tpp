@@ -33,9 +33,7 @@ import std;
 #include <type_traits>
 
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
-
 #include <version>
-
 #endif
 
 #include <utility>

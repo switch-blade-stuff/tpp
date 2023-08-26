@@ -18,12 +18,12 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the set.
 	 * @tparam KeyCmp Compare functor used by the set.
 	 * @tparam Alloc Allocator used by the set. */
-	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	template<typename Key, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class dense_set
 	{
 		struct traits_t
 		{
-			using link_type = detail::empty_link;
+			using link_type = _detail::empty_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -41,7 +41,7 @@ namespace tpp
 			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -154,25 +154,25 @@ namespace tpp
 
 		/** Returns iterator to the first element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns the total number of elements within the set. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -277,13 +277,13 @@ namespace tpp
 		[[nodiscard]] bool contains(const K &key) const { return m_table.template contains<0>(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
@@ -330,6 +330,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename K, typename H, typename C, typename A>
+	inline void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename H, typename C, typename A, typename P>
@@ -349,29 +352,23 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename H, typename C, typename A>
-	inline void swap(dense_set<K, H, C, A> &a, dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_set<K, H, C, A>>) { a.swap(b); }
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	dense_set(I, I, typename _detail::deduce_set_t<dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_set<Key, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash, typename Alloc>
+	dense_set(I, I, typename _detail::deduce_set_t<dense_set, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> dense_set<Key, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	dense_set(I, I, typename _detail::deduce_set_t<dense_set, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> dense_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	dense_set(I, I, Alloc) -> dense_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
-	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> dense_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> dense_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	dense_set(I, I, typename detail::deduce_set_t<dense_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	dense_set(I, I, Alloc) -> dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-
-	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	template<typename K, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
 	dense_set(std::initializer_list<K>, typename dense_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_set<K, Hash, Cmp, Alloc>;
 	template<typename K, typename Hash, typename Alloc>
 	dense_set(std::initializer_list<K>, typename dense_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> dense_set<K, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	dense_set(std::initializer_list<K>, typename dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	dense_set(std::initializer_list<K>, typename dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	dense_set(std::initializer_list<K>, Alloc) -> dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	dense_set(std::initializer_list<K>, Alloc) -> dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 
 	/** @brief Ordered hash set based on dense hash table.
 	 *
@@ -383,12 +380,12 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the set.
 	 * @tparam KeyCmp Compare functor used by the set.
 	 * @tparam Alloc Allocator used by the set. */
-	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	template<typename Key, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class ordered_dense_set
 	{
 		struct traits_t
 		{
-			using link_type = detail::ordered_link;
+			using link_type = _detail::ordered_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -405,7 +402,7 @@ namespace tpp
 			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -518,27 +515,27 @@ namespace tpp
 		}
 
 		/** Returns iterator to the first element of the set. */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set. */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the set. */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the set. */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns reference to the first element of the set. */
-		[[nodiscard]] constexpr const_reference front() const noexcept { return m_table.front(); }
+		[[nodiscard]] const_reference front() const noexcept { return m_table.front(); }
 		/** Returns reference to the last element of the set. */
-		[[nodiscard]] constexpr const_reference back() const noexcept { return m_table.back(); }
+		[[nodiscard]] const_reference back() const noexcept { return m_table.back(); }
 
 		/** Returns the total number of elements within the set. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -641,13 +638,13 @@ namespace tpp
 		[[nodiscard]] bool contains(const K &key) const { return m_table.template contains<0>(key); }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
@@ -694,6 +691,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename K, typename H, typename C, typename A>
+	inline void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the set \p set that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename H, typename C, typename A, typename P>
@@ -713,27 +713,21 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename H, typename C, typename A>
-	inline void swap(ordered_dense_set<K, H, C, A> &a, ordered_dense_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_set<K, H, C, A>>) { a.swap(b); }
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	ordered_dense_set(I, I, typename _detail::deduce_set_t<ordered_dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_set<Key, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash, typename Alloc>
+	ordered_dense_set(I, I, typename _detail::deduce_set_t<ordered_dense_set, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_set<Key, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	ordered_dense_set(I, I, typename _detail::deduce_set_t<ordered_dense_set, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> ordered_dense_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	ordered_dense_set(I, I, Alloc) -> ordered_dense_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
-	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> ordered_dense_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> ordered_dense_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_dense_set(I, I, typename detail::deduce_set_t<ordered_dense_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> ordered_dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_dense_set(I, I, Alloc) -> ordered_dense_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-
-	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	template<typename K, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
 	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_set<K, Hash, Cmp, Alloc>;
 	template<typename K, typename Hash, typename Alloc>
 	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_set<K, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_dense_set(std::initializer_list<K>, typename ordered_dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	ordered_dense_set(std::initializer_list<K>, Alloc) -> ordered_dense_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_dense_set(std::initializer_list<K>, Alloc) -> ordered_dense_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 }

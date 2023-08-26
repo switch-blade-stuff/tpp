@@ -7,16 +7,8 @@
 #include "assert.hpp"
 
 #ifndef TPP_USE_MODULES
-
 #include <string_view>
-
 #endif
-
-void test_seahash() noexcept;
-void test_crc32() noexcept;
-void test_fnv1a() noexcept;
-void test_sdbm() noexcept;
-void test_md5() noexcept;
 
 void test_dense_set() noexcept;
 void test_dense_map() noexcept;
@@ -52,10 +44,4 @@ static constexpr std::pair<std::string_view, void (*)()> tests[] = {
 		{"stable_map", test_stable_map},
 		{"ordered_stable_set", test_ordered_stable_set},
 		{"ordered_stable_map", test_ordered_stable_map},
-
-		{"seahash", test_seahash},
-		{"crc32", test_crc32},
-		{"fnv1a", test_fnv1a},
-		{"sdbm", test_sdbm},
-		{"md5", test_md5},
 };

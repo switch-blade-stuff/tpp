@@ -18,12 +18,12 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the set.
 	 * @tparam KeyCmp Compare functor used by the set.
 	 * @tparam Alloc Allocator used by the set. */
-	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	template<typename Key, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class sparse_set
 	{
 		struct traits_t
 		{
-			using link_type = detail::empty_link;
+			using link_type = _detail::empty_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -34,7 +34,7 @@ namespace tpp
 			static constexpr auto &get_key(T &value) noexcept { return value; }
 		};
 
-		using table_t = detail::swiss_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::swiss_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -137,14 +137,14 @@ namespace tpp
 
 		/** Returns iterator to the first element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns the total number of elements within the set. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -305,26 +305,23 @@ namespace tpp
 	template<typename K, typename H, typename C, typename A>
 	inline void swap(sparse_set<K, H, C, A> &a, sparse_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<sparse_set<K, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
-	sparse_set(I, I, typename detail::deduce_set_t<sparse_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> sparse_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	sparse_set(I, I, typename detail::deduce_set_t<sparse_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> sparse_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	sparse_set(I, I, typename detail::deduce_set_t<sparse_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> sparse_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	sparse_set(I, I, Alloc) -> sparse_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	sparse_set(I, I, typename _detail::deduce_set_t<sparse_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> sparse_set<Key, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash, typename Alloc>
+	sparse_set(I, I, typename _detail::deduce_set_t<sparse_set, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> sparse_set<Key, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	sparse_set(I, I, typename _detail::deduce_set_t<sparse_set, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> sparse_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	sparse_set(I, I, Alloc) -> sparse_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	template<typename K, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
 	sparse_set(std::initializer_list<K>, typename sparse_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> sparse_set<K, Hash, Cmp, Alloc>;
 	template<typename K, typename Hash, typename Alloc>
 	sparse_set(std::initializer_list<K>, typename sparse_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> sparse_set<K, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	sparse_set(std::initializer_list<K>, typename sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	sparse_set(std::initializer_list<K>, typename sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	sparse_set(std::initializer_list<K>, Alloc) -> sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	sparse_set(std::initializer_list<K>, Alloc) -> sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 
 	/** @brief Ordered hash set based on SwissHash open addressing hash table.
 	 *
@@ -336,12 +333,12 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the set.
 	 * @tparam KeyCmp Compare functor used by the set.
 	 * @tparam Alloc Allocator used by the set. */
-	template<typename Key, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	template<typename Key, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
 	class ordered_sparse_set
 	{
 		struct traits_t
 		{
-			using link_type = detail::ordered_link;
+			using link_type = _detail::ordered_link;
 
 			using pointer = const Key *;
 			using const_pointer = const Key *;
@@ -352,7 +349,7 @@ namespace tpp
 			static constexpr auto &get_key(T &value) noexcept { return value; }
 		};
 
-		using table_t = detail::swiss_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::swiss_table<Key, Key, Key, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		using insert_type = typename table_t::insert_type;
@@ -455,18 +452,18 @@ namespace tpp
 		}
 
 		/** Returns iterator to the first element of the set. */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the set. */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reference to the first element of the set. */
-		[[nodiscard]] constexpr const_reference front() const noexcept { return m_table.front(); }
+		[[nodiscard]] const_reference front() const noexcept { return m_table.front(); }
 		/** Returns reference to the last element of the set. */
-		[[nodiscard]] constexpr const_reference back() const noexcept { return m_table.back(); }
+		[[nodiscard]] const_reference back() const noexcept { return m_table.back(); }
 
 		/** Returns the total number of elements within the set. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -627,24 +624,21 @@ namespace tpp
 	template<typename K, typename H, typename C, typename A>
 	inline void swap(ordered_sparse_set<K, H, C, A> &a, ordered_sparse_set<K, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_sparse_set<K, H, C, A>>) { a.swap(b); }
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<detail::iter_key_t<I>>>
-	ordered_sparse_set(I, I, typename detail::deduce_set_t<ordered_sparse_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> ordered_sparse_set<detail::iter_key_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	ordered_sparse_set(I, I, typename detail::deduce_set_t<ordered_sparse_set, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> ordered_sparse_set<detail::iter_key_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_sparse_set(I, I, typename detail::deduce_set_t<ordered_sparse_set, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> ordered_sparse_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_sparse_set(I, I, Alloc) -> ordered_sparse_set<detail::iter_key_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<Key>>
+	ordered_sparse_set(I, I, typename _detail::deduce_set_t<ordered_sparse_set, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_sparse_set<Key, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Hash, typename Alloc>
+	ordered_sparse_set(I, I, typename _detail::deduce_set_t<ordered_sparse_set, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> ordered_sparse_set<Key, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	ordered_sparse_set(I, I, typename _detail::deduce_set_t<ordered_sparse_set, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> ordered_sparse_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Alloc>
+	ordered_sparse_set(I, I, Alloc) -> ordered_sparse_set<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename K, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
+	template<typename K, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<K>>
 	ordered_sparse_set(std::initializer_list<K>, typename ordered_sparse_set<K, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_sparse_set<K, Hash, Cmp, Alloc>;
 	template<typename K, typename Hash, typename Alloc>
 	ordered_sparse_set(std::initializer_list<K>, typename ordered_sparse_set<K, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_sparse_set<K, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	ordered_sparse_set(std::initializer_list<K>, typename ordered_sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_sparse_set(std::initializer_list<K>, typename ordered_sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename Alloc>
-	ordered_sparse_set(std::initializer_list<K>, Alloc) -> ordered_sparse_set<K, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_sparse_set(std::initializer_list<K>, Alloc) -> ordered_sparse_set<K, std::hash<K>, std::equal_to<K>, Alloc>;
 }

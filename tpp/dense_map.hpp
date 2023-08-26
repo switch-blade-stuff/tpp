@@ -25,7 +25,7 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the map.
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
-	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	template<typename Key, typename Mapped, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class dense_map
 	{
 	public:
@@ -37,10 +37,10 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			using link_type = detail::empty_link;
+			using link_type = _detail::empty_link;
 
-			using pointer = detail::packed_map_ptr<const key_type, mapped_type>;
-			using const_pointer = detail::packed_map_ptr<const key_type, const mapped_type>;
+			using pointer = _detail::packed_map_ptr<const key_type, mapped_type>;
+			using const_pointer = _detail::packed_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
@@ -55,7 +55,7 @@ namespace tpp
 			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -159,33 +159,33 @@ namespace tpp
 		/** Returns iterator to the first element of the map.
 		 * @note Elements are stored in no particular order. */
 		/** @copydoc begin */
-		[[nodiscard]] constexpr iterator begin() noexcept { return m_table.begin(); }
+		[[nodiscard]] iterator begin() noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr iterator end() noexcept { return m_table.end(); }
+		[[nodiscard]] iterator end() noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
+		[[nodiscard]] reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return m_table.rend(); }
+		[[nodiscard]] reverse_iterator rend() noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns the total number of elements within the map. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -555,17 +555,17 @@ namespace tpp
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
+		[[nodiscard]] local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
+		[[nodiscard]] local_iterator end(size_type n) noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
@@ -621,6 +621,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename K, typename M, typename H, typename C, typename A>
+	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
@@ -640,29 +643,23 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename M, typename H, typename C, typename A>
-	inline void swap(dense_map<K, M, H, C, A> &a, dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<dense_map<K, H, C, A>>) { a.swap(b); }
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	dense_map(I, I, typename _detail::deduce_map_t<dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_map<Key, Mapped, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Hash, typename Alloc>
+	dense_map(I, I, typename _detail::deduce_map_t<dense_map, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> dense_map<Key, Mapped, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Alloc>
+	dense_map(I, I, typename _detail::deduce_map_t<dense_map, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> dense_map<Key, Mapped, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Alloc>
+	dense_map(I, I, Alloc) -> dense_map<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
-	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	dense_map(I, I, typename detail::deduce_map_t<dense_map, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	dense_map(I, I, Alloc) -> dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
+	template<typename K, typename M, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> dense_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename M, typename Alloc>
-	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	dense_map(std::initializer_list<std::pair<K, M>>, typename dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename M, typename Alloc>
-	dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>;
 
 	/** @brief Ordered hash map based on dense hash table.
 	 *
@@ -681,7 +678,7 @@ namespace tpp
 	 * @tparam KeyHash Hash functor used by the map.
 	 * @tparam KeyCmp Compare functor used by the map.
 	 * @tparam Alloc Allocator used by the map. */
-	template<typename Key, typename Mapped, typename KeyHash = detail::default_hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	template<typename Key, typename Mapped, typename KeyHash = std::hash<Key>, typename KeyCmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
 	class ordered_dense_map
 	{
 	public:
@@ -693,10 +690,10 @@ namespace tpp
 	private:
 		struct traits_t
 		{
-			using link_type = detail::ordered_link;
+			using link_type = _detail::ordered_link;
 
-			using pointer = detail::packed_map_ptr<const key_type, mapped_type>;
-			using const_pointer = detail::packed_map_ptr<const key_type, const mapped_type>;
+			using pointer = _detail::packed_map_ptr<const key_type, mapped_type>;
+			using const_pointer = _detail::packed_map_ptr<const key_type, const mapped_type>;
 			using reference = typename pointer::reference;
 			using const_reference = typename const_pointer::reference;
 
@@ -711,7 +708,7 @@ namespace tpp
 			static constexpr std::size_t key_size = 1;
 		};
 
-		using table_t = detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
+		using table_t = _detail::dense_table<insert_type, value_type, key_type, KeyHash, KeyCmp, Alloc, traits_t>;
 
 	public:
 		/** Pair of references to `const key_type` and `mapped_type`. */
@@ -803,42 +800,42 @@ namespace tpp
 		/** Returns iterator to the first element of the map.
 		 * @note Elements are stored in no particular order. */
 		/** @copydoc begin */
-		[[nodiscard]] constexpr iterator begin() noexcept { return m_table.begin(); }
+		[[nodiscard]] iterator begin() noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator begin() const noexcept { return m_table.begin(); }
+		[[nodiscard]] const_iterator begin() const noexcept { return m_table.begin(); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+		[[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
 		/** Returns iterator one past the last element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr iterator end() noexcept { return m_table.end(); }
+		[[nodiscard]] iterator end() noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator end() const noexcept { return m_table.end(); }
+		[[nodiscard]] const_iterator end() const noexcept { return m_table.end(); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+		[[nodiscard]] const_iterator cend() const noexcept { return end(); }
 
 		/** Returns reverse iterator to the last element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
+		[[nodiscard]] reverse_iterator rbegin() noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
+		[[nodiscard]] const_reverse_iterator rbegin() const noexcept { return m_table.rbegin(); }
 		/** @copydoc rbegin */
-		[[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+		[[nodiscard]] const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 		/** Returns reverse iterator one past the first element of the map.
 		 * @note Elements are stored in no particular order. */
-		[[nodiscard]] constexpr reverse_iterator rend() noexcept { return m_table.rend(); }
+		[[nodiscard]] reverse_iterator rend() noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return m_table.rend(); }
+		[[nodiscard]] const_reverse_iterator rend() const noexcept { return m_table.rend(); }
 		/** @copydoc rend */
-		[[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+		[[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
 
 		/** Returns reference to the first element of the map. */
-		[[nodiscard]] constexpr reference front() noexcept { return m_table.front(); }
+		[[nodiscard]] reference front() noexcept { return m_table.front(); }
 		/** @copydoc front */
-		[[nodiscard]] constexpr const_reference front() const noexcept { return m_table.front(); }
+		[[nodiscard]] const_reference front() const noexcept { return m_table.front(); }
 		/** Returns reference to the last element of the map. */
-		[[nodiscard]] constexpr reference back() noexcept { return m_table.back(); }
+		[[nodiscard]] reference back() noexcept { return m_table.back(); }
 		/** @copydoc back */
-		[[nodiscard]] constexpr const_reference back() const noexcept { return m_table.back(); }
+		[[nodiscard]] const_reference back() const noexcept { return m_table.back(); }
 
 		/** Returns the total number of elements within the map. */
 		[[nodiscard]] constexpr size_type size() const noexcept { return m_table.size(); }
@@ -1208,17 +1205,17 @@ namespace tpp
 		[[nodiscard]] mapped_type &operator[](K &key) { return try_emplace(std::forward<K>(key)).first->second; }
 
 		/** Returns forward iterator to the first element of the specified bucket. */
-		[[nodiscard]] constexpr local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
+		[[nodiscard]] local_iterator begin(size_type n) noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator begin(size_type n) const noexcept { return m_table.begin(n); }
 		/** @copydoc begin */
-		[[nodiscard]] constexpr const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
+		[[nodiscard]] const_local_iterator cbegin(size_type n) const noexcept { return m_table.begin(n); }
 		/** Returns a sentinel iterator for the specified bucket. */
-		[[nodiscard]] constexpr local_iterator end(size_type n) noexcept { return m_table.end(n); }
+		[[nodiscard]] local_iterator end(size_type n) noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator end(size_type n) const noexcept { return m_table.end(n); }
 		/** @copydoc end */
-		[[nodiscard]] constexpr const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
+		[[nodiscard]] const_local_iterator cend(size_type n) const noexcept { return m_table.end(n); }
 
 		/** Returns the bucket index of the specified element. */
 		[[nodiscard]] size_type bucket(const key_type &key) const { return m_table.bucket(key); }
@@ -1274,6 +1271,9 @@ namespace tpp
 		table_t m_table;
 	};
 
+	template<typename K, typename M, typename H, typename C, typename A>
+	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
+
 	/** Erases all elements from the map \p map that satisfy the predicate \p pred.
 	 * @return Amount of elements erased. */
 	template<typename K, typename M, typename H, typename C, typename A, typename P>
@@ -1293,27 +1293,21 @@ namespace tpp
 		return result;
 	}
 
-	template<typename K, typename M, typename H, typename C, typename A>
-	inline void swap(ordered_dense_map<K, M, H, C, A> &a, ordered_dense_map<K, M, H, C, A> &b) noexcept(std::is_nothrow_swappable_v<ordered_dense_map<K, M, H, C, A>>) { a.swap(b); }
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<Key, Mapped>>>
+	ordered_dense_map(I, I, typename _detail::deduce_map_t<ordered_dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_map<Key, Mapped, Hash, Cmp, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Hash, typename Alloc>
+	ordered_dense_map(I, I, typename _detail::deduce_map_t<ordered_dense_map, I, Hash, std::equal_to<Key>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_map<Key, Mapped, Hash, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Alloc>
+	ordered_dense_map(I, I, typename _detail::deduce_map_t<ordered_dense_map, I, std::hash<Key>, std::equal_to<Key>, Alloc>::size_type, Alloc) -> ordered_dense_map<Key, Mapped, std::hash<Key>, std::equal_to<Key>, Alloc>;
+	template<typename I, typename Key = _detail::iter_key_t<I>, typename Mapped = _detail::iter_mapped_t<I>, typename Alloc>
+	ordered_dense_map(I, I, Alloc) -> ordered_dense_map<Key, std::hash<Key>, std::equal_to<Key>, Alloc>;
 
-	template<typename I, typename Hash = detail::default_hash<detail::iter_key_t<I>>, typename Cmp = std::equal_to<detail::iter_key_t<I>>, typename Alloc = std::allocator<std::pair<detail::iter_key_t<I>, detail::iter_mapped_t<I>>>>
-	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{})
-	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, Cmp, Alloc>;
-	template<typename I, typename Hash, typename Alloc>
-	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Hash, Alloc)
-	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, Hash, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_dense_map(I, I, typename detail::deduce_map_t<ordered_dense_map, I, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>::size_type, Alloc)
-	-> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-	template<typename I, typename Alloc>
-	ordered_dense_map(I, I, Alloc) -> ordered_dense_map<detail::iter_key_t<I>, detail::iter_mapped_t<I>, detail::default_hash<detail::iter_key_t<I>>, std::equal_to<detail::iter_key_t<I>>, Alloc>;
-
-	template<typename K, typename M, typename Hash = detail::default_hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
+	template<typename K, typename M, typename Hash = std::hash<K>, typename Cmp = std::equal_to<K>, typename Alloc = std::allocator<std::pair<K, M>>>
 	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, Cmp, Alloc>::size_type = 0, Hash = Hash{}, Cmp = Cmp{}, Alloc = Alloc{}) -> ordered_dense_map<K, M, Hash, Cmp, Alloc>;
 	template<typename K, typename M, typename Hash, typename Alloc>
 	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>::size_type, Hash, Alloc) -> ordered_dense_map<K, M, Hash, std::equal_to<K>, Alloc>;
 	template<typename K, typename M, typename Alloc>
-	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, typename ordered_dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>::size_type, Alloc) -> ordered_dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>;
 	template<typename K, typename M, typename Alloc>
-	ordered_dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> ordered_dense_map<K, M, detail::default_hash<K>, std::equal_to<K>, Alloc>;
+	ordered_dense_map(std::initializer_list<std::pair<K, M>>, Alloc) -> ordered_dense_map<K, M, std::hash<K>, std::equal_to<K>, Alloc>;
 }

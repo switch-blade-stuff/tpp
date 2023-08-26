@@ -5,7 +5,7 @@
 #pragma once
 
 #include "utility.hpp"
-#include "../stl_hash.hpp"
+#include "../hash.hpp"
 
 #ifndef TPP_USE_IMPORT
 
@@ -21,38 +21,38 @@ import std.memory;
 
 #endif
 
-namespace tpp::detail
+namespace tpp::_detail
 {
 	/* Helper type used to store potentially empty objects. */
 	template<typename, typename = void>
-	struct ebo_container;
+	struct empty_base;
 
 	template<typename T>
 	using ebo_candidate = std::conjunction<std::is_empty<T>, std::negation<std::is_final<T>>>;
 
 	template<typename T>
-	struct ebo_container<T, std::enable_if_t<ebo_candidate<T>::value>> : T
+	struct empty_base<T, std::enable_if_t<ebo_candidate<T>::value>> : T
 	{
-		constexpr ebo_container() noexcept(std::is_nothrow_default_constructible_v<T>) = default;
-		constexpr ebo_container(const ebo_container &other) noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
-		constexpr ebo_container(ebo_container &&other) noexcept(std::is_nothrow_move_constructible_v<T>) = default;
-		constexpr ebo_container &operator=(const ebo_container &other) noexcept(std::is_nothrow_copy_assignable_v<T>) = default;
-		constexpr ebo_container &operator=(ebo_container &&other) noexcept(std::is_nothrow_move_assignable_v<T>) = default;
+		constexpr empty_base() noexcept(std::is_nothrow_default_constructible_v<T>) = default;
+		constexpr empty_base(const empty_base &other) noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
+		constexpr empty_base(empty_base &&other) noexcept(std::is_nothrow_move_constructible_v<T>) = default;
+		constexpr empty_base &operator=(const empty_base &other) noexcept(std::is_nothrow_copy_assignable_v<T>) = default;
+		constexpr empty_base &operator=(empty_base &&other) noexcept(std::is_nothrow_move_assignable_v<T>) = default;
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(Args &&...args) noexcept(std::is_nothrow_constructible_v<T, Args...>) : T(std::forward<Args>(args)...) {}
+		constexpr empty_base(Args &&...args) noexcept(std::is_nothrow_constructible_v<T, Args...>) : T(std::forward<Args>(args)...) {}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-				:    ebo_container(std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(args)...) {}
+		constexpr empty_base(std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+				:    empty_base(std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(args)...) {}
 		template<std::size_t... Is, typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(std::index_sequence<Is...>, std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-				: ebo_container(std::forward<Args>(std::get<Is>(args))...) {}
+		constexpr empty_base(std::index_sequence<Is...>, std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+				: empty_base(std::forward<Args>(std::get<Is>(args))...) {}
 
 		[[nodiscard]] constexpr T &value() noexcept { return static_cast<T &>(*this); }
 		[[nodiscard]] constexpr const T &value() const noexcept { return static_cast<const T &>(*this); }
 
-		void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
+		void swap(empty_base &other) noexcept(std::is_nothrow_swappable_v<T>)
 		{
 			using std::swap;
 			swap(value(), other.value());
@@ -60,28 +60,28 @@ namespace tpp::detail
 	};
 
 	template<typename T>
-	struct ebo_container<T, std::enable_if_t<!ebo_candidate<T>::value>>
+	struct empty_base<T, std::enable_if_t<!ebo_candidate<T>::value>>
 	{
-		constexpr ebo_container() noexcept(std::is_nothrow_default_constructible_v<T>) = default;
-		constexpr ebo_container(const ebo_container &other) noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
-		constexpr ebo_container(ebo_container &&other) noexcept(std::is_nothrow_move_constructible_v<T>) = default;
-		constexpr ebo_container &operator=(const ebo_container &other) noexcept(std::is_nothrow_copy_assignable_v<T>) = default;
-		constexpr ebo_container &operator=(ebo_container &&other) noexcept(std::is_nothrow_move_assignable_v<T>) = default;
+		constexpr empty_base() noexcept(std::is_nothrow_default_constructible_v<T>) = default;
+		constexpr empty_base(const empty_base &other) noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
+		constexpr empty_base(empty_base &&other) noexcept(std::is_nothrow_move_constructible_v<T>) = default;
+		constexpr empty_base &operator=(const empty_base &other) noexcept(std::is_nothrow_copy_assignable_v<T>) = default;
+		constexpr empty_base &operator=(empty_base &&other) noexcept(std::is_nothrow_move_assignable_v<T>) = default;
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(Args &&...args) noexcept(std::is_nothrow_constructible_v<T, Args...>) : m_value(std::forward<Args>(args)...) {}
+		constexpr empty_base(Args &&...args) noexcept(std::is_nothrow_constructible_v<T, Args...>) : m_value(std::forward<Args>(args)...) {}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-				: ebo_container(std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(args)...) {}
+		constexpr empty_base(std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+				: empty_base(std::make_index_sequence<sizeof...(Args)>(), std::forward<Args>(args)...) {}
 		template<std::size_t... Is, typename... Args, typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
-		constexpr ebo_container(std::index_sequence<Is...>, std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-				: ebo_container(std::forward<Args>(std::get<Is>(args))...) {}
+		constexpr empty_base(std::index_sequence<Is...>, std::tuple<Args...> args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+				: empty_base(std::forward<Args>(std::get<Is>(args))...) {}
 
 		[[nodiscard]] constexpr T &value() noexcept { return m_value; }
 		[[nodiscard]] constexpr const T &value() const noexcept { return m_value; }
 
-		void swap(ebo_container &other) noexcept(std::is_nothrow_swappable_v<T>)
+		void swap(empty_base &other) noexcept(std::is_nothrow_swappable_v<T>)
 		{
 			using std::swap;
 			swap(value(), other.value());
@@ -92,7 +92,7 @@ namespace tpp::detail
 	};
 
 	template<typename T>
-	void swap(ebo_container<T> &a, ebo_container<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
+	void swap(empty_base<T> &a, empty_base<T> &b) noexcept(std::is_nothrow_swappable_v<T>) { a.swap(b); }
 
 	template<typename I, typename V, typename K, typename Kh, typename Kc, typename A>
 	struct table_traits
@@ -110,21 +110,21 @@ namespace tpp::detail
 	};
 
 	/* Placeholder node link. */
-	struct empty_link { constexpr void swap(empty_link &) noexcept {}};
+	struct empty_link { constexpr void swap(empty_link &) noexcept {} };
 	/* Node link used for ordered tables. */
 	struct ordered_link
 	{
-		[[nodiscard]] static constexpr std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
+		[[nodiscard]] static std::ptrdiff_t byte_diff(const void *a, const void *b) noexcept
 		{
 			const auto a_bytes = static_cast<const std::uint8_t *>(a);
 			const auto b_bytes = static_cast<const std::uint8_t *>(b);
 			return a_bytes - b_bytes;
 		}
-		[[nodiscard]] static constexpr const void *byte_off(const void *p, std::ptrdiff_t n) noexcept
+		[[nodiscard]] static const void *byte_off(const void *p, std::ptrdiff_t n) noexcept
 		{
 			return static_cast<const std::uint8_t *>(p) + n;
 		}
-		[[nodiscard]] static constexpr void *byte_off(void *p, std::ptrdiff_t n) noexcept
+		[[nodiscard]] static void *byte_off(void *p, std::ptrdiff_t n) noexcept
 		{
 			return static_cast<std::uint8_t *>(p) + n;
 		}
@@ -143,8 +143,10 @@ namespace tpp::detail
 		void link(ordered_link *prev_ptr) noexcept { link(prev_ptr->off(prev_ptr->next), prev_ptr); }
 		void link(ordered_link *next_ptr, ordered_link *prev_ptr) noexcept
 		{
-			next_ptr->prev = -(next = byte_diff(next_ptr, this));
-			prev_ptr->next = -(prev = byte_diff(prev_ptr, this));
+			next = byte_diff(next_ptr, this);
+			prev = byte_diff(prev_ptr, this);
+			next_ptr->prev = -next;
+			prev_ptr->next = -prev;
 		}
 
 		void relink_from(ordered_link &other) noexcept
@@ -169,13 +171,20 @@ namespace tpp::detail
 			prev_ptr->next = byte_diff(next_ptr, prev_ptr);
 		}
 
-		[[nodiscard]] constexpr ordered_link *off(std::ptrdiff_t n) noexcept { return static_cast<ordered_link *>(byte_off(this, n)); }
-		[[nodiscard]] constexpr const ordered_link *off(std::ptrdiff_t n) const noexcept { return static_cast<const ordered_link *>(byte_off(this, n)); }
+		[[nodiscard]] ordered_link *off(std::ptrdiff_t n) noexcept { return static_cast<ordered_link *>(byte_off(this, n)); }
+		[[nodiscard]] const ordered_link *off(std::ptrdiff_t n) const noexcept { return static_cast<const ordered_link *>(byte_off(this, n)); }
 
 		void swap(ordered_link &other) noexcept
 		{
 			std::swap(next, other.next);
 			std::swap(prev, other.prev);
+		}
+		friend void swap(ordered_link &a, ordered_link &b) noexcept
+		{
+			auto a_next = a.off(a.next), b_next = b.off(b.next);
+			auto a_prev = a.off(a.prev), b_prev = b.off(b.prev);
+			a.link(b_next, b_prev);
+			b.link(a_next, a_prev);
 		}
 
 		/* Offsets from `this` to next & previous links in bytes. */
@@ -203,7 +212,7 @@ namespace tpp::detail
 		template<typename C>
 		[[maybe_unused]] static std::false_type test_key_size(...);
 
-		constexpr static bool value = std::is_same_v<decltype(test_key_size<T>(nullptr)), std::true_type>;
+		static constexpr bool value = std::is_same_v<decltype(test_key_size<T>(nullptr)), std::true_type>;
 	};
 	template<typename T, bool = has_key_size<T>::value>
 	struct node_hash { using type = std::array<std::size_t, T::key_size>; };
@@ -216,15 +225,12 @@ namespace tpp::detail
 		using hash_type = typename node_hash<Traits>::type;
 		using link_base = typename Traits::link_type;
 
-		struct storage_t : ebo_container<V>
-		{
-			hash_type hash;
-		};
+		struct storage_t : empty_base<V> { hash_type hash; };
 
 	public:
 		using allocator_type = typename std::allocator_traits<A>::template rebind_alloc<V>;
 
-		constexpr packed_node() noexcept {}
+		packed_node() noexcept {}
 		~packed_node() {}
 
 		template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<V, Args...>>>
@@ -324,11 +330,11 @@ namespace tpp::detail
 		using value_ptr = typename std::allocator_traits<allocator_type>::pointer;
 
 	public:
-		class extracted_type : ebo_container<allocator_type>
+		class extracted_type : empty_base<allocator_type>
 		{
 			friend class stable_node;
 
-			using alloc_base = ebo_container<allocator_type>;
+			using alloc_base = empty_base<allocator_type>;
 
 		public:
 			constexpr extracted_type() noexcept = default;
@@ -413,7 +419,7 @@ namespace tpp::detail
 			constexpr insert_return(insert_return<I, NodeType> &&other) : insert_return(std::move(other.position), other.inserted, std::move(other.node)) {}
 
 			Iter position = {};
-			bool inserted = false;
+			bool inserted = {};
 			NodeType node = {};
 		};
 
@@ -545,31 +551,31 @@ namespace tpp::detail
 		constexpr explicit ordered_iterator(link_ptr link) noexcept : link(link) {}
 		constexpr explicit ordered_iterator(node_ptr node) noexcept : ordered_iterator(link_ptr{node}) {}
 
-		constexpr ordered_iterator operator++(int) noexcept
+		ordered_iterator operator++(int) noexcept
 		{
 			auto tmp = *this;
 			operator++();
 			return tmp;
 		}
-		constexpr ordered_iterator &operator++() noexcept
+		ordered_iterator &operator++() noexcept
 		{
 			link = link->off(link->next);
 			return *this;
 		}
-		constexpr ordered_iterator operator--(int) noexcept
+		ordered_iterator operator--(int) noexcept
 		{
 			auto tmp = *this;
 			operator--();
 			return tmp;
 		}
-		constexpr ordered_iterator &operator--() noexcept
+		ordered_iterator &operator--() noexcept
 		{
 			link = link->off(link->prev);
 			return *this;
 		}
 
-		[[nodiscard]] constexpr pointer operator->() const noexcept { return pointer{static_cast<N *>(to_address(link))}; }
-		[[nodiscard]] constexpr reference operator*() const noexcept { return *operator->(); }
+		[[nodiscard]] pointer operator->() const noexcept { return pointer{static_cast<N *>(to_address(link))}; }
+		[[nodiscard]] reference operator*() const noexcept { return *operator->(); }
 
 		[[nodiscard]] constexpr bool operator==(const ordered_iterator &other) const noexcept { return link == other.link; }
 
@@ -634,11 +640,9 @@ namespace tpp::detail
 	template<typename V, typename Traits, typename I>
 	class table_iterator : public iterator_concept_base<I>, public random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>
 	{
-		// @formatter:off
 		template<typename, typename, typename>
 		friend class table_iterator;
 		friend struct random_access_iterator_base<table_iterator<V, Traits, I>, std::iterator_traits<I>>;
-		// @formatter:on
 
 		template<typename U, typename T, typename J>
 		friend constexpr auto to_underlying(table_iterator<U, T, J>) noexcept;
@@ -762,37 +766,29 @@ namespace tpp::detail
 
 		[[nodiscard]] constexpr operator std::pair<K &, M &>() const noexcept { return {first, second}; }
 
-		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator==(const packed_map_ref<U, V> &other) const
-		{
-			return first == other.first && second == other.second;
-		}
-		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator>=(const packed_map_ref<U, V> &other) const
-		{
-			return first >= other.first && second >= other.second;
-		}
-		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator<=(const packed_map_ref<U, V> &other) const
-		{
-			return first <= other.first && second <= other.second;
-		}
-		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator>(const packed_map_ref<U, V> &other) const
-		{
-			return first > other.first && second > other.second;
-		}
-		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator<(const packed_map_ref<U, V> &other) const
-		{
-			return first < other.first && second < other.second;
-		}
-
 #if (__cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L))
 		template<typename U, typename V>
-		[[nodiscard]] constexpr bool operator!=(const packed_map_ref<U, V> &other) const
+		[[nodiscard]] constexpr bool operator==(const packed_map_ref<U, V> &other) const noexcept(noexcept(first == other.first && noexcept(second == other.second)))  { return first == other.first && second == other.second; }
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator!=(const packed_map_ref<U, V> &other) const noexcept(noexcept(first != other.first && noexcept(second != other.second))) { return first != other.first || second != other.second; }
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator>=(const packed_map_ref<U, V> &other) const noexcept(noexcept(first >= other.first && noexcept(second >= other.second)))  { return first >= other.first && second >= other.second; }
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator<=(const packed_map_ref<U, V> &other) const noexcept(noexcept(first <= other.first && noexcept(second <= other.second)))  { return first <= other.first && second <= other.second; }
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator>(const packed_map_ref<U, V> &other) const noexcept(noexcept(first > other.first && noexcept(second > other.second)))  { return first > other.first && second > other.second; }
+		template<typename U, typename V>
+		[[nodiscard]] constexpr bool operator<(const packed_map_ref<U, V> &other) const noexcept(noexcept(first < other.first && noexcept(second < other.second))) { return first < other.first && second < other.second; }
+#else
+		template<typename U, typename V> requires std::equality_comparable_with<K, U> && std::equality_comparable_with<M, V>
+		[[nodiscard]] constexpr bool operator==(const packed_map_ref<U, V> &other) const noexcept(noexcept(first == other.first && noexcept(second == other.second)))  { return first == other.first && second == other.second; }
+		template<typename U, typename V> requires(requires (const K &k, const M &m, const U &u, const V &v) { synth_three_way(k, u); synth_three_way(m, v); })
+		[[nodiscard]] constexpr auto operator<=>(const packed_map_ref<U, V> &other) const noexcept(noexcept(synth_three_way(first, other.first)) && noexcept(synth_three_way(second, other.second))) -> std::common_comparison_category_t<synth_three_way_result<K, U>, synth_three_way_result<M, V>>
 		{
-			return first != other.first || second != other.second;
+			if (auto res = synth_three_way(first, other.first); res == 0)
+				return synth_three_way(second, other.second);
+			else
+				return res;
 		}
 #endif
 
@@ -827,19 +823,17 @@ namespace tpp::detail
 		reference m_ref;
 	};
 
-	template<std::size_t I, typename K, typename M>
-	[[nodiscard]] constexpr decltype(auto) get(tpp::detail::packed_map_ref<K, M> &ref) noexcept
+	template<std::size_t I, typename K, typename M, typename = std::enable_if_t<(I < 2)>>
+	[[nodiscard]] constexpr decltype(auto) get(tpp::_detail::packed_map_ref<K, M> &ref) noexcept
 	{
-		static_assert(I < 2);
 		if constexpr (I == 0)
 			return ref.first;
 		else
 			return ref.second;
 	}
-	template<std::size_t I, typename K, typename M>
-	[[nodiscard]] constexpr decltype(auto) get(const tpp::detail::packed_map_ref<K, M> &ref) noexcept
+	template<std::size_t I, typename K, typename M, typename = std::enable_if_t<(I < 2)>>
+	[[nodiscard]] constexpr decltype(auto) get(const tpp::_detail::packed_map_ref<K, M> &ref) noexcept
 	{
-		static_assert(I < 2);
 		if constexpr (I == 0)
 			return ref.first;
 		else
@@ -848,6 +842,6 @@ namespace tpp::detail
 }
 
 template<typename K, typename M>
-struct std::tuple_size<tpp::detail::packed_map_ref<K, M>> : std::integral_constant<std::size_t, 2> {};
+struct std::tuple_size<tpp::_detail::packed_map_ref<K, M>> : std::integral_constant<std::size_t, 2> {};
 template<std::size_t I, typename K, typename M>
-struct std::tuple_element<I, tpp::detail::packed_map_ref<K, M>> { using type = std::conditional_t<I == 0, K, M>; };
+struct std::tuple_element<I, tpp::_detail::packed_map_ref<K, M>> { using type = std::conditional_t<I == 0, K, M>; };
