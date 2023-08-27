@@ -37,14 +37,6 @@
 #define TPP_ASSUME(x)
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#define TPP_UNREACHABLE() __builtin_unreachable()
-#elif defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
-#define TPP_UNREACHABLE() std::unreachable()
-#else
-#define TPP_UNREACHABLE() TPP_ASSUME(false)
-#endif
-
 #if defined(_MSC_VER)
 #define TPP_FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
@@ -53,25 +45,13 @@
 #define TPP_FORCEINLINE
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#define TPP_PURE __attribute__((pure))
-#else
-#define TPP_PURE
-#endif
-
 #if (__cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
-
 #define TPP_IF_LIKELY(x) if (x) [[likely]]
 #define TPP_IF_UNLIKELY(x) if (x) [[unlikely]]
-
 #elif defined(__GNUC__) || defined(__clang__)
-
 #define TPP_IF_LIKELY(x) if (__builtin_expect(static_cast<bool>(x), true))
 #define TPP_IF_UNLIKELY(x) if (__builtin_expect(static_cast<bool>(x), false))
-
 #else
-
 #define TPP_IF_LIKELY(x) if (x)
 #define TPP_IF_UNLIKELY(x) if (x)
-
 #endif

@@ -6,42 +6,6 @@
 
 #if defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_X86) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 #define TPP_ARCH_X86
-#elif defined(__ARM_ARCH_2__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM2
-#elif defined(__ARM_ARCH_3__) || defined(__ARM_ARCH_3M__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM3
-#elif defined(__ARM_ARCH_4T__) || defined(__TARGET_ARM_4T)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM4T
-#elif defined(__ARM_ARCH_5_) || defined(__ARM_ARCH_5E_)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM5
-#elif defined(__ARM_ARCH_6T2_) || defined(__ARM_ARCH_6T2_)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM6T2
-#elif defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM6
-#elif defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM7
-#elif defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM7A
-#elif defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM7R
-#elif defined(__ARM_ARCH_7M__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM7M
-#elif defined(__ARM_ARCH_7S__)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM7S
-#elif defined(__aarch64__) || defined(_M_ARM64)
-#define TPP_ARCH_ARM
-#define TPP_ARCH_ARM64
 #endif
 
 #ifndef TPP_NO_SIMD
@@ -69,7 +33,7 @@
 #endif
 #endif
 
-#elif defined(TPP_ARCH_ARM) && (defined(__ARM_NEON__) || defined(__ARM_NEON))
+#elif defined(__ARM_NEON__) || defined(__ARM_NEON)
 #define TPP_HAS_NEON
 #endif
 

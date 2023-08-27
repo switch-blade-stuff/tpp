@@ -441,7 +441,7 @@ namespace tpp::_detail
 	};
 
 	/* GCC was having issues with combined buffer for some reason. */
-#if (defined(__GNUC__) && !defined(__clang__)) || !defined(NDEBUG)
+#if (defined(__GNUC__) && !defined(__clang__)) || defined(TPP_DEBUG)
 	/* Always use separate buffers in debug mode for ease of debugging. */
 	template<typename Node, typename NodeAlloc, typename MetaAlloc, bool Combine = false>
 	class swiss_table_buffer;

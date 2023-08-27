@@ -14,16 +14,12 @@
 
 #include "define.hpp"
 
-#if defined(TPP_DEBUG) || !defined(NDEBUG)
-
-#ifndef TPP_USE_IMPORT
+#if defined(TPP_DEBUG)
 
 #include <algorithm>
 #include <iterator>
 #include <cstdlib>
 #include <cstdio>
-
-#endif
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define TPP_DEBUGTRAP() __debugbreak()
@@ -149,7 +145,7 @@ namespace tpp::_detail
 #endif
 #endif
 
-#if defined(TPP_DEBUG) || !defined(NDEBUG)
+#if defined(TPP_DEBUG)
 	[[maybe_unused]] inline void assert_msg(const char *file, std::size_t line, const char *func, const char *cstr, const char *msg) noexcept
 	{
 		fprintf(stderr, "%s:%zu: %s: Assertion `%s` failed", file, line, func, cstr);
