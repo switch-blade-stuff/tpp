@@ -6,8 +6,6 @@
 
 #include <tuple>
 
-#include "../hash.hpp"
-
 namespace tpp
 {
 	/** @brief Helper structure used to specify keys of a multiset. */

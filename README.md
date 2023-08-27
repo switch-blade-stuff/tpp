@@ -26,12 +26,6 @@ Here is a brief list of the features of this library:
     - `tpp::ordered_dense_map`
     - `tpp::dense_multiset`
     - `tpp::dense_multimap`
-* Hash utilities
-    - `tpp::is_hash_builder`
-    - `tpp::is_hash_builder_for`
-    - `tpp::fnv1a_builder`
-    - `tpp::sdbm_builder`
-    - `tpp::hash_combine`
 
 ## Build
 
@@ -49,21 +43,12 @@ Optionally, a `CMakeLists.txt` is also provided if you want to use the library a
     <td>Toggles availability of SIMD optimizations for swiss tables</td>
   </tr>
   <tr>
-    <td>TPP_NO_HASH</td>
-    <td>-DTPP_NO_HASH</td>
-    <td>OFF</td>
-    <td>Toggles availability of hash function utilities</td>
-  </tr>
-  <tr>
     <td>N/A</td>
     <td>-DTPP_TESTS</td>
     <td>OFF</td>
     <td>Enables unit test target</td>
   </tr>
 </table>
-
-If hash utility functions are enabled, all tables will use the `tpp::seahash_hash` hasher by default,
-otherwise `std::hash` is used.
 
 ## API compatibility
 

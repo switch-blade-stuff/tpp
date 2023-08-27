@@ -7,6 +7,7 @@
 #include "assert.hpp"
 
 #include <tpp/detail/multikey.hpp>
+#include <string>
 
 template<template<typename...> typename T, typename set_t = T<std::string>>
 static void test_set() noexcept

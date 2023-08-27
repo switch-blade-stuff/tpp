@@ -7,6 +7,7 @@
 #include "assert.hpp"
 
 #include <tpp/detail/multikey.hpp>
+#include <string>
 
 template<template<typename...> typename T, typename map_t = T<std::string, int>>
 static void test_map() noexcept

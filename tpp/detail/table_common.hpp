@@ -5,9 +5,9 @@
 #pragma once
 
 #include <initializer_list>
+#include <stdexcept>
 
 #include "utility.hpp"
-#include "../hash.hpp"
 
 namespace tpp::_detail
 {

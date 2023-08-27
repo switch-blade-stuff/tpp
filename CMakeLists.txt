@@ -16,11 +16,6 @@ if (${TPP_NO_SIMD})
     target_compile_definitions(${PROJECT_NAME} INTERFACE TPP_NO_SIMD)
 endif ()
 
-option(TPP_NO_HASH "Toggles availability of hash function utilities" OFF)
-if (${TPP_NO_HASH})
-    target_compile_definitions(${PROJECT_NAME} INTERFACE TPP_NO_HASH)
-endif ()
-
 # Add sources
 target_sources(${PROJECT_NAME} INTERFACE FILE_SET HEADERS BASE_DIRS tpp FILES
         # Common definitions & utilities
@@ -43,10 +38,7 @@ target_sources(${PROJECT_NAME} INTERFACE FILE_SET HEADERS BASE_DIRS tpp FILES
         tpp/sparse_set.hpp
         tpp/sparse_map.hpp
         tpp/stable_set.hpp
-        tpp/stable_map.hpp
-
-        # Hash utilities
-        tpp/hash.hpp)
+        tpp/stable_map.hpp)
 
 # Configure CMake package
 set(TPP_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
